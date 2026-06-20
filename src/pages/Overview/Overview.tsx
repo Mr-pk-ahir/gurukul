@@ -1,0 +1,209 @@
+import { useState, useEffect } from "react";
+import ThemeToggle from "../../components/theme/ThemeToggle";
+import { useTheme } from "../../components/theme/ThemeContext";
+import { Link } from "react-router-dom";
+
+const STATIC_DATA = {
+  section1: {
+    images: [
+      "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1200",
+      "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?q=80&w=1200"
+    ],
+    menuOptions: [
+      { id: 1, label: "અમૃતનું આચમન" },
+      { id: 2, label: "ડેઈલી દર્શન" }
+    ]
+  },
+  section2: {
+    title: "Revolutionizing Education with AI",
+    description: "An AI-Powered LMS bridging the digital divide in schools, colleges, coaching centres, and rural institutions — even offline."
+  },
+  section3: {
+    tagline: "AI-POWERED LEARNING",
+    title: "Smart & Offline Infrastructure",
+    description: "અદ્યતન ટેક્નોલોજી દ્વારા પૂરું પાડવામાં આવતું ઑફલાઇન કન્ટેન્ટ મેનેજમેન્ટ, જે ઇન્ટરનેટ વગર પણ વિદ્યાર્થીઓ સુધી શ્રેષ્ઠ શિક્ષણ પહોંચાડે છે.",
+    image: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1200"
+  },
+  footer: {
+    brandName: "RuralSpark",
+    brandDescription: "Empowering rural education through cutting-edge AI technology, bringing digital content where it matters most.",
+    contactEmail: "support@ruralspark.com",
+    links: [
+      { label: "About Us", href: "#about" },
+      { label: "Features", href: "#features" },
+      { label: "Contact", href: "#contact" }
+    ]
+  }
+};
+
+export default function Overview() {
+  const { theme } = useTheme();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+
+  // JSON માંથી ડેટા અલગ તારવ્યો
+  const { section1, section2, section3, footer } = STATIC_DATA;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentImgIndex((prevIndex) => (prevIndex + 1) % section1.images.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [section1.images.length]);
+
+  return (
+    <div className="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth bg-white [&::-webkit-scrollbar]:none [-ms-overflow-style:none] [scrollbar-width:none]">
+
+      {/* ---------------- SECTION 1: ONLY IMAGES & HEADER ---------------- */}
+      <section className="h-screen w-full snap-start relative flex flex-col justify-between p-6 overflow-hidden bg-slate-950">
+
+        {/* ઓટો ચેન્જ થતી ઇમેજ (ઓપેસિટી હવે ૧૦૦% એટલે કે ફૂલ છે) */}
+        {section1.images.map((img, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${
+              index === currentImgIndex ? "opacity-100" : "opacity-0"
+            }`}
+            style={{ backgroundImage: `url(${img})` }}
+          />
+        ))}
+
+        {/* ટોપ હેડર બાર */}
+        <div className="relative z-30 flex justify-between items-center w-full">
+          <div className="flex items-center gap-6">
+            <ThemeToggle />
+
+            <div className="relative">
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className={`flex flex-col justify-center items-center gap-1 w-10 h-10 bg-white rounded-xl shadow-md border transition-all active:scale-90 cursor-pointer ${
+                  theme ? "border-red-200" : "border-blue-200"
+                }`}
+              >
+                <div className={`h-0.5 w-5 transition-all rounded-2xl ${theme ? "bg-red-600" : "bg-blue-600"} ${isMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
+                <div className={`h-0.5 w-5 transition-all rounded-2xl ${theme ? "bg-red-600" : "bg-blue-600"} ${isMenuOpen ? 'opacity-0' : ''}`} />
+                <div className={`h-0.5 w-5 transition-all rounded-2xl ${theme ? "bg-red-600" : "bg-blue-600"} ${isMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`} />
+              </button>
+
+              {/* ડ્રોપડાઉન મેનુ - ડાયનેમિક લૂપ */}
+              <div className={`absolute top-12 left-0 w-56 bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 origin-top-left z-50 ${
+                theme ? "border border-red-200" : "border border-blue-200"
+              } ${isMenuOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}`}>
+                <div className="flex flex-col p-2 gap-1">
+                  {section1.menuOptions.map((option, idx) => (
+                    <div key={option.id}>
+                      <button className={`w-full flex items-center gap-3 cursor-pointer p-3 rounded-xl transition-colors hover:bg-gray-50 font-bold text-sm ${theme ? "text-red-600" : "text-blue-600"}`}>
+                        <span className={`w-2 h-2 rounded-full ${theme ? "bg-red-600" : "bg-blue-600"}`} />
+                        {option.label}
+                      </button>
+                      {idx !== section1.menuOptions.length - 1 && (
+                        <div className={`h-px w-full opacity-10 ${theme ? "bg-red-600" : "bg-blue-600"}`} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Link to={"/login"} className={`flex items-center justify-center px-4 py-2 bg-white rounded-xl shadow-md border font-bold text-sm transition-all active:scale-90 ${theme ? "border-red-200 text-red-600 hover:bg-red-50/30" : "border-blue-200 text-blue-600 hover:bg-blue-50/30"}`}>
+            Login
+          </Link>
+        </div>
+
+        {/* બોટમ ઇન્ડિકેટર્સ */}
+        <div className="relative z-10 flex flex-col items-center gap-3 mt-auto mb-2">
+          <div className="flex justify-center gap-2">
+            {section1.images.map((_, idx) => (
+              <div key={idx} className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentImgIndex ? (theme ? "w-6 bg-red-500" : "w-6 bg-blue-500") : "w-2 bg-white/40"}`} />
+            ))}
+          </div>
+
+          <div className="flex flex-col items-center">
+            <span className="text-xs font-bold text-white/80 mb-1">Scroll Down</span>
+            <div className={`w-1 h-4 rounded-full ${theme ? "bg-red-500" : "bg-blue-500"}`} />
+          </div>
+        </div>
+      </section>
+
+      {/* ---------------- SECTION 2: TEXT INTRODUCTION ---------------- */}
+      <section className="h-screen w-full snap-start relative flex flex-col items-center justify-center text-center px-6 bg-white">
+        <h1 className={`text-4xl md:text-5xl font-black mb-4 tracking-wide transition-colors ${theme ? "text-red-600" : "text-blue-600"}`}>
+          {section2.title}
+        </h1>
+        <p className="text-gray-500 font-medium max-w-xl leading-relaxed">
+          {section2.description}
+        </p>
+      </section>
+
+      {/* ---------------- SECTION 3: MASK EFFECT WITH BACKGROUND (Opacity 100%) ---------------- */}
+      <section className="h-screen w-full snap-start relative flex items-center justify-center overflow-hidden bg-white">
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-100"
+          style={{
+            backgroundImage: `url(${section3.image})`,
+            maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)'
+          }}
+        />
+        <div className="relative z-10 text-center px-6 max-w-2xl bg-white/80 p-6 rounded-3xl shadow-xl backdrop-blur-sm border border-gray-100">
+          <span className={`text-xs font-black tracking-widest uppercase ${theme ? "text-red-500" : "text-blue-500"}`}>
+            {section3.tagline}
+          </span>
+          <h2 className={`text-3xl md:text-4xl font-extrabold mt-2 mb-4 ${theme ? "text-slate-900" : "text-slate-800"}`}>
+            {section3.title}
+          </h2>
+          <p className="text-gray-600 text-sm md:text-base leading-relaxed">
+            {section3.description}
+          </p>
+        </div>
+      </section>
+
+      {/* ---------------- SECTION 4: FOOTER SECTION ---------------- */}
+      <section className="h-screen w-full snap-start relative flex flex-col justify-between p-10 bg-slate-950 text-gray-400">
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-auto max-w-6xl w-full mx-auto">
+          
+          <div className="flex flex-col gap-3">
+            <h3 className={`text-2xl font-black ${theme ? "text-red-500" : "text-blue-500"}`}>
+              {footer.brandName}
+            </h3>
+            <p className="text-sm text-gray-500 max-w-xs">
+              {footer.brandDescription}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <h4 className="text-white font-bold text-sm uppercase tracking-wider">Quick Links</h4>
+            <nav className="flex flex-col gap-1 text-sm">
+              {footer.links.map((link, idx) => (
+                <a key={idx} href={link.href} className="hover:text-white transition-colors">
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <h4 className="text-white font-bold text-sm uppercase tracking-wider">Contact Support</h4>
+            <p className="text-sm text-gray-500">Have questions? Reach out to us at:</p>
+            <a href={`mailto:${footer.contactEmail}`} className={`text-sm font-bold ${theme ? "text-red-400 hover:text-red-300" : "text-blue-400 hover:text-blue-300"}`}>
+              {footer.contactEmail}
+            </a>
+          </div>
+
+        </div>
+
+        <div className="border-t border-gray-800/60 pt-6 mt-10 max-w-6xl w-full mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-600">
+          <p>© {new Date().getFullYear()} {footer.brandName}. All rights reserved.</p>
+          <div className="flex gap-4">
+            <a href="#privacy" className="hover:text-gray-400 transition-colors">Privacy Policy</a>
+            <a href="#terms" className="hover:text-gray-400 transition-colors">Terms of Service</a>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+  );
+}
