@@ -1,6 +1,8 @@
+import React, { useState } from "react";
 import { HiOutlineMenuAlt2, HiOutlineBell } from "react-icons/hi";
 import { useTheme } from "../components/theme/ThemeContext";
 import ThemeToggle from "../components/theme/ThemeToggle";
+import NotificationBox from "../components/Notification/NotificationBox"; // NotificationBox ઇમ્પોર્ટ કર્યું
 
 interface HeaderProps {
     toggleSidebar: () => void;
@@ -9,6 +11,9 @@ interface HeaderProps {
 export default function Header({ toggleSidebar }: HeaderProps) {
     const { theme } = useTheme(); // ડાર્ક/લાઇટ થીમ લેવા માટે
     const adminData = JSON.parse(localStorage.getItem("adminData") || '{"username": "Admin"}');
+    
+    // નોટિફિકેશન બોક્સ ઓપન/ક્લોઝ કરવા માટેનું સ્ટેટ
+    const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
 
     return (
         <header className={`h-18 border-b flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-sm transition-colors duration-300 ${
@@ -39,16 +44,26 @@ export default function Header({ toggleSidebar }: HeaderProps) {
             <div className="flex items-center gap-3 sm:gap-5">
                 
                 {/* --- Notification Bell --- */}
-                <button className={`p-2.5 duration-300 cursor-pointer rounded-xl transition-colors relative ${
-                    theme 
-                        ? "bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-blue-200" 
-                        : "bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600"
-                }`}>
+                <button 
+                    onClick={() => setIsNotifOpen(true)} // ક્લિક ઇવેન્ટ ઉમેરી
+                    className={`p-2.5 duration-300 cursor-pointer rounded-xl transition-colors relative ${
+                        theme 
+                            ? "bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-blue-200" 
+                            : "bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600"
+                    }`}
+                >
                     <HiOutlineBell className="text-xl" />
+                    {/* Badge (લાલ/ભૂરું ટપકું) */}
                     <span className={`absolute top-2 right-2.5 w-2 h-2 rounded-full border ${
                         theme ? "bg-blue-200 border-gray-900" : "bg-red-600 border-white"
                     }`}></span>
                 </button>
+                
+                {/* Notification Box Component (અહીં કોલ કર્યું છે) */}
+                <NotificationBox 
+                    isOpen={isNotifOpen} 
+                    onClose={() => setIsNotifOpen(false)} 
+                />
                 
                 <ThemeToggle />
 
