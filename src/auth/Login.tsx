@@ -30,7 +30,7 @@ export default function Login() {
                     hasStudentsAccess: true
                 }
             };
-            localStorage.setItem("adminData", JSON.stringify(adminData));
+            localStorage.setItem("user", JSON.stringify(adminData));
             navigate("/dashboard");
 
         // --- Teacher અથવા સામાન્ય સ્ટાફ લોગિન ચેક ---
@@ -45,7 +45,7 @@ export default function Login() {
                     hasStudentsAccess: true     
                 }
             };
-            localStorage.setItem("adminData", JSON.stringify(adminData));
+            localStorage.setItem("user", JSON.stringify(adminData));
             navigate("/dashboard");
 
         } else {

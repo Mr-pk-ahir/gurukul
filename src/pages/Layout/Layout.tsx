@@ -15,21 +15,17 @@ export default function Layout() {
 
     return (
         <div className={`min-h-screen flex font-sans transition-colors duration-300 ${theme ? 'bg-gray-900 text-gray-50' : 'bg-gray-50 text-gray-800'}`}>
-            
-            {/* Sidebar અહી રેન્ડર થાય છે */}
+
             <Sidebar isOpen={isMobileSidebarOpen} setIsOpen={setIsMobileSidebarOpen} />
 
             <div className={`flex-1 flex flex-col min-w-0 transition-colors duration-300 ${theme ? 'bg-gray-900 text-gray-50' : 'bg-gray-50 text-gray-800'}`}>
-                {/* Header (Navbar) અહી રેન્ડર થાય છે */}
                 <Header toggleSidebar={toggleSidebar} />
-                
+
                 <main className="flex-1 p-6 md:p-3 w-full mx-auto overflow-y-auto">
-                    {/* Main Outlet Card Container - અહીં પણ gray-900 અને gray-800 પ્રોપર સેટ કર્યા છે */}
-                    <div className={`w-full h-full rounded-2xl shadow-sm border p-6 transition-colors duration-300 ${
-                        theme 
-                            ? 'bg-gray-900 text-gray-50 border-gray-800' 
+                    <div className={`w-full h-full rounded-2xl p-6 transition-colors duration-300 ${theme
+                            ? 'bg-gray-900 text-gray-50 border-gray-800'
                             : 'bg-white text-gray-800 border-gray-100'
-                    }`}>
+                        }`}>
                         <Outlet />
                     </div>
                 </main>

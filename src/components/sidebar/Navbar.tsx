@@ -7,6 +7,7 @@ import {
     HiOutlineLibrary, 
     HiOutlineUser
 } from "react-icons/hi";
+import { FiUsers } from "react-icons/fi"; // યુઝર્સ મેનૂ માટે નવો આઇકોન
 import { CiCircleList } from "react-icons/ci";
 import { IoCreateOutline } from "react-icons/io5";
 
@@ -16,7 +17,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
-    const { theme } = useTheme(); // ડાર્ક/લાઇટ થીમ લેવા માટે
+    const { theme } = useTheme(); // ડાર્ક/લાઇટ થીમ લેવા માટે (true = Dark, false = Light assumed)
     const navigate = useNavigate();
     const location = useLocation();
     
@@ -24,7 +25,7 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
     const [hasPermissionAccess, setHasPermissionAccess] = useState<boolean>(false);
 
     useEffect(() => {
-        const data = localStorage.getItem("adminData");
+        const data = localStorage.getItem("user");
         if (data) {
             try {
                 const parsed = JSON.parse(data);
@@ -38,16 +39,24 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
         }
     }, []);
 
+    // ૧. ડિપાર્ટમેન્ટના આઇટમ્સ અને પાથ
     const departmentItems = [
         { name: "Create Departments", path: "/departments", icon: <IoCreateOutline /> },
         { name: "Departments List", path: "/lessons", icon: <CiCircleList /> },
     ];
 
+    // ૨. યુઝર્સ મેનેજમેન્ટના સાચા પાથ (અહીં ફેરફાર કર્યો છે)
     const userItems = [
-        { name: "Create User", path: "/permissions/role", icon: <IoCreateOutline /> },
-        { name: "User List", path: "/permissions/lesson", icon: <CiCircleList /> },
+        { name: "Create User", path: "/users/create", icon: <IoCreateOutline /> },
+        { name: "User List", path: "/users/list", icon: <CiCircleList /> },
     ];
 
+    // ૩. રોલ્સ અને પરમિશનના પાથ
+    const roleItems = [
+        { name: "Create Role", path: "/permissions/role", icon: <IoCreateOutline /> },
+        { name: "Role List", path: "/permissions/lesson", icon: <CiCircleList /> },
+    ];
+    
     const isActive = location.pathname === "/dashboard";
 
     return (
@@ -64,7 +73,9 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                     ${isMiniSidebar ? "justify-center px-2" : ""}
                     ${
                         isActive
-                            ? "bg-blue-200 text-gray-900 shadow-md shadow-blue-200/10"
+                            ? theme 
+                                ? "text-blue-200 bg-gray-800" 
+                                : "text-red-600 bg-red-50"
                             : theme 
                                 ? "text-white bg-gray-900 hover:bg-gray-800 hover:text-blue-200" 
                                 : "text-gray-500 hover:bg-red-50 hover:text-red-600"
@@ -73,7 +84,7 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
             >
                 <span className={`transition-colors ${
                     isActive 
-                        ? "text-gray-900" 
+                        ? theme ? "text-blue-200" : "text-red-600" 
                         : theme 
                             ? "text-gray-300 group-hover:text-blue-200" 
                             : "text-gray-400 group-hover:text-red-600"
@@ -83,7 +94,7 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 {!isMiniSidebar && "Dashboard"}
             </button>
 
-            {/* --- Gurukul Dropdown --- */}
+            {/* --- Department Dropdown --- */}
             {hasGurukulAccess && (
                 <SidebarDropdown 
                     title="Department"
@@ -94,11 +105,23 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 />
             )}
 
+            {/* --- Users Dropdown --- */}
             {hasPermissionAccess && (
                 <SidebarDropdown 
                     title="Users"
-                    icon={<HiOutlineUser className="text-xl" />}
+                    icon={<FiUsers className="text-xl" />} // અહીં યુઝર્સ માટે અલગ આઇકોન સેટ કર્યો
                     items={userItems}
+                    setSidebarOpen={setSidebarOpen}
+                    isMiniSidebar={isMiniSidebar}
+                />
+            )}
+            
+            {/* --- Roles & Permission Dropdown --- */}
+            {hasPermissionAccess && (
+                <SidebarDropdown 
+                    title="Roles & permmision"
+                    icon={<HiOutlineUser className="text-xl" />}
+                    items={roleItems}
                     setSidebarOpen={setSidebarOpen}
                     isMiniSidebar={isMiniSidebar}
                 />

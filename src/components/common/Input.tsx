@@ -4,7 +4,7 @@ import { useTheme } from "../theme/ThemeContext"; // તમારી ThemeContex
 // React.InputHTMLAttributes વાપરવાથી HTML input ના બધા જ એટ્રીબ્યુટ્સ ઓટોમેટિક સપોર્ટ થઈ જશે
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     type: string;
-    value: string;
+    value: string | number;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     icon?: React.ReactNode;
 }
