@@ -4,33 +4,44 @@ import Overview from "../pages/Overview/Overview";
 import Login from "../auth/Login";
 import Dashboard from "../pages/Dashboard";
 
-// નવા કમ્પોનન્ટ્સ ઇમ્પોર્ટ કર્યા (તમારા પ્રોજેક્ટ ફોલ્ડર સ્ટ્રક્ચર પ્રમાણે)
+// યુઝર મેનેજમેન્ટ
 import CreateUserForm from "../pages/Section/Users-Managemant/Create-user-form";
 import UserList from "../pages/Section/Users-Managemant/User-list";
+
+// ડિપાર્ટમેન્ટ મેનેજમેન્ટ
+import CreateDepartment from "../pages/Section/Department-Management/Create-Department";
+import DepartmentList from "../pages/Section/Department-Management/Department-List";
+
+// 🎯 નવા ડાયનેમિક પેજ ઈમ્પોર્ટ કર્યા
+import AdmissionRequestPage from "../pages/Section/Department-Management/AdmissionRequestPage";
+import StudentListPage from "../pages/Section/Department-Management/StudentListPage";
+
+// રોલ મેનેજમેન્ટ
+import CreateRole from "../pages/Section/Role-managemant/Create-Role";
+import RoleList from "../pages/Section/Role-managemant/RoleList";
+import CreateAdmission from "../pages/Section/Department-Management/CreateAdmission";
 
 export default function Routers() {
     return (
         <Routes>
-            {/* પબ્લિક રૂટ્સ */}
             <Route path="/" element={<Overview />} />
             <Route path="/login" element={<Login />} />
-            
-            {/* પ્રોટેક્ટેડ/ડેશબોર્ડ રૂટ્સ (Layout ની અંદર Nested) */}
-            <Route path="/dashboard" element={<Layout />} >
-                {/* /dashboard ઓપન થાય ત્યારે આ લોડ થશે */}
-                <Route index element={<Dashboard />} />
-            </Route>
 
-            {/* યુઝર મેનેજમેન્ટ રૂટ્સ (આ પણ Layout ની અંદર જ ઓપન થશે) */}
-            <Route path="/users" element={<Layout />}>
-                {/* પાથ: /users/create */}
-                <Route path="create" element={<CreateUserForm />} />
-                {/* પાથ: /users/list */}
-                <Route path="list" element={<UserList />} />
+            {/* મેઈન પેરેન્ટ Route */}
+            <Route path="/dashboard" element={<Layout />} >
+                <Route index element={<Dashboard />} />
+                    <Route path="users/create" element={<CreateUserForm />} />
+                    <Route path="users/list" element={<UserList />} />
+                    <Route path="departments/create" element={<CreateDepartment />} />
+                    <Route path="departments/list" element={<DepartmentList />} />
+                    <Route path="departments/:deptId/create-admission" element={<CreateAdmission />} />
+                    <Route path="departments/:deptId/admission-requests" element={<AdmissionRequestPage />} />
+                    <Route path="departments/:deptId/student-list" element={<StudentListPage />} />
+                    <Route path="permissions/role" element={<CreateRole />} />
+                    <Route path="permissions/lesson" element={<RoleList />} />
+
+                <Route path="*" element={<Navigate to="/login" replace />} />
             </Route>
-            
-            {/* બાકીના બધા જ ખોટા પાથ માટે લોગિન પર રીડાયરેક્ટ */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
     );
 }

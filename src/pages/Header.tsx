@@ -12,7 +12,6 @@ export default function Header({ toggleSidebar }: HeaderProps) {
     const { theme } = useTheme(); // ડાર્ક/લાઇટ થીમ લેવા માટે
     const adminData = JSON.parse(localStorage.getItem("adminData") || '{"username": "Admin"}');
     
-    // નોટિફિકેશન બોક્સ ઓપન/ક્લોઝ કરવા માટેનું સ્ટેટ
     const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
 
     return (

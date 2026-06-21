@@ -1,0 +1,17 @@
+/* આખા પેજની ડિફોલ્ટ સ્ક્રોલબાર સંતાડવા માટે */
+html, body {
+  overflow: hidden;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* જો સાઇડબાર કે અંદરના બોક્સમાં સ્ક્રોલની જરૂર હોય પણ તેની લાઇન ન દેખાવી હોય તો: */
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari અને Opera માટે */
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE અને Edge માટે */
+  scrollbar-width: none;  /* Firefox માટે */
+}

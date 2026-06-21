@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useTheme } from "../theme/ThemeContext"; // તમારી ThemeContext ફાઇલ પાથ અહીં ચેક કરી લેવો
+import { useTheme } from "../theme/ThemeContext"; 
 import SidebarDropdown from "./SidebarDropdown";
 import { 
     HiOutlineHome, 
     HiOutlineLibrary, 
-    HiOutlineUser
+    HiOutlineShieldCheck,
+    HiOutlineClipboardList, // રિક્વેસ્ટ માટે આઇકોન
+    HiOutlineAcademicCap    // સ્ટુડન્ટ લિસ્ટ માટે આઇકોન
 } from "react-icons/hi";
-import { FiUsers } from "react-icons/fi"; // યુઝર્સ મેનૂ માટે નવો આઇકોન
+import { FiUsers } from "react-icons/fi"; 
 import { CiCircleList } from "react-icons/ci";
 import { IoCreateOutline } from "react-icons/io5";
 
@@ -17,44 +19,54 @@ interface NavbarProps {
 }
 
 export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
-    const { theme } = useTheme(); // ડાર્ક/લાઇટ થીમ લેવા માટે (true = Dark, false = Light assumed)
+    const { theme } = useTheme(); 
     const navigate = useNavigate();
     const location = useLocation();
     
-    const [hasGurukulAccess, setHasGurukulAccess] = useState<boolean>(false);
-    const [hasPermissionAccess, setHasPermissionAccess] = useState<boolean>(false);
+    const [hasGurukulAccess, setHasGurukulAccess] = useState<boolean>(true);
+    const [hasPermissionAccess, setHasPermissionAccess] = useState<boolean>(true);
+    
+    const [userDeptId, setUserDeptId] = useState<number | null>(null);
 
     useEffect(() => {
         const data = localStorage.getItem("user");
         if (data) {
             try {
                 const parsed = JSON.parse(data);
+                
+                if (parsed.departmentId) {
+                    setUserDeptId(Number(parsed.departmentId));
+                }
+
                 if (parsed.permissions) {
                     setHasGurukulAccess(!!parsed.permissions.hasGurukulAccess);
                     setHasPermissionAccess(!!parsed.permissions.hasPermissionAccess);
                 }
             } catch (e) {
-                console.error("Error parsing permissions:", e);
+                console.error("Error parsing user data:", e);
             }
         }
     }, []);
 
-    // ૧. ડિપાર્ટમેન્ટના આઇટમ્સ અને પાથ
     const departmentItems = [
-        { name: "Create Departments", path: "/departments", icon: <IoCreateOutline /> },
-        { name: "Departments List", path: "/lessons", icon: <CiCircleList /> },
+        { name: "Create Departments", path: "/dashboard/departments/create", icon: <IoCreateOutline /> },
+        { name: "Departments List", path: "/dashboard/departments/list", icon: <CiCircleList /> }, 
     ];
+    
+    const pipelineItems = userDeptId ? [
+        { name: "Create Admission", path: `/dashboard/departments/${userDeptId}/create-admission`, icon: <IoCreateOutline /> },
+        { name: "Admission Requests", path: `/dashboard/departments/${userDeptId}/admission-requests`, icon: <HiOutlineClipboardList /> },
+        { name: "Student List", path: `/dashboard/departments/${userDeptId}/student-list`, icon: <HiOutlineAcademicCap /> },
+    ] : [];
 
-    // ૨. યુઝર્સ મેનેજમેન્ટના સાચા પાથ (અહીં ફેરફાર કર્યો છે)
     const userItems = [
-        { name: "Create User", path: "/users/create", icon: <IoCreateOutline /> },
-        { name: "User List", path: "/users/list", icon: <CiCircleList /> },
+        { name: "Create User", path: "/dashboard/users/create", icon: <IoCreateOutline /> },
+        { name: "User List", path: "/dashboard/users/list", icon: <CiCircleList /> },
     ];
 
-    // ૩. રોલ્સ અને પરમિશનના પાથ
     const roleItems = [
-        { name: "Create Role", path: "/permissions/role", icon: <IoCreateOutline /> },
-        { name: "Role List", path: "/permissions/lesson", icon: <CiCircleList /> },
+        { name: "Create Role", path: "/dashboard/permissions/role", icon: <IoCreateOutline /> },
+        { name: "Role List", path: "/dashboard/permissions/lesson", icon: <CiCircleList /> }, 
     ];
     
     const isActive = location.pathname === "/dashboard";
@@ -94,7 +106,16 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 {!isMiniSidebar && "Dashboard"}
             </button>
 
-            {/* --- Department Dropdown --- */}
+            {userDeptId && pipelineItems.length > 0 && (
+                <SidebarDropdown 
+                    title="My Pipeline"
+                    icon={<HiOutlineAcademicCap className="text-xl" />}
+                    items={pipelineItems}
+                    setSidebarOpen={setSidebarOpen}
+                    isMiniSidebar={isMiniSidebar}
+                />
+            )}
+
             {hasGurukulAccess && (
                 <SidebarDropdown 
                     title="Department"
@@ -105,22 +126,20 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 />
             )}
 
-            {/* --- Users Dropdown --- */}
             {hasPermissionAccess && (
                 <SidebarDropdown 
                     title="Users"
-                    icon={<FiUsers className="text-xl" />} // અહીં યુઝર્સ માટે અલગ આઇકોન સેટ કર્યો
+                    icon={<FiUsers className="text-xl" />} 
                     items={userItems}
                     setSidebarOpen={setSidebarOpen}
                     isMiniSidebar={isMiniSidebar}
                 />
             )}
             
-            {/* --- Roles & Permission Dropdown --- */}
             {hasPermissionAccess && (
                 <SidebarDropdown 
-                    title="Roles & permmision"
-                    icon={<HiOutlineUser className="text-xl" />}
+                    title="Roles & Permissions"
+                    icon={<HiOutlineShieldCheck className="text-xl" />}
                     items={roleItems}
                     setSidebarOpen={setSidebarOpen}
                     isMiniSidebar={isMiniSidebar}
