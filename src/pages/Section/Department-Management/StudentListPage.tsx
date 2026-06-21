@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import Table from "../../../components/common/Table";
-import { HiOutlineSearch, HiOutlineUserGroup, HiOutlineAcademicCap } from "react-icons/hi";
+import { HiOutlineSearch, HiOutlineUserGroup } from "react-icons/hi";
 
 // 💾 Type-Safe Data Model (Database Interface)
 interface UserCreate {

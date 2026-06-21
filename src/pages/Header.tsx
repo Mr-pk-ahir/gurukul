@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { HiOutlineMenuAlt2, HiOutlineBell } from "react-icons/hi";
 import { useTheme } from "../components/theme/ThemeContext";
 import ThemeToggle from "../components/theme/ThemeToggle";

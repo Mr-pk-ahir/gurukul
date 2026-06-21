@@ -3,12 +3,12 @@ import { useTheme } from "../../../components/theme/ThemeContext";
 import Input from "../../../components/common/Input";
 import { HiOutlineUser, HiOutlineLibrary } from "react-icons/hi";
 import { FaBuilding } from "react-icons/fa";
+// import SearchableDropdown from "../../../components/common/SearchableDropdown";
 
 export default function CreateAdmission() {
     const { theme } = useTheme();
     const [applicantName, setApplicantName] = useState("");
     const [applicantSuid, setApplicantSuid] = useState("");
-    const [requestedRole, setRequestedRole] = useState("STUDENT");
     const [departmentId, setDepartmentId] = useState("");
     const [successMsg, setSuccessMsg] = useState("");
 
@@ -19,7 +19,7 @@ export default function CreateAdmission() {
         const newRequest = {
             id: Math.floor(100 + Math.random() * 900), // Random 3 Digit Req ID
             applicantName,
-            requestedRole,
+            applicantSuid,
             departmentId: Number(departmentId),
             requestDate: new Date().toLocaleDateString("en-GB"), // DD/MM/YYYY
             status: "PENDING",
@@ -58,7 +58,7 @@ export default function CreateAdmission() {
 
             <form onSubmit={handleApply} className={` p-6 rounded-2xl border border-gray-800 shadow-sm space-y-5`}>
                 <div>
-                    <label className="block text-xs font-bold mb-1.5 uppercase text-gray-400">Applicant Full Name</label>
+                    <label className="block text-xs font-bold mb-1.5 uppercase text-gray-400">Full Name</label>
                     <Input
                         type="text"
                         value={applicantName}
@@ -77,18 +77,6 @@ export default function CreateAdmission() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-xs font-bold mb-2 uppercase text-gray-400">Requested Role</label>
-                        <select
-                            value={requestedRole}
-                            onChange={(e) => setRequestedRole(e.target.value)}
-                            className="w-full px-4 py-2.5 border border-gray-200 bg-gray-50 dark:bg-neutral-800 rounded-xl text-sm font-medium text-gray-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="STUDENT">STUDENT</option>
-                            <option value="STAFF">STAFF</option>
-                        </select>
-                    </div>
-
                     <div>
                         <label className="block text-xs font-bold mb-2 uppercase text-gray-400">Department ID</label>
                         <Input

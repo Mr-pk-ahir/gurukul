@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import Table from "../../../components/common/Table";
 import { HiOutlineClock, HiOutlineCheckCircle, HiUsers, HiCheck } from "react-icons/hi";
-import { HiUserPlus } from "react-icons/hi2";
 
 interface AdmissionRequest {
   id: number;

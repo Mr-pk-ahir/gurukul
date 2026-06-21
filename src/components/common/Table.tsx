@@ -1,5 +1,6 @@
 import React from "react";
 import { useTheme } from "../theme/ThemeContext";
+import { HiOutlineInbox } from "react-icons/hi";
 
 interface Column<T> {
   header: string;
@@ -29,7 +30,7 @@ export default function Table<T>({
         <thead>
           <tr className={`transition-colors duration-200 ${
             theme 
-              ? "bg-gray-800 text-gray-200" 
+              ? "bg-gray-700 text-gray-200" 
               : "bg-[#9b001c] text-white" // તમારા ફોટો જેવો સેમ કલર કોડ
           }`}>
             {columns.map((column, index) => (
@@ -49,7 +50,7 @@ export default function Table<T>({
             data.map((item) => (
               <tr
                 key={keyExtractor(item)}
-                className={`shadow-sm transition-all duration-150 rounded-xl ${
+                className={`shadow-sm hover:shadow-md transition-all duration-150 rounded-xl ${
                   theme 
                     ? "bg-gray-800/60 hover:bg-gray-800 text-gray-200" 
                     : "bg-white hover:bg-neutral-50 text-neutral-800"
@@ -71,13 +72,22 @@ export default function Table<T>({
             ))
           ) : (
             <tr>
-              <td
-                colSpan={columns.length}
-                className={`p-8 text-center rounded-xl ${
-                  theme ? "bg-gray-800 text-gray-500" : "bg-white text-neutral-400"
-                }`}
-              >
-                {emptyMessage}
+              <td colSpan={columns.length} className="p-0">
+                {/* 🌟 Empty state: પહેલા ફક્ત ઝાંખો ટેક્સ્ટ હતો — હવે આઇકન +
+                    હેડિંગ + સહાયક લાઇન સાથે, જેથી ખાલી ટેબલ "તૂટેલું" નહીં
+                    પણ ઈરાદાપૂર્વકનું લાગે */}
+                <div
+                  className={`flex flex-col items-center justify-center gap-2 py-14 rounded-xl border border-dashed ${
+                    theme
+                      ? "bg-gray-800/40 border-gray-700 text-gray-500"
+                      : "bg-neutral-50/60 border-neutral-200 text-neutral-400"
+                  }`}
+                >
+                  <HiOutlineInbox className="text-3xl opacity-70" />
+                  <p className={`text-sm font-semibold ${theme ? "text-gray-400" : "text-neutral-500"}`}>
+                    {emptyMessage}
+                  </p>
+                </div>
               </td>
             </tr>
           )}
