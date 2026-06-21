@@ -21,6 +21,11 @@ import CreateRole from "../pages/Section/Role-managemant/Create-Role";
 import RoleList from "../pages/Section/Role-managemant/RoleList";
 import CreateAdmission from "../pages/Section/Department-Management/CreateAdmission";
 
+// પ્રોફાઈલ (Popup એ header નું dropdown trigger છે, route નથી —
+// એટલે ProfileView (read-only page) અને ProfileSetting (edit page) જ route થાય છે)
+import Profile from "../pages/Profile";
+import ProfileSetting from "../pages/Profile-Setting";
+
 export default function Routers() {
     return (
         <Routes>
@@ -39,6 +44,8 @@ export default function Routers() {
                     <Route path="departments/:deptId/student-list" element={<StudentListPage />} />
                     <Route path="permissions/role" element={<CreateRole />} />
                     <Route path="permissions/lesson" element={<RoleList />} />
+                    <Route path="profile" element={<Profile />} />
+                    <Route path="settings/profile" element={<ProfileSetting />} />
 
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Route>

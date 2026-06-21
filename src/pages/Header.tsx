@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { HiOutlineMenuAlt2, HiOutlineBell } from "react-icons/hi";
 import { useTheme } from "../components/theme/ThemeContext";
 import ThemeToggle from "../components/theme/ThemeToggle";
 import NotificationBox from "../components/Notification/NotificationBox"; // NotificationBox ઇમ્પોર્ટ કર્યું
+import ProfilePopup, { type ProfileUser } from "../components/Profile-Popup/Profile-Popup"; // પ્રિમિયમ પ્રોફાઈલ પોપઅપ
 
 interface HeaderProps {
     toggleSidebar: () => void;
@@ -10,9 +12,28 @@ interface HeaderProps {
 
 export default function Header({ toggleSidebar }: HeaderProps) {
     const { theme } = useTheme(); // ડાર્ક/લાઇટ થીમ લેવા માટે
+    const navigate = useNavigate();
     const adminData = JSON.parse(localStorage.getItem("adminData") || '{"username": "Admin"}');
-    
+
     const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
+
+    // localStorage ના adminData ને ProfilePopup ના ProfileUser format માં map કર્યું.
+    // જે field adminData માં ન હોય તેના માટે safe fallback રાખ્યો છે.
+    const profileUser: ProfileUser = {
+        suid: adminData.suid ?? adminData.id ?? "-",
+        fullName: adminData.fullName ?? adminData.username ?? "Admin",
+        username: adminData.username ?? "-",
+        joinedDate: adminData.joinedDate ?? "-",
+        birthDate: adminData.birthDate ?? "-",
+        roleLabel: adminData.role ?? adminData.roleLabel ?? "SUPER_ADMIN",
+        avatarUrl: adminData.avatarUrl,
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem("adminData");
+        localStorage.removeItem("token");
+        navigate("/login");
+    };
 
     return (
         <header className={`h-18 border-b flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-sm transition-colors duration-300 ${
@@ -68,30 +89,12 @@ export default function Header({ toggleSidebar }: HeaderProps) {
 
                 <div className={`h-8 w-px hidden sm:block ${theme ? "bg-gray-800" : "bg-gray-200"}`} />
 
-                {/* --- Admin Profile Section --- */}
-                <div className={`flex items-center gap-3 cursor-pointer p-1.5 pr-3 rounded-2xl transition-colors border border-transparent duration-300 ${
-                    theme 
-                        ? "bg-gray-800 hover:bg-gray-700 hover:border-gray-700" 
-                        : "bg-gray-200 hover:bg-gray-50 hover:border-gray-100"
-                }`}>
-                    
-                    <div className={`h-9 w-9 rounded-full flex items-center justify-center font-bold text-sm shadow-md ${
-                        theme ? "bg-blue-200 text-gray-900" : "bg-red-600 text-white"
-                    }`}>
-                        {adminData.username.charAt(0)}
-                    </div>
-                    
-                    <div className="text-left hidden sm:block">
-                        <p className={`text-sm font-bold leading-tight ${theme ? "text-white" : "text-gray-800"}`}>
-                            {adminData.username}
-                        </p>
-                        <p className={`text-[11px] font-bold uppercase tracking-wide mt-0.5 ${
-                            theme ? "text-blue-200" : "text-red-500"
-                        }`}>
-                            Super Admin
-                        </p>
-                    </div>
-                </div>
+                    <ProfilePopup
+                        user={profileUser}
+                        onLogout={handleLogout}
+                        profilePath="/Dashboard/Profile"
+                        settingsPath="/Dashboard/Profile-Settings"
+                    />
                 
             </div>
         </header>

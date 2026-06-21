@@ -19,11 +19,16 @@ interface DropdownProps {
 }
 
 export default function SidebarDropdown({ title, icon, items, setSidebarOpen, isMiniSidebar }: DropdownProps) {
-    const { theme } = useTheme(); 
+    const { theme } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
 
-    const isChildActive = items.some(item => location.pathname.includes(item.path));
+    const isChildActive = items.some(
+        (item) =>
+            location.pathname === item.path ||
+            location.pathname.startsWith(item.path + "/")
+    );
+
     const [isOpen, setIsOpen] = useState(isChildActive && !isMiniSidebar);
 
     const [isHovered, setIsHovered] = useState(false);
@@ -60,7 +65,6 @@ export default function SidebarDropdown({ title, icon, items, setSidebarOpen, is
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
         >
-            {/* --- ડ્રોપડાઉન મેઇન બટન --- */}
             <button
                 onClick={() => {
                     if (!isMiniSidebar) {
@@ -72,19 +76,19 @@ export default function SidebarDropdown({ title, icon, items, setSidebarOpen, is
                     ${isMiniSidebar ? "justify-center px-2" : ""}
                     ${
                         isChildActive
-                            ? theme 
-                                ? "bg-blue-200 text-gray-900" 
+                            ? theme
+                                ? "bg-linear-to-tr bg-blue-700 to-blue-400 text-gray-50"
                                 : "bg-red-50 text-red-600"
-                            : theme 
-                                ? "text-white hover:bg-gray-800 hover:text-blue-200" 
+                            : theme
+                                ? "text-white hover:bg-gray-800 hover:text-blue-200"
                                 : "text-gray-500 hover:bg-red-50 hover:text-red-600"
                     }
                 `}
             >
                 <div className="flex items-center gap-3.5">
                     <span className={`transition-colors ${
-                        isChildActive 
-                            ? theme ? "text-gray-900" : "text-red-600" 
+                        isChildActive
+                            ? theme ? "text-gray-50" : "text-red-600"
                             : theme ? "text-gray-400 group-hover:text-blue-200" : "text-gray-400 group-hover:text-red-600"
                     }`}>
                         {icon}
@@ -94,39 +98,54 @@ export default function SidebarDropdown({ title, icon, items, setSidebarOpen, is
 
                 {!isMiniSidebar && (
                     <HiChevronDown className={`text-lg transition-transform duration-300 ${isOpen ? "rotate-180" : ""} ${
-                        isChildActive 
-                            ? theme ? "text-gray-900" : "text-red-600" 
+                        isChildActive
+                            ? theme ? "text-gray-50" : "text-red-600"
                             : theme ? "text-gray-400" : "text-gray-400"
                     }`} />
                 )}
             </button>
 
             {/* --- સબ-મેનુ આઇટમ્સ (Accordion) --- */}
-            <div className={`overflow-hidden transition-all duration-300 ${isOpen && !isMiniSidebar ? "max-h-[500px] mt-1" : "max-h-0"}`}>
-                <div className="pl-12 space-y-1">
+            <div
+                className={`overflow-hidden transition-all duration-300 ${
+                    isOpen && !isMiniSidebar ? "max-h-[500px] mt-1" : "max-h-0"
+                }`}
+                // 🌟 Closed/hidden hoy tyare aa wrapper Tab-focusable subtree ne
+                // assistive tech mate pan "hidden" mark kare chhe.
+                aria-hidden={!isOpen}
+            >
+                <div className="pl-12 p-2 space-y-1">
                     {items.map((sub, index) => {
                         const isActive = location.pathname === sub.path;
                         return (
                             <button
                                 key={index}
+                                // 🌟 MAIN FIX: dropdown closed hoy tyare Tab key
+                                // aa button ne SKIP kare — focus sidhu next
+                                // dropdown/element par jashe. Khuli tyare j
+                                // normal tab-order ma aave chhe.
+                                tabIndex={isOpen ? 0 : -1}
                                 onClick={() => {
                                     navigate(sub.path);
                                     setSidebarOpen(false);
                                 }}
-                                className={`w-full flex items-center justify-start gap-3.5 text-left px-3 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer
+                                className={`w-full flex items-center justify-start gap-1.5 text-left px-2 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer
                                     ${
                                         isActive
-                                            ? theme 
-                                                ? "bg-blue-200/20 text-blue-200 font-bold" 
+                                            ? theme
+                                                ? "bg-linear-to-r from-blue-700 to-blue-400 text-blue-200 font-bold"
                                                 : "bg-red-50 text-red-600 font-bold"
-                                            : theme 
-                                                ? "text-gray-400 hover:bg-gray-800 hover:text-blue-200" 
+                                            : theme
+                                                ? "text-gray-400 hover:bg-gray-800 hover:text-blue-200"
                                                 : "text-gray-600 hover:bg-gray-50 hover:text-red-600"
                                     }
                                 `}
                             >
+                                {isActive && (
+                                    <div className={`w-1 h-6 rounded-2xl bg-blue-50`} />
+                                )}
                                 <span className={`text-lg transition-colors ${
-                                    isActive 
+                                    isActive
                                         ? theme ? "text-blue-200" : "text-red-600"
                                         : theme ? "text-gray-400" : "text-gray-400"
                                 }`}>
@@ -139,7 +158,6 @@ export default function SidebarDropdown({ title, icon, items, setSidebarOpen, is
                 </div>
             </div>
 
-            {/* --- મિની સાઇડબાર માટેનું હોવર મેનુ --- */}
             {isMiniSidebar && isHovered && (
                 <SidebarHoverMenu
                     title={title}
