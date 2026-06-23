@@ -1,7 +1,5 @@
-import React, { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useRef, useEffect } from "react";
 import {
-  ArrowLeft,
   AtSign,
   Calendar,
   Camera,
@@ -47,29 +45,28 @@ const DEFAULT_USER: ProfileSettingsUser = {
 
 function SectionHeading({ icon, title, theme }: { icon: React.ReactNode; title: string; theme: boolean }) {
   return (
-    <div className="flex items-center gap-3 mb-8">
+    <div className="flex items-center gap-4 mb-8 group">
       <div
-        className={`flex items-center justify-center w-8 h-8 rounded-xl shrink-0 shadow-sm ${
+        className={`flex items-center justify-center w-9 h-9 rounded-xl shrink-0 shadow-sm transition-all duration-300 group-hover:scale-110 ${
           theme
-            ? "bg-linear-to-br from-blue-500/20 to-blue-600/10 text-blue-400 border border-blue-500/20"
-            : "bg-linear-to-br from-red-500/10 to-red-600/5 text-red-600 border border-red-100"
+            ? "bg-linear-to-br from-blue-500/20 to-blue-600/10 text-blue-400 border border-blue-500/20 group-hover:border-blue-500/40 group-hover:shadow-[0_0_15px_rgba(59,130,246,0.2)]"
+            : "bg-linear-to-br from-red-500/10 to-red-600/5 text-red-600 border border-red-100 group-hover:border-red-300 group-hover:shadow-[0_0_15px_rgba(220,38,38,0.15)]"
         }`}
       >
         {icon}
       </div>
       <h3
-        className={`text-xs font-bold uppercase tracking-widest ${
-          theme ? "text-gray-300" : "text-neutral-500"
+        className={`text-sm font-bold uppercase tracking-widest transition-colors duration-300 ${
+          theme ? "text-gray-300 group-hover:text-white" : "text-neutral-500 group-hover:text-neutral-900"
         }`}
       >
         {title}
       </h3>
-      <div className={`flex-1 h-px ml-4 ${theme ? "bg-gray-800" : "bg-neutral-200"}`} />
+      <div className={`flex-1 h-px ml-4 transition-colors duration-300 ${theme ? "bg-gray-800 group-hover:bg-gray-700" : "bg-neutral-200 group-hover:bg-neutral-300"}`} />
     </div>
   );
 }
 
-// Premium Text/Date Field
 const TextField: React.FC<{
   icon: React.ReactNode;
   label: string;
@@ -80,7 +77,6 @@ const TextField: React.FC<{
 }> = ({ icon, label, value, type = "text", onChange, theme }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Focus functionality for date fields to open the picker smoothly
   const handleContainerClick = () => {
     if (type === "date" && inputRef.current) {
       try {
@@ -96,23 +92,23 @@ const TextField: React.FC<{
   return (
     <label className="block group">
       <span
-        className={`text-[11px] font-bold uppercase tracking-wider transition-colors ${
-          theme ? "text-gray-400 group-focus-within:text-blue-400" : "text-neutral-500 group-focus-within:text-red-600"
+        className={`text-xs font-bold uppercase tracking-wider transition-colors duration-300 ${
+          theme ? "text-gray-400 group-focus-within:text-blue-400 group-hover:text-blue-300" : "text-neutral-500 group-focus-within:text-red-600 group-hover:text-red-500"
         }`}
       >
         {label}
       </span>
       <div
         onClick={handleContainerClick}
-        className={`mt-2 flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all duration-300 cursor-text shadow-sm ${
+        className={`mt-2 flex items-center gap-4 rounded-xl border px-4 py-4 transition-all duration-300 cursor-text shadow-sm ${
           theme
-            ? "border-gray-800 bg-gray-950/50 focus-within:border-blue-500/50 focus-within:bg-gray-900/80 focus-within:ring-4 focus-within:ring-blue-500/10 hover:border-gray-700 hover:bg-gray-900"
-            : "border-neutral-200 bg-white focus-within:border-red-400 focus-within:ring-4 focus-within:ring-red-600/10 hover:border-neutral-300 hover:bg-neutral-50"
+            ? "border-gray-800 bg-gray-950/50 focus-within:border-blue-500/50 focus-within:bg-gray-900/80 focus-within:ring-2 focus-within:ring-blue-500/10 hover:-translate-y-1 hover:border-blue-500/30 hover:bg-gray-900/40 hover:shadow-[0_10px_20px_-5px_rgba(59,130,246,0.15)]"
+            : "border-neutral-200 bg-white focus-within:border-red-400 focus-within:ring-2 focus-within:ring-red-600/10 hover:-translate-y-1 hover:border-red-200 hover:shadow-[0_10px_20px_-5px_rgba(220,38,38,0.08)]"
         }`}
       >
         <span
-          className={`transition-colors ${
-            theme ? "text-blue-400 group-focus-within:text-blue-300" : "text-red-500 group-focus-within:text-red-600"
+          className={`transition-all duration-300 ${
+            theme ? "text-blue-400 group-focus-within:text-blue-300 group-hover:scale-110" : "text-red-500 group-focus-within:text-red-600 group-hover:scale-110"
           }`}
         >
           {icon}
@@ -122,12 +118,11 @@ const TextField: React.FC<{
           type={type}
           value={value}
           onChange={onChange}
-          className={`w-full bg-transparent text-sm font-semibold outline-none transition-colors ${
+          className={`w-full bg-transparent text-base font-semibold outline-none transition-colors ${
             theme ? "text-gray-100 scheme-dark" : "text-neutral-900 scheme-light"
           } ${
             type === "date"
-              ? /* Hiding the ugly native calendar icon completely */
-                "[&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-inner-spin-button]:hidden"
+              ? "[&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-inner-spin-button]:hidden"
               : ""
           }`}
         />
@@ -136,7 +131,6 @@ const TextField: React.FC<{
   );
 };
 
-// Premium Password Field
 const PasswordField: React.FC<{
   label: string;
   value: string;
@@ -147,23 +141,23 @@ const PasswordField: React.FC<{
 }> = ({ label, value, show, onToggleShow, onChange, theme }) => (
   <label className="block group">
     <span
-      className={`text-[11px] font-bold uppercase tracking-wider transition-colors ${
-        theme ? "text-gray-400 group-focus-within:text-blue-400" : "text-neutral-500 group-focus-within:text-red-600"
+      className={`text-xs font-bold uppercase tracking-wider transition-colors duration-300 ${
+        theme ? "text-gray-400 group-focus-within:text-blue-400 group-hover:text-blue-300" : "text-neutral-500 group-focus-within:text-red-600 group-hover:text-red-500"
       }`}
     >
       {label}
     </span>
     <div
-      className={`mt-2 flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all duration-300 shadow-sm ${
+      className={`mt-2 flex items-center gap-4 rounded-xl border px-4 py-4 transition-all duration-300 shadow-sm ${
         theme
-          ? "border-gray-800 bg-gray-950/50 focus-within:border-blue-500/50 focus-within:bg-gray-900/80 focus-within:ring-4 focus-within:ring-blue-500/10 hover:border-gray-700"
-          : "border-neutral-200 bg-white focus-within:border-red-400 focus-within:ring-4 focus-within:ring-red-600/10 hover:border-neutral-300"
+          ? "border-gray-800 bg-gray-950/50 focus-within:border-blue-500/50 focus-within:bg-gray-900/80 focus-within:ring-2 focus-within:ring-blue-500/10 hover:-translate-y-1 hover:border-blue-500/30 hover:bg-gray-900/40 hover:shadow-[0_10px_20px_-5px_rgba(59,130,246,0.15)]"
+          : "border-neutral-200 bg-white focus-within:border-red-400 focus-within:ring-2 focus-within:ring-red-600/10 hover:-translate-y-1 hover:border-red-200 hover:shadow-[0_10px_20px_-5px_rgba(220,38,38,0.08)]"
       }`}
     >
       <Lock
         size={18}
-        className={`shrink-0 transition-colors ${
-          theme ? "text-blue-400 group-focus-within:text-blue-300" : "text-red-500 group-focus-within:text-red-600"
+        className={`shrink-0 transition-all duration-300 ${
+          theme ? "text-blue-400 group-focus-within:text-blue-300 group-hover:scale-110" : "text-red-500 group-focus-within:text-red-600 group-hover:scale-110"
         }`}
       />
       <input
@@ -171,15 +165,15 @@ const PasswordField: React.FC<{
         value={value}
         onChange={onChange}
         autoComplete="new-password"
-        className={`w-full bg-transparent text-sm font-semibold outline-none ${
+        className={`w-full bg-transparent text-base font-semibold outline-none ${
           theme ? "text-gray-100" : "text-neutral-900"
         }`}
       />
       <button
         type="button"
         onClick={onToggleShow}
-        className={`cursor-pointer transition-colors ${
-          theme ? "text-gray-500 hover:text-gray-300" : "text-neutral-400 hover:text-neutral-600"
+        className={`cursor-pointer transition-transform duration-300 p-1 hover:scale-110 ${
+          theme ? "text-gray-500 hover:text-blue-400" : "text-neutral-400 hover:text-red-500"
         }`}
       >
         {show ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -195,7 +189,6 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
   onSaveProfile,
   onChangePassword,
 }) => {
-  const navigate = useNavigate();
   const { theme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -207,6 +200,21 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
     joinedDate: user.joinedDate,
     avatarUrl: user.avatarUrl || "",
   });
+
+  // Load existing saved local data if any on mount
+  useEffect(() => {
+    if (user === DEFAULT_USER) {
+      const stored = localStorage.getItem("adminData");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setForm((prev) => ({ ...prev, ...parsed }));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  }, [user]);
   
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -217,7 +225,6 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
     setProfileSaved(false);
   };
 
-  // Profile Image Handling Logic
   const processFile = (file: File) => {
     if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
@@ -321,35 +328,29 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
 
   return (
     <div
-      className={`w-full mx-auto p-6 sm:p-10 rounded-3xl shadow-sm mt-6 border transition-all duration-300 ${
-        theme ? "bg-[#0B1120] border-gray-800 text-white" : "bg-white border-neutral-200 text-neutral-900"
+      className={`w-full h-full p-4 sm:p-8 transition-all duration-300 ${
+        theme ? "bg-[#0B1120] text-white" : "bg-white text-neutral-900"
       }`}
     >
-      {/* ===== Header (Updated divider line for Light theme) ===== */}
-      <div className="mb-10 pb-8 border-b flex flex-col items-start gap-4 border-neutral-100 dark:border-gray-400">
-        <button
-          onClick={() => navigate(-1)}
-          className={`flex items-center gap-2 text-sm font-bold transition-all cursor-pointer w-fit group ${
-            theme ? "text-gray-400 hover:text-white" : "text-neutral-500 hover:text-neutral-900"
-          }`}
-        >
-          <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" /> Back
-        </button>
-        <div>
-          <h2 className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${theme ? "text-white" : "text-neutral-900"}`}>
+      {/* ===== Premium Header ===== */}
+      <div className={`mb-10 pb-6 border-b transition-colors duration-300 ${theme ? "border-gray-800/70" : "border-neutral-200/70"}`}>
+          <h2 className={`text-3xl lg:text-4xl font-bold tracking-tight ${theme ? "text-white" : "text-neutral-900"}`}>
             Account Settings
           </h2>
-          <p className={`text-sm mt-1.5 max-w-md font-medium ${theme ? "text-gray-400" : "text-neutral-500"}`}>
+          <p className={`text-sm sm:text-base mt-2 font-medium tracking-wide ${theme ? "text-gray-400/90" : "text-neutral-500"}`}>
             Manage your profile details and security preferences seamlessly.
           </p>
-        </div>
       </div>
 
       {/* ===== Main Content ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         
-        {/* Left Column: Avatar & Quick Info with Drag and Drop Support */}
-        <div className="lg:col-span-4 h-max lg:sticky lg:top-8 flex flex-col items-center text-center p-6 rounded-2xl border border-transparent transition-colors hover:border-gray-800/30">
+        {/* Left Column: Avatar & Quick Info */}
+        <div className={`lg:col-span-4 h-max lg:sticky lg:top-4 flex flex-col items-center text-center p-6 rounded-3xl border transition-all duration-300 group-card ${
+          theme 
+            ? "border-transparent bg-gray-950/10 hover:border-gray-800 hover:bg-gray-950/30 hover:shadow-[0_15px_35px_-10px_rgba(0,0,0,0.3)] hover:-translate-y-1" 
+            : "border-transparent bg-neutral-50/40 hover:border-neutral-200 hover:bg-neutral-50/80 hover:shadow-[0_15px_35px_-10px_rgba(0,0,0,0.05)] hover:-translate-y-1"
+        }`}>
           <div 
             className="relative group cursor-pointer"
             onDragOver={handleDragOver}
@@ -357,7 +358,6 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
             onDrop={handleDrop}
             onClick={triggerFileInput}
           >
-            {/* Hidden File Input */}
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -367,47 +367,41 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
             />
 
             <div
-              className={`flex h-32 w-32 items-center justify-center overflow-hidden rounded-full text-5xl font-black shadow-2xl ring-4 transition-all duration-300 ${
+              className={`relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-full text-5xl font-black shadow-xl ring-4 transition-all duration-500 ${
                 isDragging 
                   ? "ring-emerald-500 scale-105 bg-emerald-500/10" 
                   : theme
-                  ? "bg-linear-to-tr from-gray-800 to-gray-700 text-blue-300 ring-gray-800/50 group-hover:ring-blue-500/40"
-                  : "bg-linear-to-tr from-neutral-100 to-white text-red-600 ring-neutral-100 group-hover:ring-red-500/30"
+                  ? "bg-linear-to-tr from-gray-800 to-gray-700 text-blue-300 ring-gray-800/50 group-hover:ring-blue-500/40 group-hover:shadow-[0_0_25px_rgba(59,130,246,0.2)]"
+                  : "bg-linear-to-tr from-neutral-100 to-white text-red-600 ring-neutral-100 group-hover:ring-red-500/30 group-hover:shadow-[0_0_25px_rgba(220,38,38,0.15)]"
               }`}
             >
               {form.avatarUrl ? (
-                <img src={form.avatarUrl} alt={form.fullName} className="h-full w-full object-cover" />
+                <img src={form.avatarUrl} alt={form.fullName} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
               ) : (
                 initial
               )}
+              
+              {/* Hover Overlay for Camera */}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <Camera size={32} className="text-white drop-shadow-md" />
+              </div>
             </div>
-            <button
-              type="button"
-              aria-label="Change photo"
-              className={`absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-full text-white shadow-xl transition-all duration-300 group-hover:scale-110 border-4 ${
-                theme
-                  ? "bg-blue-600 hover:bg-blue-500 border-[#0B1120]"
-                  : "bg-red-600 hover:bg-red-500 border-white"
-              }`}
-            >
-              <Camera size={18} />
-            </button>
           </div>
-          <h2 className={`mt-6 text-2xl font-black tracking-tight ${theme ? "text-gray-50" : "text-neutral-900"}`}>
+          <h2 className={`mt-6 text-2xl font-black tracking-tight transition-colors duration-300 ${theme ? "text-gray-50 group-hover:text-white" : "text-neutral-900 group-hover:text-neutral-950"}`}>
             {form.fullName}
           </h2>
-          <p className={`text-[15px] font-medium mt-1 ${theme ? "text-blue-400/80" : "text-red-500/80"}`}>
+          <p className={`text-base font-medium mt-1 transition-colors duration-300 ${theme ? "text-blue-400/80 group-hover:text-blue-400" : "text-red-500/80 group-hover:text-red-600"}`}>
             @{form.username}
           </p>
           
           <span
-            className={`mt-5 inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-[11px] font-black tracking-widest uppercase shadow-sm ${
+            className={`mt-5 inline-flex items-center gap-2 rounded-full px-5 py-2 text-xs font-black tracking-widest uppercase shadow-sm transition-all duration-300 ${
               theme
-                ? "bg-blue-500/10 text-blue-300 border border-blue-500/20"
-                : "bg-red-50 text-red-700 border border-red-200"
+                ? "bg-blue-500/10 text-blue-300 border border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/40"
+                : "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 hover:border-red-300"
             }`}
           >
-            <ShieldCheck size={14} /> {user.roleLabel}
+            <ShieldCheck size={16} /> {user.roleLabel}
           </span>
         </div>
 
@@ -416,7 +410,7 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
           
           {/* Account Details Form */}
           <section>
-            <SectionHeading icon={<User size={16} />} title="Profile Information" theme={theme} />
+            <SectionHeading icon={<User size={18} />} title="Profile Information" theme={theme} />
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               
               <TextField
@@ -459,21 +453,21 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
               />
             </div>
 
-            <div className={`mt-8 flex items-center gap-4 pt-6 border-t ${theme ? "border-gray-800/80" : "border-neutral-200"}`}>
+            <div className={`mt-8 flex items-center gap-5 pt-6 border-t transition-colors duration-300 ${theme ? "border-gray-800/80" : "border-neutral-200"}`}>
               <button
                 onClick={handleSaveProfile}
                 disabled={savingProfile}
-                className={`rounded-xl px-8 py-3.5 text-sm font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer ${
+                className={`rounded-xl px-8 py-3.5 text-base font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-xl disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:scale-100 cursor-pointer ${
                   theme
-                    ? "bg-linear-to-r from-blue-600 to-blue-500 shadow-blue-900/30"
-                    : "bg-linear-to-r from-red-600 to-red-500 shadow-red-600/20"
+                    ? "bg-linear-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-900/30 hover:shadow-blue-500/20"
+                    : "bg-linear-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 shadow-red-600/20 hover:shadow-red-500/30"
                 }`}
               >
-                {savingProfile ? "Saving Details..." : "Save Changes"}
+                {savingProfile ? "Saving..." : "Save Changes"}
               </button>
               {profileSaved && (
-                <span className={`flex items-center gap-2 text-sm font-bold px-4 py-3 rounded-xl transition-all duration-500 ${theme ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-600"}`}>
-                  <Check size={18} /> Profile Updated
+                <span className={`flex items-center gap-2 text-base font-bold px-4 py-3 rounded-xl transition-all duration-500 animate-in fade-in slide-in-from-left-4 ${theme ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-600"}`}>
+                  <Check size={20} className="animate-bounce" /> Updated
                 </span>
               )}
             </div>
@@ -481,10 +475,9 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
 
           {/* Security Form */}
           <section>
-            <SectionHeading icon={<ShieldCheck size={16} />} title="Security & Password" theme={theme} />
+            <SectionHeading icon={<ShieldCheck size={18} />} title="Security & Password" theme={theme} />
             <form onSubmit={handlePasswordSubmit} className="space-y-6">
               
-              {/* Row 1: Current Password & New Password */}
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <PasswordField
                   label="Current Password"
@@ -504,7 +497,6 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
                 />
               </div>
 
-              {/* Row 2: Confirm Password */}
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <PasswordField
                   label="Confirm New Password"
@@ -517,38 +509,37 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
               </div>
 
               {pwdError && (
-                <div role="alert" className={`flex items-start gap-3 p-4 rounded-xl text-sm font-semibold border shadow-sm w-fit ${
+                <div role="alert" className={`flex items-start gap-3 p-4 rounded-xl text-sm font-semibold border shadow-sm w-fit animate-in fade-in slide-in-from-top-2 ${
                   theme ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-red-50 text-red-700 border-red-200"
                 }`}>
-                  <span className="mt-0.5 shrink-0 bg-red-500/20 text-red-500 rounded-full h-5 w-5 flex items-center justify-center text-xs">!</span>
+                  <span className="mt-0.5 shrink-0 bg-red-500/20 text-red-500 rounded-full h-5 w-5 flex items-center justify-center">!</span>
                   <span>{pwdError}</span>
                 </div>
               )}
               
               {pwdSaved && (
-                <p className={`flex w-max items-center gap-2 text-sm font-bold px-5 py-3.5 rounded-xl border shadow-sm ${theme ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-emerald-50 text-emerald-600 border-emerald-200"}`}>
-                  <Check size={18} /> Password updated successfully
+                <p className={`flex w-max items-center gap-2 text-sm font-bold px-5 py-3.5 rounded-xl border shadow-sm animate-in fade-in slide-in-from-top-2 ${theme ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-emerald-50 text-emerald-600 border-emerald-200"}`}>
+                  <Check size={20} /> Password updated successfully
                 </p>
               )}
 
-              <div className={`pt-4 border-t mt-8 ${theme ? "border-gray-800/80" : "border-neutral-200"}`}>
+              <div className={`pt-6 border-t mt-8 transition-colors duration-300 ${theme ? "border-gray-800/80" : "border-neutral-200"}`}>
                 <button
                   type="submit"
                   disabled={savingPwd}
-                  className={`flex items-center gap-2.5 rounded-xl px-8 py-3.5 text-sm font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer ${
+                  className={`flex items-center gap-3 rounded-xl px-8 py-3.5 text-base font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-xl disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:scale-100 cursor-pointer ${
                     theme
-                      ? "bg-linear-to-b from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-700 shadow-black/40 border border-gray-600/50"
-                      : "bg-linear-to-b from-red-500 to-red-600 hover:from-red-700 hover:to-red-800 shadow-neutral-900/20"
+                      ? "bg-linear-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-900/30 hover:shadow-blue-500/20 border border-transparent"
+                      : "bg-linear-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 shadow-red-600/20 hover:shadow-red-500/30 border border-transparent"
                   }`}
                 >
-                  <Lock size={16} />
-                  {savingPwd ? "Updating Password..." : "Update Password"}
+                  <Lock size={18} className="transition-transform duration-300 group-hover:rotate-12" />
+                  {savingPwd ? "Updating..." : "Update Password"}
                 </button>
               </div>
             </form>
           </section>
         </div>
-
       </div>
     </div>
   );

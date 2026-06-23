@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // 👈 useEffect એડ કર્યો
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import Input from "../../../components/common/Input";
@@ -17,8 +17,13 @@ import {
 import type { UserCreate } from "../../../Types/User-create";
 import { FaUserCircle } from "react-icons/fa";
 
-// 🌟 ફોર્મને વિઝ્યુઅલી ગ્રુપ કરવા માટેનું નાનું હેડર — દરેક સેક્શનને
-// label + icon + thin divider આપે છે, જે scanning ઝડપી બનાવે છે
+// 🎯 રોલ ડેટા માટેનું ઇન્ટરફેસ
+interface RoleOption {
+    role_id: number;
+    role_name: string;
+    role_code: string;
+}
+
 function SectionHeading({
     icon,
     title,
@@ -54,16 +59,13 @@ export default function CreateUserForm() {
 
     const [loading, setLoading] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string>("");
+    
+    // 🌐 ડેટાબેઝમાંથી આવતા રોલ્સ સ્ટોર કરવા માટેનું સ્ટેટ
+    const [roles, setRoles] = useState<RoleOption[]>([]);
 
-    // 📥 પાઇપલાઇનમાંથી આવતો ડેટા
     const incomingData = location.state as { id: number; applicantName: string; requestedRole: string; departmentId: number } | null;
 
-    const roles = [
-        { id: 101, name: "Department Head", code: "HEAD100" },
-        { id: 102, name: "Teacher / Staff", code: "STAFF" },
-        { id: 103, name: "Student", code: "STUDENT" },
-    ];
-
+    // 🏢 ડિપાર્ટમેન્ટ્સ લિસ્ટ (આને પણ ભવિષ્યમાં આ જ રીતે લાઈવ કરી શકો છો)
     const departments = [
         { id: 4, name: "Academic Main" },
         { id: 10, name: "Primary Section" },
@@ -71,17 +73,15 @@ export default function CreateUserForm() {
         { id: 30, name: "Higher Secondary" },
     ];
 
-    const matchedRole = incomingData ? roles.find(r => r.code === incomingData.requestedRole) : null;
-
     const [formData, setFormData] = useState<UserCreate>({
         suid: Math.floor(100000 + Math.random() * 900000),
         avatar: "",
         name: incomingData?.applicantName || "",
         username: "",
         password: "",
-        roleId: matchedRole?.id || 0,
+        roleId: 0, // શરૂઆતમાં 0, API ડેટા આવ્યા પછી અપડેટ થશે
         bod: new Date().toISOString().split("T")[0],
-        roleCode: matchedRole?.code || "",
+        roleCode: "",
         departmentId: incomingData?.departmentId || 0,
         sectionId: 0,
         standardId: 0,
@@ -92,6 +92,50 @@ export default function CreateUserForm() {
     const isHeadRole = formData.roleCode === "HEAD100";
     const isFromPipeline = !!incomingData;
 
+    // 🔍 ડીબીમાંથી રોલ્સ મેળવવાનો સેક્શન
+    useEffect(() => {
+        const fetchLiveRoles = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const backendBaseUrl = window.location.hostname === "localhost"
+                    ? "http://localhost:5000"
+                    : "https://તમારા-બેકએન્ડની-vercel-લિંક.vercel.app";
+
+                const response = await fetch(`${backendBaseUrl}/roles`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    setRoles(result.data);
+
+                    // 💡 જો પાઇપલાઇનમાંથી રિક્વેસ્ટ આવી હોય, તો લાઈવ ડેટામાંથી રોલ મેચ કરો
+                    if (incomingData) {
+                        const matched = result.data.find((r: RoleOption) => r.role_code === incomingData.requestedRole);
+                        if (matched) {
+                            setFormData(prev => ({
+                                ...prev,
+                                roleId: matched.role_id,
+                                roleCode: matched.role_code
+                            }));
+                        }
+                    }
+                } else {
+                    console.error("Roles fetch failed:", result.message);
+                }
+            } catch (error) {
+                console.error("Error fetching live roles:", error);
+            }
+        };
+
+        fetchLiveRoles();
+    }, [incomingData]);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
@@ -100,7 +144,6 @@ export default function CreateUserForm() {
         }));
     };
 
-    // 📂 લોકલ ડિવાઇસમાંથી ફાઇલ અપલોડ કરીને Base64 સ્ટ્રિંગ બનાવવી
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -108,19 +151,21 @@ export default function CreateUserForm() {
             reader.onloadend = () => {
                 setFormData((prev) => ({ ...prev, avatar: reader.result as string }));
             };
-            reader.readAsDataURL(file); // ઈમેજને Base64 માં કન્વર્ટ કરશે
+            reader.readAsDataURL(file);
         }
     };
 
-    // 🚀 API સબમિશન પ્રોસેસ
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setErrorMessage("");
 
         try {
-            // 🎯 તમારી સાચી API લિંક અહીં સેટ કરો
-            const response = await fetch("https://api.example.com/v1/users", {
+            const backendBaseUrl = window.location.hostname === "localhost"
+                ? "http://localhost:5000"
+                : "https://તમારા-બેકએન્ડની-vercel-લિંક.vercel.app";
+
+            const response = await fetch(`${backendBaseUrl}/users/register`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -128,12 +173,11 @@ export default function CreateUserForm() {
                 body: JSON.stringify(formData),
             });
 
-            if (!response.ok) {
-                throw new Error("સર્વર પર યુઝર ક્રિએટ કરવામાં સમસ્યા આવી.");
-            }
-
             const result = await response.json();
-            console.log("API સક્સેસ રિસ્પોન્સ:", result);
+
+            if (!response.ok) {
+                throw new Error(result.message || "સર્વર પર યુઝર ક્રિએટ કરવામાં સમસ્યા આવી.");
+            }
 
             if (isFromPipeline) {
                 const allReqs = localStorage.getItem("admission_requests");
@@ -148,7 +192,6 @@ export default function CreateUserForm() {
             }
 
         } catch (error: any) {
-            console.error("API Error:", error);
             setErrorMessage(error.message || "કંઈક ખોટું થયું છે, ફરી પ્રયાસ કરો.");
         } finally {
             setLoading(false);
@@ -164,8 +207,8 @@ export default function CreateUserForm() {
             <div className="mb-8 pb-6 border-b flex flex-col items-center text-center gap-2 border-neutral-200 dark:border-gray-800">
                 <div
                     className={`w-16 h-16 text-white rounded-full shadow-lg ${theme
-                            ? "bg-linear-to-bl from-blue-300 to-blue-900 shadow-blue-950/40"
-                            : "bg-linear-to-bl from-red-300 to-red-900 shadow-red-950/20"
+                        ? "bg-linear-to-bl from-blue-300 to-blue-900 shadow-blue-950/40"
+                        : "bg-linear-to-bl from-red-300 to-red-900 shadow-red-950/20"
                         } flex items-center justify-center mb-1`}
                 >
                     <FaUserCircle size={24} />
@@ -193,8 +236,8 @@ export default function CreateUserForm() {
                 <div
                     role="alert"
                     className={`mb-6 flex items-start gap-2.5 p-3.5 rounded-xl text-sm font-medium border ${theme
-                            ? "bg-red-500/10 text-red-300 border-red-500/20"
-                            : "bg-red-50 text-red-700 border-red-100"
+                        ? "bg-red-500/10 text-red-300 border-red-500/20"
+                        : "bg-red-50 text-red-700 border-red-100"
                         }`}
                 >
                     <span className="mt-0.5 shrink-0">⚠</span>
@@ -222,13 +265,11 @@ export default function CreateUserForm() {
                             </span>
                         )}
 
-                        {/* 📷 હોવર ઇફેક્ટ: માઉસ લઈ જતાં બ્લેક શેડો અને કેમેરા દેખાશે */}
                         <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                             <HiCamera className="text-white text-2xl" />
                             <span className="text-white text-[10px] font-medium">Upload</span>
                         </div>
 
-                        {/* છુપાયેલું ફાઇલ ઇનપુટ */}
                         <input
                             type="file"
                             accept="image/*"
@@ -281,23 +322,25 @@ export default function CreateUserForm() {
                 <div>
                     <SectionHeading icon={<HiOutlineShieldCheck size={15} />} title="Role & Department" theme={theme} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        {/* ⚡ લાઈવ રોલ્સ સાથે ડ્રોપડાઉન કનેક્ટ કર્યું */}
                         <SearchableDropdown
                             label="Select Role *"
-                            placeholder="Choose Role"
-                            options={roles.map(r => ({ id: r.id, name: `${r.name} (${r.code})` }))}
+                            placeholder={roles.length === 0 ? "Loading roles..." : "Choose Role"}
+                            options={roles.map(r => ({ id: r.role_id, name: `${r.role_name} (${r.role_code})` }))} // 👈 role_id, role_name, role_code નો ઉપયોગ કર્યો
                             selectedId={formData.roleId || ""}
                             onSelect={(id) => {
                                 if (isFromPipeline) return;
-                                const selectedRole = roles.find(r => r.id === Number(id));
+                                const selectedRole = roles.find(r => r.role_id === Number(id)); // 👈 role_id મેચ કર્યો
                                 setFormData((prev) => ({
                                     ...prev,
                                     roleId: Number(id),
-                                    roleCode: selectedRole ? selectedRole.code : "",
-                                    ...(selectedRole?.code !== "HEAD100" && { departmentId: 0 })
+                                    roleCode: selectedRole ? selectedRole.role_code : "",
+                                    ...(selectedRole?.role_code !== "HEAD100" && { departmentId: 0 })
                                 }));
                             }}
                             required
-                            disabled={isFromPipeline}
+                            disabled={isFromPipeline || roles.length === 0}
                         />
 
                         {(isHeadRole || isFromPipeline) ? (
@@ -317,8 +360,8 @@ export default function CreateUserForm() {
                         ) : (
                             <div
                                 className={`flex items-center gap-2.5 border border-dashed rounded-xl p-4 text-xs ${theme
-                                        ? "border-gray-700 bg-gray-800/30 text-gray-500"
-                                        : "border-neutral-200 bg-neutral-50/50 text-neutral-400"
+                                    ? "border-gray-700 bg-gray-800/30 text-gray-500"
+                                    : "border-neutral-200 bg-neutral-50/50 text-neutral-400"
                                     }`}
                             >
                                 <HiOutlineOfficeBuilding className="text-base shrink-0" />
@@ -386,7 +429,7 @@ export default function CreateUserForm() {
                     </p>
                     <Button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || roles.length === 0}
                         className={`${theme ? "bg-blue-600 hover:bg-blue-700" : "bg-red-600 hover:bg-red-700"} min-w-45 transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed`}
                     >
                         {loading ? (

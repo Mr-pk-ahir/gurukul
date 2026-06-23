@@ -1,11 +1,32 @@
+// 📂 ફાઈલ પાથ: Types/Admission-request.ts
+
 export interface AdmissionRequest {
-  id: number;              // રિક્વેસ્ટની પોતાની યુનિક પ્રાઇમરી કી (Auto Increment ID)
-  applicantName: string;   // અરજી કરનારનું નામ
-  requestedRole: string;   // 'STUDENT' કે 'STAFF' (જે તે ડિપાર્ટમેન્ટ હેડ દ્વારા મોકલેલ)
-  departmentId: number;    // કયા ડિપાર્ટમેન્ટ માટે રિક્વેસ્ટ છે તેની ID
-  departmentName: string;  
-  sectionId?: number;      // જો વિદ્યાર્થી હોય તો સેક્શન ID (નહીંતર optional)
-  requestDate: string;     // કઈ તારીખે રિક્વેસ્ટ આવી
+  id: number;
+  applicantName: string;
+  applicantSuid: number;   // 👈 વિદ્યાર્થીનો SUID (નવો ઉમેર્યો)
+  requestedRole: string;   // 'STUDENT' કે 'STAFF'
+  departmentId: number;    // ડિપાર્ટમેન્ટ ID
+  departmentName: string;  // ડિપાર્ટમેન્ટનું નામ
+  sectionId?: number;      // વિદ્યાર્થી હોય તો સેક્શન ID (Optional)
+  requestDate: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
+  additionalDetails?: string; // ડિસ્ક્રિપ્શન (Optional)
+}
+
+// ફોર્મ સબમિટ કરતી વખતે આ ટાઇપ વપરાશે
+export interface CreateAdmissionInput {
+  applicantName: string;
+  applicantSuid: number;   // 👈 ફોર્મમાંથી બેકએન્ડમાં મોકલવા માટે
+  requestedRole: string;
+  departmentId: number;
+  departmentName: string;
+  sectionId?: number;
   additionalDetails?: string;
+}
+
+// API રિસ્પોન્સ માટેનો જેનરિક ટાઇપ
+export interface AdmissionApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
 }

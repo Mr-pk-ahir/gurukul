@@ -1,88 +1,120 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // 👈 useEffect ઇમ્પોર્ટ કર્યો
 import { useTheme } from "../../../components/theme/ThemeContext";
 import Table from "../../../components/common/Table";
 import DataCruding from "../../../components/common/DataCruding";
 
+// 🎯 ડેટાબેઝના ફિલ્ડ્સ પ્રમાણે ઇન્ટરફેસ અપડેટ કર્યો
 interface RoleData {
-  id: number;
-  roleName: string;
-  roleCode: string;
+  role_id: number;
+  role_name: string;
+  role_code: string;
   description: string;
-  allowedModules: string[];
+  permissions: {
+    [key: string]: {
+      create: boolean;
+      edit: boolean;
+      view: boolean;
+      delete: boolean;
+    };
+  };
 }
 
 export default function RoleList() {
     const { theme } = useTheme();
 
-    // લોકલ સ્ટેટ ડમી ડેટા સાથે (તમારા લિસ્ટના લુક પ્રમાણે)
-    const [roles, setRoles] = useState<RoleData[]>([
-        {
-            id: 1,
-            roleName: "Super Admin",
-            roleCode: "ROLE_SUPER_ADMIN",
-            description: "Full access to all software modules and configuration settings.",
-            allowedModules: ["Department", "Users", "Roles"],
-        },
-        {
-            id: 2,
-            roleName: "Academic Teacher",
-            roleCode: "ROLE_TEACHER",
-            description: "Access to student attendance, homework, and test section markings.",
-            allowedModules: ["Users"],
-        },
-        {
-            id: 3,
-            roleName: "HR Manager",
-            roleCode: "ROLE_HR",
-            description: "Manages employee profiles, leave application permissions.",
-            allowedModules: ["Department", "Users"],
-        }
-    ]);
+    // સ્ટેટ્સ: લોડિંગ અને રોલ્સનો રિયલ ડેટા સ્ટોર કરવા માટે
+    const [roles, setRoles] = useState<RoleData[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
 
-    const handleDeleteRole = (id: number) => {
-        setRoles((prev) => prev.filter((role) => role.id !== id));
-        console.log(`Role ID ${id} લોકલ સ્ટેટમાંથી ટેમ્પરરી ડિલીટ થયો.`);
+    // 🔍 ૧. બેકએન્ડમાંથી ડેટા ફેચ કરવાનું ફંક્શન
+    const fetchRoles = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem("token"); // મિડલવેર માટે ઓથોરાઇઝેશન ટોકન
+
+            const response = await fetch("http://localhost:5000/roles", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                setRoles(result.data); // બેકએન્ડમાંથી આવેલો એરે સેટ કર્યો
+            } else {
+                alert(`⚠️ ભૂલ: ${result.message || "ડેટા લોડ થઈ શક્યો નહીં."}`);
+            }
+        } catch (error) {
+            console.error("Error fetching roles:", error);
+            alert("❌ સર્વર સાથે કનેક્ટ થવામાં પ્રોબ્લેમ આવ્યો છે!");
+        } finally {
+            setLoading(false); // લોડિંગ પૂરું
+        }
     };
 
+    // 🔄 ૨. પેજ ઓપન થાય ત્યારે રિક્વેસ્ટ ટ્રિગર થશે
+    useEffect(() => {
+        fetchRoles();
+    }, []);
+
+    const handleDeleteRole = (roleId: number) => {
+        // ભવિષ્યમાં અહીં બેકએન્ડની DELETE API કોલ કરી શકો: fetch(`.../roles/${roleId}`, {method: 'DELETE'})
+        setRoles((prev) => prev.filter((role) => role.role_id !== roleId));
+        console.log(`Role ID ${roleId} લોકલ સ્ટેટમાંથી ટેમ્પરરી ડિલીટ થયો.`);
+    };
+
+    // 📊 ટેબલ કોલમ્સ (જેમાં ડેટાબેઝના સાચા કી-નેમ્સ સેટ કર્યા છે)
     const columns = [
         {
             header: "Role Code",
             className: "w-44 text-left font-mono text-xs tracking-wider",
             accessor: (role: RoleData) => (
                 <span className="px-2.5 py-1 rounded-md font-bold bg-neutral-100 text-neutral-700 dark:bg-gray-800 dark:text-gray-300 border dark:border-gray-700">
-                    {role.roleCode}
+                    {role.role_code} {/* 👈 roleCode નું role_code કર્યું */}
                 </span>
             ),
         },
         {
             header: "Role Name",
             className: "font-bold text-left",
-            accessor: (role: RoleData) => role.roleName,
+            accessor: (role: RoleData) => role.role_name, // 👈 roleName નું role_name કર્યું
         },
         {
             header: "Description",
             className: "max-w-xs truncate text-neutral-500 dark:text-gray-400 font-normal",
-            accessor: (role: RoleData) => role.description,
+            accessor: (role: RoleData) => role.description || "No description provided.",
         },
         {
             header: "Allowed Modules",
-            accessor: (role: RoleData) => (
-                <div className="flex flex-wrap gap-1">
-                    {role.allowedModules.map((mod) => (
-                        <span key={mod} className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400">
-                            {mod}
-                        </span>
-                    ))}
-                </div>
-            ),
+            accessor: (role: RoleData) => {
+                // 💡 ડેટાબેઝના JSONB ઓબ્જેક્ટની કીઝ (મોડ્યુલના નામ) ડાયનેમિક મેળવવા માટે
+                const allowedModules = role.permissions ? Object.keys(role.permissions) : [];
+                
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        {allowedModules.length > 0 ? (
+                            allowedModules.map((mod) => (
+                                <span key={mod} className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400">
+                                    {mod}
+                                </span>
+                            ))
+                        ) : (
+                            <span className="text-xs text-neutral-400">No modules assigned</span>
+                        )}
+                    </div>
+                );
+            },
         },
         {
             header: "Actions",
             className: "w-16 text-center",
             accessor: (role: RoleData) => (
                 <DataCruding
-                    onEdit={() => console.log("Edit Role ID:", role.id)}
-                    onDelete={() => handleDeleteRole(role.id)}
+                    onEdit={() => console.log("Edit Role ID:", role.role_id)}
+                    onDelete={() => handleDeleteRole(role.role_id)}
                 />
             ),
         },
@@ -96,12 +128,19 @@ export default function RoleList() {
                 </h2>
             </div>
 
-            <Table
-                columns={columns}
-                data={roles}
-                keyExtractor={(role) => role.id}
-                emptyMessage="No roles defined yet!"
-            />
+            {/* ⏳ જો ડેટા લોડ થતો હોય તો લોડિંગ મેસેજ બતાવશે */}
+            {loading ? (
+                <div className="text-center py-10 font-medium text-neutral-500">
+                    Loading roles from database...
+                </div>
+            ) : (
+                <Table
+                    columns={columns}
+                    data={roles}
+                    keyExtractor={(role) => role.role_id} // 👈 id ની જગ્યાએ role_id
+                    emptyMessage="No roles defined yet!"
+                />
+            )}
         </div>
     );
 }

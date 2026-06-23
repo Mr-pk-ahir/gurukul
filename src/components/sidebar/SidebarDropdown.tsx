@@ -108,7 +108,7 @@ export default function SidebarDropdown({ title, icon, items, setSidebarOpen, is
             {/* --- સબ-મેનુ આઇટમ્સ (Accordion) --- */}
             <div
                 className={`overflow-hidden transition-all duration-300 ${
-                    isOpen && !isMiniSidebar ? "max-h-[500px] mt-1" : "max-h-0"
+                    isOpen && !isMiniSidebar ? "max-h-125 mt-1" : "max-h-0"
                 }`}
                 // 🌟 Closed/hidden hoy tyare aa wrapper Tab-focusable subtree ne
                 // assistive tech mate pan "hidden" mark kare chhe.

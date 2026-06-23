@@ -10,8 +10,10 @@ import type { RoleCreate, PermissionRow } from "../../../Types/Role-create";
 
 export default function CreateRole() {
     const { theme } = useTheme();
-
     const modules = ["Department", "Users", "Roles & Permissions"];
+
+    // ⏳ રિક્વેસ્ટ પ્રોસેસ થાય ત્યારે લોડિંગ બતાવવા માટેની સ્ટેટ
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // 🛠️ useState માં RoleCreate ટાઇપ સેટ કર્યો
     const [formData, setFormData] = useState<RoleCreate>({
@@ -42,14 +44,49 @@ export default function CreateRole() {
         }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // 🚀 સબમિટ હેન્ડલર - જેમાં fetch API કનેક્ટ કર્યું છે
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSubmitting(true);
         
-        // 🛠️ આ ઓબ્જેક્ટ હવે અદ્દલ તમારા પૂર્વનિર્ધારિત ટાઇપ પ્રમાણે જ API માં જશે
-        console.log("ટાઇપ સેફ રોલ ઓબ્જેક્ટ API માટે એકદમ રેડી છે:", formData);
-        
-        // અહીં ભવિષ્યમાં તમારો API કોલ આવશે:
-        // axios.post('/api/roles', formData);
+        try {
+            // 🔑 LocalStorage માંથી લોગિન વખતે સેવ કરેલો ટોકન મેળવો
+            const token = localStorage.getItem("token"); 
+
+            // ⚡ બેકએન્ડ API કોલ (જો પોર્ટ અલગ હોય તો 5000 ની જગ્યાએ તમારો પોર્ટ લખવો)
+            const response = await fetch("http://localhost:5000/roles/create", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` // બેકએન્ડ મિડલવેર માટે ટોકન મોકલ્યો
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                alert("🎉 રોલ સફળતાપૂર્વક બની ગયો છે!");
+                
+                setFormData({
+                    roleName: "",
+                    roleCode: "",
+                    description: "",
+                    permissions: modules.reduce((acc, module) => {
+                        acc[module] = { create: false, edit: false, view: false, delete: false };
+                        return acc;
+                    }, {} as { [key: string]: PermissionRow }),
+                });
+            } else {
+                // બેકએન્ડમાંથી આવેલી એરર મેસેજ બતાવશે (દા.ત. રોલ ઓલરેડી એક્ઝિસ્ટ કરે છે)
+                alert(`⚠️ ભૂલ: ${result.message || "રોલ ક્રિએટ ન થઈ શક્યો."}`);
+            }
+        } catch (error) {
+            console.error("API Error:", error);
+            alert("❌ સર્વર સાથે કનેક્ટ થવામાં સમસ્યા આવી રહી છે!");
+        } finally {
+            setIsSubmitting(false); // લોડિંગ પૂરું કરો
+        }
     };
 
     return (
@@ -74,6 +111,7 @@ export default function CreateRole() {
                             onChange={handleInputChange}
                             icon={<HiOutlineShieldCheck className="text-lg" />}
                             placeholder="Ex: HOD, Class Teacher"
+                            disabled={isSubmitting}
                             required
                         />
                     </div>
@@ -87,6 +125,7 @@ export default function CreateRole() {
                             onChange={handleInputChange}
                             icon={<HiOutlineDocumentText className="text-lg" />}
                             placeholder="Ex: ROLE_HOD"
+                            disabled={isSubmitting}
                             required
                         />
                     </div>
@@ -101,11 +140,12 @@ export default function CreateRole() {
                         onChange={handleInputChange}
                         rows={3}
                         placeholder="Enter role details or responsibilities..."
+                        disabled={isSubmitting}
                         className={`w-full px-4 py-2.5 text-sm rounded-xl border outline-none transition-all ${
                             theme 
                                 ? "bg-gray-800 border-gray-700 text-white focus:border-blue-500" 
                                 : "bg-neutral-50 border-neutral-200 text-neutral-900 focus:border-red-500"
-                        }`}
+                        } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                     />
                 </div>
 
@@ -134,6 +174,7 @@ export default function CreateRole() {
                                                 <Checkbox
                                                     checked={formData.permissions[module][action]}
                                                     onChange={() => handlePermissionChange(module, action)}
+                                                    disabled={isSubmitting}
                                                 />
                                             </td>
                                         ))}
@@ -148,9 +189,10 @@ export default function CreateRole() {
                 <div className="flex justify-end pt-4 border-t border-neutral-200 dark:border-gray-800">
                     <Button
                         type="submit"
+                        disabled={isSubmitting}
                         className={theme ? "bg-blue-600 hover:bg-blue-700" : "bg-red-500 hover:bg-red-600"}
                     >
-                        Create Role
+                        {isSubmitting ? "Creating..." : "Create Role"}
                     </Button>
                 </div>
             </form>

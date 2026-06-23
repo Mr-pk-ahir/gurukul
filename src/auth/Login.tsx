@@ -14,45 +14,78 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
 
-        // --- 🔑 Super Admin લોગિન ચેક ---
-        if (username === 'super-admin' && password === 'admin123') {
-            const adminData = {
-                id: 1,
-                username: "Super Admin",
-                role: "super-admin",
-                departmentId: 4, // 🎯 માસ્ટર એકેડેમિક એક્સેસ
-                permissions: {
-                    hasGurukulAccess: true,
-                    hasPermissionAccess: true,
-                    hasStudentsAccess: true
-                }
-            };
-            localStorage.setItem("user", JSON.stringify(adminData));
-            navigate("/dashboard");
+        try {
+            // ૧. બેકએન્ડ લોગિન API કોલ
+            const response = await fetch("http://localhost:5000/users/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ username, password }),
+            });
 
-        // --- 👨‍🏫 Teacher અથવા ડિપાર્ટમેન્ટ હેડ (HEAD100) લોગિન ચેક ---
-        } else if (username === 'teacher' && password === 'teacher123') {
-            const teacherData = {
-                id: 2,
-                username: "Staff Member",
-                role: "teacher",
-                roleCode: "HEAD100", // 🎯 તમારા આર્કિટેક્ચરનો મેઈન ડિપાર્ટમેન્ટ હેડ રોલ કોડ
-                departmentId: 10,   // 🎯 આઇસોલેટેડ આઇડી (નેવબાર આનાથી જ પાઇપલાઇન ઓપન કરશે)
-                permissions: {
-                    hasGurukulAccess: true,     
-                    hasPermissionAccess: false, 
-                    hasStudentsAccess: true     
-                }
-            };
-            localStorage.setItem("user", JSON.stringify(teacherData));
-            navigate("/dashboard");
+            const result = await response.json();
+            
+            // 🔍 બ્રાઉઝરના કન્સોલ (F12) માં રિસ્પોન્સ ચેક કરવા માટે
+            console.log("Backend Login Response:", result);
 
-        } else {
-            setError("Invalid username or password");
+            // ૨. જો લોગિન સફળ થાય તો
+            if (result.success) {
+                
+                // સેફ્ટી ચેક: જો બેકએન્ડમાંથી user ડેટા પ્રોપર ન આવે તો ક્રેશ થતા બચાવશે
+                if (!result.user) {
+                    setError("લોગિન સફળ થયું, પણ યુઝર પ્રોફાઈલ ડેટા મળ્યો નથી!");
+                    return;
+                }
+
+                // 🎯 ચેક કરો કે લોગિન કરનાર સુપર એડમિન છે કે નહીં
+                const isSuperAdmin = result.user?.roleCode === "ROLE_SUPER_ADMIN" || username === "super-admin";
+
+                // 🎯 નવું ડાયનેમિક પરમિશન બેકઅપ સ્ટ્રક્ચર (જો બેકએન્ડમાંથી ન આવે તો)
+                const defaultPermissions = isSuperAdmin 
+                    ? {
+                        "Users": { create: true, edit: true, view: true, delete: true },
+                        "Department": { create: true, edit: true, view: true, delete: true },
+                        "Roles & Permissions": { create: true, edit: true, view: true, delete: true }
+                      }
+                    : {
+                        "Users": { create: false, edit: false, view: true, delete: false },
+                        "Department": { create: false, edit: false, view: true, delete: false },
+                        "Roles & Permissions": { create: false, edit: false, view: false, delete: false }
+                      };
+
+                // ૩. ડાયનેમિક અને સેફ ડેટા સ્ટ્રક્ચર (જેમાં ટોકન અંદર જ આવી ગયું)
+                const loggedInUserData = {
+                    token: result.token, // 🎯 ટોકન અહીં જ અંદર મર્જ કરી દીધું!
+                    id: result.user?.suid || result.user?.id || 0,
+                    username: result.user?.name || result.user?.username || username,
+                    roleName: result.user?.roleName || (isSuperAdmin ? "Super Admin" : "Teacher"),
+                    roleCode: result.user?.roleCode || (isSuperAdmin ? "ROLE_SUPER_ADMIN" : "HEAD100"),
+                    departmentId: result.user?.departmentId || (isSuperAdmin ? 4 : 10), 
+                    permissions: result.user?.permissions || defaultPermissions // 🎯 નવી ટાઇપ ફોર્મેટ
+                };
+
+                // 🤝 માત્ર એક જ કી ("user") માં આખો મર્જ થયેલો ડેટા લોકલ સ્ટોરેજમાં સેવ થશે
+                localStorage.setItem("user", JSON.stringify(loggedInUserData));
+                
+                // સેફ્ટી માટે જૂનું સ્ટેન્ડઅલોન ટોકન પણ રાખવું હોય તો રાખી શકો:
+                localStorage.setItem("token", result.token);
+                
+                // 🚀 ડેશબોર્ડ પર રીડાયરેક્ટ
+                navigate("/dashboard");
+
+            } else {
+                // બેકએન્ડ તરફથી આવતી વેલિડેશન એરર
+                setError(result.message || "લોગિન આઈડી અથવા પાસવર્ડ ખોટો છે!");
+            }
+
+        } catch (err) {
+            console.error("Login Connection Error:", err);
+            setError("સર્વર કનેક્શન ફેલ થયું અથવા કોડમાં કોઈ ભૂલ આવી છે!");
         }
     };
 
@@ -101,7 +134,7 @@ export default function Login() {
 
                     {/* Error Message */}
                     {error && (
-                        <div className="mb-6 p-3.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl text-xs text-red-600 dark:text-red-400 text-center font-bold animate-shake">
+                        <div className="mb-6 p-3.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl text-xs text-red-600 dark:text-red-400 text-center font-bold">
                             {error}
                         </div>
                     )}
@@ -143,6 +176,7 @@ export default function Login() {
                                 required
                                 className="w-full tracking-widest"
                                 icon={<IoIosLock className="text-xl text-gray-400" />}
+                                autoComplete="current-password"
                             />
                         </div>
 
@@ -170,10 +204,9 @@ export default function Login() {
 
                 {/* --- Right Side: Gurukul Branding --- */}
                 <div className={`w-full md:w-1/2 relative hidden md:flex flex-col items-center justify-center p-10 text-center transition-colors duration-300 ${
-                    theme ? "bg-gray-950/20" : "bg-red-50/30"
+                    theme ? "bg-gray-900/20" : "bg-red-50/30"
                 }`}>
 
-                    {/* Glow behind the logo */}
                     <div className={`absolute w-64 h-64 rounded-full blur-3xl -z-10 ${
                         theme ? "bg-blue-600/15" : "bg-red-100"
                     }`}></div>
@@ -181,7 +214,7 @@ export default function Login() {
                     <img
                         src={Logo}
                         alt="Gurukul Logo"
-                        className="w-full max-w-[220px] object-contain drop-shadow-2xl hover:-translate-y-2 transition-transform duration-500"
+                        className="w-full max-w-55 object-contain drop-shadow-2xl hover:-translate-y-2 transition-transform duration-500"
                     />
 
                     <div className="mt-8 z-10">

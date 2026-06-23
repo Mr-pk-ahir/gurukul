@@ -1,17 +1,20 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useTheme } from "../theme/ThemeContext"; 
+import { useTheme } from "../theme/ThemeContext";
 import SidebarDropdown from "./SidebarDropdown";
-import { 
-    HiOutlineHome, 
-    HiOutlineLibrary, 
+import {
+    HiOutlineHome,
+    HiOutlineLibrary,
     HiOutlineShieldCheck,
-    HiOutlineClipboardList, // રિક્વેસ્ટ માટે આઇકોન
-    HiOutlineAcademicCap    // સ્ટુડન્ટ લિસ્ટ માટે આઇકોન
+    HiOutlineClipboardList,
+    HiOutlineAcademicCap
 } from "react-icons/hi";
-import { FiUsers } from "react-icons/fi"; 
+import { FiUsers } from "react-icons/fi";
 import { CiCircleList } from "react-icons/ci";
 import { IoCreateOutline } from "react-icons/io5";
+import { SiGoogledataproc, SiGoogleearth, SiNginxproxymanager } from "react-icons/si";
+import { RiEditBoxLine } from "react-icons/ri";
+import type { AuthUser } from "../../Types/Role-create";
 
 interface NavbarProps {
     setSidebarOpen: (isOpen: boolean) => void;
@@ -19,62 +22,83 @@ interface NavbarProps {
 }
 
 export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
-    const { theme } = useTheme(); 
+    const { theme } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
-    
-    const [hasGurukulAccess, setHasGurukulAccess] = useState<boolean>(true);
-    const [hasPermissionAccess, setHasPermissionAccess] = useState<boolean>(true);
-    
-    const [userDeptId, setUserDeptId] = useState<number | null>(null);
+
+    const [user, setUser] = useState<AuthUser | null>(null);
 
     useEffect(() => {
         const data = localStorage.getItem("user");
         if (data) {
             try {
-                const parsed = JSON.parse(data);
-                
-                if (parsed.departmentId) {
-                    setUserDeptId(Number(parsed.departmentId));
-                }
-
-                if (parsed.permissions) {
-                    setHasGurukulAccess(!!parsed.permissions.hasGurukulAccess);
-                    setHasPermissionAccess(!!parsed.permissions.hasPermissionAccess);
-                }
+                const parsed: AuthUser = JSON.parse(data);
+                setUser(parsed);
             } catch (e) {
                 console.error("Error parsing user data:", e);
             }
         }
     }, []);
 
-    const departmentItems = [
-        { name: "Create Departments", path: "/dashboard/departments/create", icon: <IoCreateOutline /> },
-        { name: "Departments List", path: "/dashboard/departments/list", icon: <CiCircleList /> }, 
-    ];
-    
-    const pipelineItems = userDeptId ? [
-        { name: "Create Admission", path: `/dashboard/departments/${userDeptId}/create-admission`, icon: <IoCreateOutline /> },
-        { name: "Admission Requests", path: `/dashboard/departments/${userDeptId}/admission-requests`, icon: <HiOutlineClipboardList /> },
-        { name: "Student List", path: `/dashboard/departments/${userDeptId}/student-list`, icon: <HiOutlineAcademicCap /> },
-    ] : [];
+    // ૧. ડિપાર્ટમેન્ટ આઇટમ્સ
+    const departmentItems = [];
+    if (user?.permissions?.["Department"]?.create) {
+        departmentItems.push({ name: "Create Departments", path: "/dashboard/departments/create", icon: <IoCreateOutline /> });
+    }
+    if (user?.permissions?.["Department"]?.view) {
+        departmentItems.push({ name: "Departments List", path: "/dashboard/departments/list", icon: <CiCircleList /> });
+    }
 
-    const userItems = [
-        { name: "Create User", path: "/dashboard/users/create", icon: <IoCreateOutline /> },
-        { name: "User List", path: "/dashboard/users/list", icon: <CiCircleList /> },
-    ];
+    // ૨. પાઇપલાઇન આઇટમ્સ
+    const pipelineItems = [];
+    const deptId = user && ('departmentId' in user ? (user as any).departmentId : null);
 
-    const roleItems = [
-        { name: "Create Role", path: "/dashboard/permissions/role", icon: <IoCreateOutline /> },
-        { name: "Role List", path: "/dashboard/permissions/lesson", icon: <CiCircleList /> }, 
-    ];
-    
+    if (deptId && user?.permissions?.["Department"]?.view) {
+        if (user?.permissions?.["Department"]?.create) {
+            pipelineItems.push({ name: "Create Admission", path: `/dashboard/departments/${deptId}/create-admission`, icon: <IoCreateOutline /> });
+        }
+        pipelineItems.push(
+            { name: "Admission Requests", path: `/dashboard/departments/${deptId}/admission-requests`, icon: <HiOutlineClipboardList /> },
+            { name: "Student List", path: `/dashboard/departments/${deptId}/student-list`, icon: <HiOutlineAcademicCap /> }
+        );
+    }
+
+    // ૩. યુઝર આઇટમ્સ
+    const userItems = [];
+    if (user?.permissions?.["Users"]?.create) {
+        userItems.push({ name: "Create User", path: "/dashboard/users/create", icon: <IoCreateOutline /> });
+    }
+    if (user?.permissions?.["Users"]?.view) {
+        userItems.push({ name: "User List", path: "/dashboard/users/list", icon: <CiCircleList /> });
+    }
+
+    // ૪. વેબસાઇટ / ઓવરવ્યૂ મેનેજમેન્ટ આઇટમ્સ (Fixed Syntax & Permissions)
+    const websiteItems = [];
+    if (user?.permissions?.["overview-management"]?.view) {
+        websiteItems.push({ name: "Overview", path: "/dashboard/overview-management", icon: <RiEditBoxLine /> });
+    }
+    if (user?.permissions?.["overview-management"]?.create || user?.permissions?.["overview-management"]?.view) {
+        websiteItems.push(
+            { name: "Amrut Nu Aachaman", path: "/dashboard/overview-management/amrut-nu-aachaman", icon: <SiGoogledataproc /> },
+            { name: "Daily Darshan", path: "/dashboard/overview-management/daily-darshan", icon: <SiGoogleearth /> }
+        );
+    }
+
+    // ૫. રોલ આઇટમ્સ
+    const roleItems = [];
+    if (user?.permissions?.["Roles & Permissions"]?.create) {
+        roleItems.push({ name: "Create Role", path: "/dashboard/permissions/role", icon: <IoCreateOutline /> });
+    }
+    if (user?.permissions?.["Roles & Permissions"]?.view) {
+        roleItems.push({ name: "Role List", path: "/dashboard/permissions/lesson", icon: <CiCircleList /> });
+    }
+
     const isActive = location.pathname === "/dashboard";
 
     return (
         <div className="w-full flex flex-col space-y-1.5">
-            
-            {/* --- Dashboard --- */}
+
+            {/* Dashboard Button */}
             <button
                 onClick={() => {
                     navigate("/dashboard");
@@ -83,31 +107,24 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 title={isMiniSidebar ? "Dashboard" : ""}
                 className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-[15px] transition-all duration-200 group cursor-pointer 
                     ${isMiniSidebar ? "justify-center px-2" : ""}
-                    ${
-                        isActive
-                            ? theme 
-                                ? "text-blue-200 bg-gray-800" 
-                                : "text-red-600 bg-red-50"
-                            : theme 
-                                ? "text-white bg-gray-900 hover:bg-gray-800 hover:text-blue-200" 
-                                : "text-gray-500 hover:bg-red-50 hover:text-red-600"
+                    ${isActive
+                        ? theme ? "text-blue-200 bg-gray-800" : "text-red-600 bg-red-50"
+                        : theme ? "text-white bg-gray-900 hover:bg-gray-800 hover:text-blue-200" : "text-gray-500 hover:bg-red-50 hover:text-red-600"
                     }
                 `}
             >
-                <span className={`transition-colors ${
-                    isActive 
-                        ? theme ? "text-blue-200" : "text-red-600" 
-                        : theme 
-                            ? "text-gray-300 group-hover:text-blue-200" 
-                            : "text-gray-400 group-hover:text-red-600"
+                <span className={`transition-colors ${isActive
+                    ? theme ? "text-blue-200" : "text-red-600"
+                    : theme ? "text-gray-300 group-hover:text-blue-200" : "text-gray-400 group-hover:text-red-600"
                 }`}>
                     <HiOutlineHome className="text-xl" />
                 </span>
                 {!isMiniSidebar && "Dashboard"}
             </button>
 
-            {userDeptId && pipelineItems.length > 0 && (
-                <SidebarDropdown 
+            {/* Pipeline Dropdown */}
+            {pipelineItems.length > 0 && (
+                <SidebarDropdown
                     title="My Pipeline"
                     icon={<HiOutlineAcademicCap className="text-xl" />}
                     items={pipelineItems}
@@ -116,8 +133,9 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 />
             )}
 
-            {hasGurukulAccess && (
-                <SidebarDropdown 
+            {/* Department Dropdown */}
+            {departmentItems.length > 0 && (
+                <SidebarDropdown
                     title="Department"
                     icon={<HiOutlineLibrary className="text-xl" />}
                     items={departmentItems}
@@ -126,18 +144,31 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 />
             )}
 
-            {hasPermissionAccess && (
-                <SidebarDropdown 
+            {/* Users Dropdown */}
+            {userItems.length > 0 && (
+                <SidebarDropdown
                     title="Users"
-                    icon={<FiUsers className="text-xl" />} 
+                    icon={<FiUsers className="text-xl" />}
                     items={userItems}
                     setSidebarOpen={setSidebarOpen}
                     isMiniSidebar={isMiniSidebar}
                 />
             )}
-            
-            {hasPermissionAccess && (
-                <SidebarDropdown 
+
+            {/* Overview Management Dropdown (Fixed Reference Error) */}
+            {websiteItems.length > 0 && (
+                <SidebarDropdown
+                    title="Overview Manage"
+                    icon={<SiNginxproxymanager className="text-xl" />}
+                    items={websiteItems}
+                    setSidebarOpen={setSidebarOpen}
+                    isMiniSidebar={isMiniSidebar}
+                />
+            )}
+
+            {/* Roles & Permissions Dropdown */}
+            {roleItems.length > 0 && (
+                <SidebarDropdown
                     title="Roles & Permissions"
                     icon={<HiOutlineShieldCheck className="text-xl" />}
                     items={roleItems}
@@ -145,7 +176,6 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                     isMiniSidebar={isMiniSidebar}
                 />
             )}
-
         </div>
     );
 }

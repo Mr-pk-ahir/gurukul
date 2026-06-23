@@ -8,6 +8,7 @@ import {
     HiOutlineLogout,
     HiChevronLeft,
     HiChevronRight,
+    HiOutlineExclamationCircle,
 } from "react-icons/hi";
 
 interface SidebarProps {
@@ -22,9 +23,33 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const isMiniSidebar = isCollapsed && window.innerWidth >= 768;
 
-    const handleLogout = () => {
+    // 🌟 Logout confirmation modal state — have direct logout nathi thatu,
+    // pehla confirm karavu pade chhe
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    const handleLogoutClick = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const confirmLogout = () => {
+        setIsLoggingOut(true);
+
+        // 🌟 Static data fix: "adminData" ni jagaye "user" key vaprai chhe
+        // baki badha files (Dashboard.tsx, CreateUserForm.tsx) ma — etle
+        // have proper cleanup thai chhe, koi stale key bachi nathi rahti
+        localStorage.removeItem("user");
         localStorage.removeItem("adminData");
-        navigate("/login");
+
+        // 🌟 Halko sa delay — UI ne "process thai rahyu chhe" jevu feedback
+        // aapva mate, real API call hoy tyare aa j jagah par await thashe
+        setTimeout(() => {
+            navigate("/login");
+        }, 400);
+    };
+
+    const cancelLogout = () => {
+        setShowLogoutConfirm(false);
     };
 
     return (
@@ -121,7 +146,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     ${theme ? "border-gray-800" : "border-gray-100"}`}
                 >
                     <button
-                        onClick={handleLogout}
+                        onClick={handleLogoutClick}
                         title={isMiniSidebar ? "Logout" : ""}
                         className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-[15px] transition-all duration-200 group cursor-pointer 
                             ${isMiniSidebar ? "justify-center px-2" : ""} 
@@ -144,6 +169,64 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40 md:hidden cursor-pointer"
                     onClick={() => setIsOpen(false)}
                 />
+            )}
+
+            {/* --- 🌟 લોગઆઉટ કન્ફર્મેશન મોડલ --- */}
+            {showLogoutConfirm && (
+                <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                    onClick={cancelLogout}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className={`w-full max-w-sm rounded-3xl border p-6 shadow-2xl transition-all ${
+                            theme
+                                ? "bg-gray-900 border-gray-800 text-white"
+                                : "bg-white border-gray-100 text-gray-900"
+                        }`}
+                    >
+                        <div
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${
+                                theme ? "bg-red-500/10 text-red-400" : "bg-red-50 text-red-600"
+                            }`}
+                        >
+                            <HiOutlineExclamationCircle className="text-2xl" />
+                        </div>
+
+                        <h3 className="text-lg font-bold">Log out of your account?</h3>
+                        <p className={`text-sm mt-1.5 ${theme ? "text-gray-400" : "text-neutral-500"}`}>
+                            You'll need to sign in again to access the Gurukul admin dashboard.
+                        </p>
+
+                        <div className="flex items-center gap-3 mt-6">
+                            <button
+                                onClick={cancelLogout}
+                                disabled={isLoggingOut}
+                                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                                    theme
+                                        ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
+                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                }`}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmLogout}
+                                disabled={isLoggingOut}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isLoggingOut ? (
+                                    <>
+                                        <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                                        Logging out...
+                                    </>
+                                ) : (
+                                    "Logout"
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </>
     );

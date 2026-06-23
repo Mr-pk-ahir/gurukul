@@ -22,7 +22,7 @@ export default function SidebarHoverMenu({ title, items, setIsOpen, parentTop }:
     return (
         <div
             style={{ top: parentTop }}
-            className={`fixed left-20 z-50 w-56 rounded-2xl border shadow-2xl p-2 ${
+            className={`fixed left-18 z-50 w-56 rounded-2xl border shadow-2xl p-2 ${
                 theme
                     ? "bg-gray-900 border-gray-800"
                     : "bg-white border-neutral-100"
@@ -36,12 +36,6 @@ export default function SidebarHoverMenu({ title, items, setIsOpen, parentTop }:
 
             <div className="flex flex-col gap-1">
                 {items.map((sub, index) => {
-                    // 🌟 Mini sidebar na hover-popup ma — aa j ek j jagah chhe jya
-                    // sub-item "active" gani shakay, kemke accordion mode ma to
-                    // dropdown kadi khulto j nathi. Etle rule: jo current URL
-                    // exact match thay, to highlight — nahi to kainpan nahi.
-                    // Aa highlight FAKT tyare j "count" thay chhe jyare user
-                    // potani rite hover kari ne aa popup khole chhe.
                     const isActive = location.pathname === sub.path;
                     return (
                         <button
