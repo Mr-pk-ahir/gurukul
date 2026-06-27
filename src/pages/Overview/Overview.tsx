@@ -4,13 +4,10 @@ import ThemeToggle from "../../components/theme/ThemeToggle";
 import { useTheme } from "../../components/theme/ThemeContext";
 import { Link } from "react-router-dom";
 
-import impc from "../../assets/Gurukulimg/vison/impc.jpeg";
-import Allmember from "../../assets/Gurukulimg/vison/All-member.jpeg";
-import Students from "../../assets/Gurukulimg/Class/Students.jpeg";
 
 const STATIC_DATA = {
     section1: {
-        images: [Allmember, impc, Students],
+        images: [],
         menuOptions: [
             { id: 1, label: "અમૃતનું આચમન" },
             { id: 2, label: "ડેઈલી દર્શન" },
