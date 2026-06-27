@@ -9,6 +9,7 @@ import {
     HiOutlineDocumentText,
 } from "react-icons/hi";
 import { FaBuilding } from "react-icons/fa";
+import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -49,7 +50,6 @@ export interface DepartmentCreate {
 export default function CreateDepartment() {
     const { theme } = useTheme();
     const [loading, setLoading] = useState<boolean>(false);
-    const [errorMessage, setErrorMessage] = useState<string>("");
     
     // 👑 સ્ટેટમાંથી પણ departmentHeadId રીમુવ કર્યું
     const [formData, setFormData] = useState<DepartmentCreate>({
@@ -68,7 +68,6 @@ export default function CreateDepartment() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setErrorMessage("");
 
         try {
             const response = await fetch(`${API_URL}/departments/create`, {
@@ -84,19 +83,15 @@ export default function CreateDepartment() {
             console.log("Backend Department Response:", result);
 
             if (result.success) {
-                alert("ડિપાર્ટમેન્ટ સફળતાપૂર્વક બની ગયો છે!");
+                toast.success("Department create succesfully")
 
-                // 👑 સક્સેસ પછી ફોર્મ રીસેટ
                 setFormData({
                     departmentName: "",
                     description: "",
                 });
-            } else {
-                setErrorMessage(result.message || "ડિપાર્ટમેન્ટ બનાવવામાં કંઈક સમસ્યા આવી.");
             }
         } catch (error: any) {
-            console.error("API Error:", error);
-            setErrorMessage("સર્વર કનેક્શન ફેલ થયું છે, ફરી પ્રયાસ કરો.");
+            toast.error(error)
         } finally {
             setLoading(false);
         }
@@ -124,20 +119,6 @@ export default function CreateDepartment() {
                     Fill in the details below to register a new department.
                 </p>
             </div>
-
-            {/* ===== Error banner ===== */}
-            {errorMessage && (
-                <div
-                    role="alert"
-                    className={`mb-6 flex items-start gap-2.5 p-3.5 rounded-xl text-sm font-medium border ${theme
-                        ? "bg-red-500/10 text-red-300 border-red-500/20"
-                        : "bg-red-50 text-red-700 border-red-100"
-                        }`}
-                >
-                    <span className="mt-0.5 shrink-0">⚠</span>
-                    <span>{errorMessage}</span>
-                </div>
-            )}
 
             <form onSubmit={handleSubmit} className="space-y-8">
 

@@ -6,8 +6,9 @@ import { useTheme } from "../components/theme/ThemeContext";
 import { HiOutlineMail } from "react-icons/hi";
 import { IoIosLock } from "react-icons/io";
 import { FaLock } from "react-icons/fa";
+import { toast } from "sonner";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 
 
@@ -24,7 +25,6 @@ export default function Login() {
         setError("");
 
         try {
-            // ૧. બેકએન્ડ લોગિન API કોલ
             const response = await fetch(`${API_URL}/users/login`, {
                 method: "POST",
                 headers: {
@@ -44,6 +44,8 @@ export default function Login() {
                     setError("લોગિન સફળ થયું, પણ યુઝર પ્રોફાઈલ ડેટા મળ્યો નથી!");
                     return;
                 }
+
+                toast.success("Login Succesfully")
 
                 const isSuperAdmin =
                     result.user?.roleCode === "SUPER_ADMIN";

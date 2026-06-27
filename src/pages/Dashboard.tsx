@@ -6,7 +6,6 @@ import {
     Area,
     ResponsiveContainer,
 } from "recharts";
-import { toast } from "sonner";
 
 interface RecentItem {
     name: string;
@@ -30,7 +29,7 @@ export default function Dashboard() {
     const { theme } = useTheme();
     const userData = localStorage.getItem("user");
     const username = userData ? JSON.parse(userData).username : "Guest";
-    const [department, setDepartment] = useState("")
+    // const [department, setDepartment] = useState("")
     const [timeFrame, setTimeFrame] = useState<"week" | "month">("month");
     const [dashboard, setDashboard] = useState<any>(null);
 
