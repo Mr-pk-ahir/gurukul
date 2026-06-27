@@ -9,7 +9,6 @@ import { FaLock } from "react-icons/fa";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-console.log("API_URL =", API_URL);
 
 
 export default function Login() {
@@ -18,7 +17,8 @@ export default function Login() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
-
+    
+    console.log("API_URL =", API_URL);
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
