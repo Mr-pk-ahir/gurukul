@@ -6,7 +6,7 @@ import { roleDelete } from "../../../action/Role/Delete";
 
 
 interface RoleData {
-    role_code: string;      // Primary Key
+    role_code: string;
     role_name: string;
     description: string;
     permissions: {

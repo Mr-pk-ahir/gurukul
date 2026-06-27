@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTheme } from "../components/theme/ThemeContext";
 import { HiOutlineLibrary, HiOutlineUsers, HiOutlineShieldCheck } from "react-icons/hi";
 import {
@@ -6,37 +6,131 @@ import {
     Area,
     ResponsiveContainer,
 } from "recharts";
+import { toast } from "sonner";
+
+interface RecentItem {
+    name: string;
+    meta: string;
+}
+
+interface StatCard {
+    key: "department" | "user" | "role";
+    label: string;
+    value: number;
+    caption: string;
+    icon: any;
+    color: string;
+    iconBg: string;
+    recentItems: RecentItem[];
+}
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Dashboard() {
     const { theme } = useTheme();
     const userData = localStorage.getItem("user");
     const username = userData ? JSON.parse(userData).username : "Guest";
-
-    // ફક્ત ટાઇમફ્રેમ સ્ટેટ રાખ્યો છે (sparkline cards ne filter karva mate)
+    const [department, setDepartment] = useState("")
     const [timeFrame, setTimeFrame] = useState<"week" | "month">("month");
+    const [dashboard, setDashboard] = useState<any>(null);
+
+    useEffect(() => {
+
+        const fetchDashboard = async () => {
+
+            const res = await fetch(`${API_URL}/dashboard`);
+
+            const result = await res.json();
+
+            if (result.success) {
+
+                setDashboard(result.data);
+
+            }
+
+        }
+
+        fetchDashboard();
+
+    }, []);
 
     const stats = {
-        departmentsCount: 12,
-        usersCount: 48,
-        rolesCount: 6,
-    };
+        departmentsCount: dashboard?.counts.departments ?? 0,
+        usersCount: dashboard?.counts.users ?? 0,
+        rolesCount: dashboard?.counts.roles ?? 0
+    }
 
-    // ગ્રાફ માટેનો ડાયનેમિક મોક ડેટા
     const graphData = {
         month: [
-            { name: "Week 1", department: 2, user: 10, role: 1 },
-            { name: "Week 2", department: 5, user: 25, role: 2 },
-            { name: "Week 3", department: 3, user: 18, role: 4 },
-            { name: "Week 4", department: 12, user: 48, role: 6 },
+            {
+                name: "Week 1",
+                department: stats.departmentsCount,
+                user: stats.usersCount,
+                role: stats.rolesCount,
+            },
+            {
+                name: "Week 2",
+                department: stats.departmentsCount,
+                user: stats.usersCount,
+                role: stats.rolesCount,
+            },
+            {
+                name: "Week 3",
+                department: stats.departmentsCount,
+                user: stats.usersCount,
+                role: stats.rolesCount,
+            },
+            {
+                name: "Week 4",
+                department: stats.departmentsCount,
+                user: stats.usersCount,
+                role: stats.rolesCount,
+            },
         ],
+
         week: [
-            { name: "Mon", department: 1, user: 4, role: 1 },
-            { name: "Tue", department: 3, user: 8, role: 2 },
-            { name: "Wed", department: 2, user: 12, role: 3 },
-            { name: "Thu", department: 5, user: 6, role: 3 },
-            { name: "Fri", department: 1, user: 15, role: 5 },
-            { name: "Sat", department: 0, user: 3, role: 6 },
-            { name: "Sun", department: 0, user: 0, role: 6 },
+            {
+                name: "Mon",
+                department: stats.departmentsCount,
+                user: stats.usersCount,
+                role: stats.rolesCount,
+            },
+            {
+                name: "Tue",
+                department: stats.departmentsCount,
+                user: stats.usersCount,
+                role: stats.rolesCount,
+            },
+            {
+                name: "Wed",
+                department: stats.departmentsCount,
+                user: stats.usersCount,
+                role: stats.rolesCount,
+            },
+            {
+                name: "Thu",
+                department: stats.departmentsCount,
+                user: stats.usersCount,
+                role: stats.rolesCount,
+            },
+            {
+                name: "Fri",
+                department: stats.departmentsCount,
+                user: stats.usersCount,
+                role: stats.rolesCount,
+            },
+            {
+                name: "Sat",
+                department: stats.departmentsCount,
+                user: stats.usersCount,
+                role: stats.rolesCount,
+            },
+            {
+                name: "Sun",
+                department: stats.departmentsCount,
+                user: stats.usersCount,
+                role: stats.rolesCount,
+            },
         ],
     };
 
@@ -46,7 +140,7 @@ export default function Dashboard() {
     // add karvo hoy to fakt aa array ma entry ઉમેરવી padshe, JSX touch nathi karvanu.
     // `recentItems` have static mock chhe — backend API connect karvanu hoy tyare
     // fakt aa array ne API response thi map kari devu (niche "Backend connect karva mate" note).
-    const statCards = [
+    const statCards: StatCard[] = [
         {
             key: "department" as const,
             label: "Total Departments",
@@ -55,11 +149,14 @@ export default function Dashboard() {
             icon: HiOutlineLibrary,
             color: "#9b001c",
             iconBg: theme ? "bg-red-950/50 text-red-400" : "bg-red-50 text-red-600",
-            recentItems: [
-                { name: "Academic Main", meta: "Added 2d ago" },
-                { name: "Primary Section", meta: "Added 5d ago" },
-                { name: "Higher Secondary", meta: "Added 1w ago" },
-            ],
+            recentItems:
+                dashboard?.departments?.map((d: any) => ({
+
+                    name: d.department_name,
+
+                    meta: "Department"
+
+                })) || []
         },
         {
             key: "user" as const,
@@ -69,11 +166,14 @@ export default function Dashboard() {
             icon: HiOutlineUsers,
             color: "#2563eb",
             iconBg: theme ? "bg-blue-950/50 text-blue-400" : "bg-blue-50 text-blue-600",
-            recentItems: [
-                { name: "Marakna Priyank", meta: "Joined today" },
-                { name: "Ankit Patel", meta: "Joined 3d ago" },
-                { name: "Pooja Sharma", meta: "Joined 4d ago" },
-            ],
+            recentItems:
+                dashboard?.users?.map((u: any) => ({
+
+                    name: u.name,
+
+                    meta: "User"
+
+                })) || []
         },
         {
             key: "role" as const,
@@ -83,11 +183,14 @@ export default function Dashboard() {
             icon: HiOutlineShieldCheck,
             color: "#10b981",
             iconBg: theme ? "bg-emerald-950/50 text-emerald-400" : "bg-emerald-50 text-emerald-600",
-            recentItems: [
-                { name: "Department Head", meta: "6 users" },
-                { name: "Teacher / Staff", meta: "22 users" },
-                { name: "Student", meta: "20 users" },
-            ],
+            recentItems:
+                dashboard?.roles?.map((r: any) => ({
+
+                    name: r.role_name,
+
+                    meta: "Role"
+
+                })) || []
         },
     ];
 
@@ -101,23 +204,31 @@ export default function Dashboard() {
         color: string;
     }) {
         return (
-            <div className="h-16 w-24 sm:h-20 sm:w-28 opacity-60">
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={currentChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+            <div className="w-36 h-20 min-w-35 min-h-20">
+                <ResponsiveContainer>
+                    <AreaChart data={currentChartData}>
                         <defs>
-                            <linearGradient id={`spark-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor={color} stopOpacity={0.5} />
-                                <stop offset="100%" stopColor={color} stopOpacity={0} />
+                            <linearGradient
+                                id={`gradient-${dataKey}`}
+                                x1="0"
+                                y1="0"
+                                x2="0"
+                                y2="1"
+                            >
+                                <stop offset="5%" stopColor={color} stopOpacity={0.6} />
+                                <stop offset="95%" stopColor={color} stopOpacity={0.05} />
                             </linearGradient>
                         </defs>
+
                         <Area
                             type="monotone"
                             dataKey={dataKey}
                             stroke={color}
-                            strokeWidth={2}
-                            fillOpacity={1}
-                            fill={`url(#spark-${dataKey})`}
-                            isAnimationActive={false}
+                            strokeWidth={3}
+                            fill={`url(#gradient-${dataKey})`}
+                            dot={false}
+                            activeDot={false}
+                            isAnimationActive
                         />
                     </AreaChart>
                 </ResponsiveContainer>
