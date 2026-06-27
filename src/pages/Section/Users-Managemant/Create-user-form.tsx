@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"; // 👈 useEffect એડ કર્યો
+import React, { useState, useEffect, type ChangeEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import Input from "../../../components/common/Input";
@@ -17,11 +17,23 @@ import {
 import type { UserCreate } from "../../../Types/User-create";
 import { FaUserCircle } from "react-icons/fa";
 
-// 🎯 રોલ ડેટા માટેનું ઇન્ટરફેસ
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+
 interface RoleOption {
     role_id: number;
     role_name: string;
     role_code: string;
+}
+
+// 🎯 ડિપાર્ટમેન્ટ માટેનું નવું ઇન્ટરફેસ
+interface DepartmentOption {
+    departmentId: number;
+    departmentName: string;
+    description?: string;
+    departmentHeadId?: number | null;
+    departmentHeadName?: string | null;
+    created_at?: string;
 }
 
 function SectionHeading({
@@ -59,19 +71,14 @@ export default function CreateUserForm() {
 
     const [loading, setLoading] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string>("");
-    
-    // 🌐 ડેટાબેઝમાંથી આવતા રોલ્સ સ્ટોર કરવા માટેનું સ્ટેટ
+
     const [roles, setRoles] = useState<RoleOption[]>([]);
+    // 🌐 ડેટાબેઝમાંથી આવતા ડિપાર્ટમેન્ટ્સ સ્ટોર કરવા માટેનું નવું સ્ટેટ
+    const [departments, setDepartments] = useState<DepartmentOption[]>([]);
 
     const incomingData = location.state as { id: number; applicantName: string; requestedRole: string; departmentId: number } | null;
 
-    // 🏢 ડિપાર્ટમેન્ટ્સ લિસ્ટ (આને પણ ભવિષ્યમાં આ જ રીતે લાઈવ કરી શકો છો)
-    const departments = [
-        { id: 4, name: "Academic Main" },
-        { id: 10, name: "Primary Section" },
-        { id: 20, name: "Secondary Section" },
-        { id: 30, name: "Higher Secondary" },
-    ];
+    const isUserRole = incomingData?.requestedRole === "USER";
 
     const [formData, setFormData] = useState<UserCreate>({
         suid: Math.floor(100000 + Math.random() * 900000),
@@ -79,44 +86,53 @@ export default function CreateUserForm() {
         name: incomingData?.applicantName || "",
         username: "",
         password: "",
-        roleId: 0, // શરૂઆતમાં 0, API ડેટા આવ્યા પછી અપડેટ થશે
+        roleId: 0,
         bod: new Date().toISOString().split("T")[0],
         roleCode: "",
         departmentId: incomingData?.departmentId || 0,
         sectionId: 0,
         standardId: 0,
         joiningDate: new Date().toISOString().split("T")[0],
-        status: incomingData ? "APPROVED" : "PENDING"
+
+        // USER => PENDING
+        // HEAD100 & SUPER_ADMIN => APPROVED
+        status: isUserRole ? "PENDING" : "APPROVED",
     });
 
-    const isHeadRole = formData.roleCode === "HEAD100";
+    const isHeadRole = formData.roleCode === "HEAD100"; // 🎯 HOD રોલ કોડ
     const isFromPipeline = !!incomingData;
 
-    // 🔍 ડીબીમાંથી રોલ્સ મેળવવાનો સેક્શન
     useEffect(() => {
-        const fetchLiveRoles = async () => {
+        const fetchInitialData = async () => {
             try {
                 const token = localStorage.getItem("token");
-                const backendBaseUrl = window.location.hostname === "localhost"
-                    ? "http://localhost:5000"
-                    : "https://તમારા-બેકએન્ડની-vercel-લિંક.vercel.app";
 
-                const response = await fetch(`${backendBaseUrl}/roles`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`
-                    }
-                });
+                const [rolesRes, deptsRes] = await Promise.all([
+                    fetch(`${API_URL}/roles`, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        }
+                    }),
+                    fetch(`${API_URL}/departments`, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        }
+                    })
+                ]);
 
-                const result = await response.json();
+                const rolesResult = await rolesRes.json();
+                const deptsResult = await deptsRes.json();
 
-                if (response.ok && result.success) {
-                    setRoles(result.data);
+                // 👥 રોલ્સ સેટ કરો
+                if (rolesRes.ok && rolesResult.success) {
+                    setRoles(rolesResult.data);
 
-                    // 💡 જો પાઇપલાઇનમાંથી રિક્વેસ્ટ આવી હોય, તો લાઈવ ડેટામાંથી રોલ મેચ કરો
                     if (incomingData) {
-                        const matched = result.data.find((r: RoleOption) => r.role_code === incomingData.requestedRole);
+                        const matched = rolesResult.data.find((r: RoleOption) => r.role_code === incomingData.requestedRole);
                         if (matched) {
                             setFormData(prev => ({
                                 ...prev,
@@ -125,15 +141,21 @@ export default function CreateUserForm() {
                             }));
                         }
                     }
-                } else {
-                    console.error("Roles fetch failed:", result.message);
                 }
+
+                if (deptsRes.ok && deptsResult.success) {
+
+                    setDepartments(deptsResult.data);
+                } else {
+                    console.error(deptsResult.message);
+                }
+
             } catch (error) {
-                console.error("Error fetching live roles:", error);
+                console.error("Error fetching initial data:", error);
             }
         };
 
-        fetchLiveRoles();
+        fetchInitialData();
     }, [incomingData]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,7 +219,6 @@ export default function CreateUserForm() {
             setLoading(false);
         }
     };
-
     return (
         <div
             className={`max-w-7xl mx-auto p-6 sm:p-8 rounded-2xl shadow-sm mt-6 border transition-all duration-200 ${theme ? "bg-gray-900 border-gray-800 text-white" : "bg-white border-neutral-200 text-neutral-900"
@@ -284,7 +305,7 @@ export default function CreateUserForm() {
 
                 {/* ===== Identity section ===== */}
                 <div>
-                    <SectionHeading icon={<HiOutlineIdentification size={15} />} title="Identity" theme={theme} />
+                    <SectionHeading icon={<HiOutlineIdentification className="text-sm" />} title="Identity" theme={theme} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium mb-1.5">User ID (SUID) *</label>
@@ -320,23 +341,30 @@ export default function CreateUserForm() {
 
                 {/* ===== Role & department section ===== */}
                 <div>
-                    <SectionHeading icon={<HiOutlineShieldCheck size={15} />} title="Role & Department" theme={theme} />
+                    <SectionHeading icon={<HiOutlineShieldCheck className="text-sm" />} title="Role & Department" theme={theme} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        
-                        {/* ⚡ લાઈવ રોલ્સ સાથે ડ્રોપડાઉન કનેક્ટ કર્યું */}
+
                         <SearchableDropdown
                             label="Select Role *"
                             placeholder={roles.length === 0 ? "Loading roles..." : "Choose Role"}
-                            options={roles.map(r => ({ id: r.role_id, name: `${r.role_name} (${r.role_code})` }))} // 👈 role_id, role_name, role_code નો ઉપયોગ કર્યો
+                            options={roles.map(r => ({ id: r.role_id, name: `${r.role_name} (${r.role_code})` }))}
                             selectedId={formData.roleId || ""}
                             onSelect={(id) => {
-                                if (isFromPipeline) return;
-                                const selectedRole = roles.find(r => r.role_id === Number(id)); // 👈 role_id મેચ કર્યો
-                                setFormData((prev) => ({
+                                const selectedRole = roles.find(r => r.role_id === Number(id));
+
+                                setFormData(prev => ({
                                     ...prev,
                                     roleId: Number(id),
-                                    roleCode: selectedRole ? selectedRole.role_code : "",
-                                    ...(selectedRole?.role_code !== "HEAD100" && { departmentId: 0 })
+                                    roleCode: selectedRole?.role_code ?? "",
+
+                                    status:
+                                        selectedRole?.role_code === "USER"
+                                            ? "PENDING"
+                                            : "APPROVED",
+
+                                    ...(selectedRole?.role_code !== "HEAD100" && {
+                                        departmentId: 0,
+                                    }),
                                 }));
                             }}
                             required
@@ -346,16 +374,17 @@ export default function CreateUserForm() {
                         {(isHeadRole || isFromPipeline) ? (
                             <SearchableDropdown
                                 label="Assign Department *"
-                                placeholder="Choose Department"
-                                options={departments}
+                                placeholder={departments.length === 0 ? "Loading departments..." : "Choose Department"}
+                                options={departments.map((d) => ({
+                                    id: d.departmentId,
+                                    name: d.departmentName,
+                                }))}
                                 selectedId={formData.departmentId || ""}
                                 onSelect={(id) => {
-                                    if (!isFromPipeline) {
-                                        setFormData((prev) => ({ ...prev, departmentId: Number(id) }))
-                                    }
+                                    setFormData((prev) => ({ ...prev, departmentId: Number(id) }))
                                 }}
                                 required
-                                disabled={isFromPipeline}
+                                disabled={departments.length === 0}
                             />
                         ) : (
                             <div
@@ -373,7 +402,7 @@ export default function CreateUserForm() {
 
                 {/* ===== Account section ===== */}
                 <div>
-                    <SectionHeading icon={<HiOutlineKey size={15} />} title="Account Credentials" theme={theme} />
+                    <SectionHeading icon={<HiOutlineKey className="text-sm" />} title="Account Credentials" theme={theme} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium mb-1.5">Username *</label>
@@ -405,7 +434,7 @@ export default function CreateUserForm() {
 
                 {/* ===== Dates section ===== */}
                 <div>
-                    <SectionHeading icon={<HiOutlineCalendar size={15} />} title="Important Dates" theme={theme} />
+                    <SectionHeading icon={<HiOutlineCalendar className="text-sm" />} title="Important Dates" theme={theme} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <DatePicker
                             label="Joining Date *"

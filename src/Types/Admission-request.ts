@@ -16,7 +16,7 @@ export interface AdmissionRequest {
 // ફોર્મ સબમિટ કરતી વખતે આ ટાઇપ વપરાશે
 export interface CreateAdmissionInput {
   applicantName: string;
-  applicantSuid: number;   // 👈 ફોર્મમાંથી બેકએન્ડમાં મોકલવા માટે
+  applicantSuid: number;
   requestedRole: string;
   departmentId: number;
   departmentName: string;

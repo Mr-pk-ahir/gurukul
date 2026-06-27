@@ -73,7 +73,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                             /* --- મોટું સાઇડબાર: લોગો + ટેક્સ્ટ --- */
                             <div className="flex items-center gap-3 py-2 animate-fadeIn">
                                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center p-1.5 shadow-sm 
-                                    ${theme ? "bg-blue-200" : "bg-gradient-to-tr from-red-700 to-red-400"}`}
+                                    ${theme ? "bg-blue-200" : "bg-linear-to-tr from-red-700 to-red-400"}`}
                                 >
                                     <img
                                         src={Logo}
@@ -100,8 +100,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                 <div
                                     onClick={() => setIsCollapsed(false)}
                                     className={`relative w-11 h-11 rounded-xl flex items-center justify-center p-1.5 shadow-sm transition-all duration-300 group cursor-pointer 
-                                        ${theme 
-                                            ? "bg-blue-200 hover:bg-blue-300" 
+                                        ${theme
+                                            ? "bg-blue-200 hover:bg-blue-300"
                                             : "bg-red-50 hover:bg-red-600"
                                         }`}
                                     title="Expand Sidebar"
@@ -134,10 +134,12 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     )}
                 </div>
 
-                {/* --- નેવિગેશન મેનુ --- */}
-                <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-3">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar p-3">
                     <nav className="space-y-1.5 relative">
-                        <Navbar setSidebarOpen={setIsOpen} isMiniSidebar={isMiniSidebar} />
+                        <Navbar
+                            setSidebarOpen={setIsOpen}
+                            isMiniSidebar={isMiniSidebar}
+                        />
                     </nav>
                 </div>
 
@@ -154,7 +156,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                 ? "text-gray-300 hover:bg-gray-800 hover:text-blue-200"
                                 : "text-gray-500 hover:bg-red-50 hover:text-red-600"
                             }`}
-                       >
+                    >
                         <HiOutlineLogout className={`text-xl transition-colors 
                             ${theme ? "text-gray-400 group-hover:text-blue-200" : "text-gray-400 group-hover:text-red-600"}`}
                         />
@@ -174,21 +176,19 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             {/* --- 🌟 લોગઆઉટ કન્ફર્મેશન મોડલ --- */}
             {showLogoutConfirm && (
                 <div
-                    className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                    className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
                     onClick={cancelLogout}
                 >
                     <div
                         onClick={(e) => e.stopPropagation()}
-                        className={`w-full max-w-sm rounded-3xl border p-6 shadow-2xl transition-all ${
-                            theme
-                                ? "bg-gray-900 border-gray-800 text-white"
-                                : "bg-white border-gray-100 text-gray-900"
-                        }`}
+                        className={`w-full max-w-sm rounded-3xl border p-6 shadow-2xl transition-all ${theme
+                            ? "bg-gray-900 border-gray-800 text-white"
+                            : "bg-white border-gray-100 text-gray-900"
+                            }`}
                     >
                         <div
-                            className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${
-                                theme ? "bg-red-500/10 text-red-400" : "bg-red-50 text-red-600"
-                            }`}
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${theme ? "bg-red-500/10 text-red-400" : "bg-red-50 text-red-600"
+                                }`}
                         >
                             <HiOutlineExclamationCircle className="text-2xl" />
                         </div>
@@ -202,11 +202,10 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                             <button
                                 onClick={cancelLogout}
                                 disabled={isLoggingOut}
-                                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                                    theme
-                                        ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
-                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                }`}
+                                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${theme
+                                    ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                    }`}
                             >
                                 Cancel
                             </button>

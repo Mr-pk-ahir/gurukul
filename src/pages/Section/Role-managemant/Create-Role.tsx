@@ -8,6 +8,9 @@ import { HiOutlineShieldCheck, HiOutlineDocumentText } from "react-icons/hi";
 // 🛠️ આપણો નવો ટાઇપ અહીં ઇમ્પોર્ટ કર્યો
 import type { RoleCreate, PermissionRow } from "../../../Types/Role-create";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+
 export default function CreateRole() {
     const { theme } = useTheme();
     const modules = ["Department", "Users", "Roles & Permissions"];
@@ -54,7 +57,7 @@ export default function CreateRole() {
             const token = localStorage.getItem("token"); 
 
             // ⚡ બેકએન્ડ API કોલ (જો પોર્ટ અલગ હોય તો 5000 ની જગ્યાએ તમારો પોર્ટ લખવો)
-            const response = await fetch("http://localhost:5000/roles/create", {
+            const response = await fetch(`${API_URL}/roles/create`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

@@ -21,7 +21,6 @@ export default function Layout() {
             theme ? 'bg-gray-900 text-gray-50' : 'bg-gray-50 text-gray-800'
         }`}>
 
-            {/* સાઇડબાર કમ્પોનન્ટ */}
             <Sidebar isOpen={isMobileSidebarOpen} setIsOpen={setIsMobileSidebarOpen} />
 
             {/* મેઈન કન્ટેન્ટ કન્ટેનર */}
@@ -54,7 +53,6 @@ export default function Layout() {
                             Back
                         </button>
 
-                        {/* અહીં તમારા બધા પેજીસ (જેમ કે CreateUserForm) લોડ થશે */}
                         <Outlet />
                     </div>
                 </main>

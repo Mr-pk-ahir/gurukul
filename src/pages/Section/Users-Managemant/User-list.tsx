@@ -4,6 +4,18 @@ import { useTheme } from "../../../components/theme/ThemeContext";
 import DataCruding from "../../../components/common/DataCruding";
 import { HiOutlineUsers, HiSearch, HiFilter, HiChevronDown } from "react-icons/hi";
 
+// 🟢 ૧. બેકએન્ડ સ્ટ્રક્ચર મુજબ પરમિશન ઇન્ટરફેસ
+interface PermissionActions {
+    create: boolean;
+    edit: boolean;
+    view: boolean;
+    delete: boolean;
+}
+
+interface ModulePermissions {
+    [moduleName: string]: PermissionActions;
+}
+
 interface UserData {
     suid: number;
     avatar: string;
@@ -12,22 +24,25 @@ interface UserData {
     requestDate?: string;  
     joiningDate?: string;  
     status: "APPROVED" | "PENDING" | "REJECTED";
+    // 🟢 નવા ડાયનેમિક ફિલ્ડ્સ
+    role: string; 
+    permissions: ModulePermissions; // બેકએન્ડ તરફથી આવતો JSON ઓબ્જેક્ટ
 }
 
-// 🌟 ફિલ્ટરના ઓપ્શન્સ જે ગાયબ હતા તે અહીં એડ કર્યા છે
 const filterOptions = [
     { value: "all", label: "All Records" },
     { value: "name", label: "Name" },
     { value: "suid", label: "SUID" },
+    { value: "role", label: "Role" },
     { value: "status", label: "Status" },
-    { value: "performance", label: "Performance" },
-    { value: "date", label: "Date" }
+    { value: "performance", label: "Performance" }
 ];
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function UserList() {
     const { theme } = useTheme();
 
-    // 🌟 સ્ટેટ્સ મેનેજમેન્ટ (ડુપ્લિકેટ કાઢીને સિંગલ અને પ્રોપર રાખ્યા છે)
     const [users, setUsers] = useState<UserData[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>("");
@@ -36,21 +51,19 @@ export default function UserList() {
     const [filterType, setFilterType] = useState("all");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-    // 🔄 API માંથી ડેટા ફેચ કરવાનો લોજિક
+    // 🔄 API માંથી ડેટા ફેચ કરવાનો લોજિક (રીપેર કરેલ લોડિંગ સ્ટેટ)
     const fetchUsers = async () => {
         try {
             setLoading(true); 
             setError("");
 
-            const token = localStorage.getItem("token");
-
-            const response = await fetch("http://localhost:5000/users", {
+            const response = await fetch(`${API_URL}/users`, {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
             });
+
+            if (!response.ok) {
+                throw new Error(`સર્વર રિસ્પોન્સ એરર: ${response.status}`);
+            }
 
             const result = await response.json();
 
@@ -62,9 +75,9 @@ export default function UserList() {
 
         } catch (err: any) {
             console.error("Fetch Error:", err);
-            setError("સર્વર કનેક્શન ફેલ થયું!");
+            setError(err.message || "સર્વર કનેક્શન ફેલ થયું!");
         } finally {
-            setLoading(false); // લોડિંગ અહીં ફરજિયાત બંધ થશે જ!
+            setLoading(false); // 🟢 લોડિંગ બંધ કરવાનું અહીં સેટ કર્યું
         }
     };
 
@@ -72,12 +85,9 @@ export default function UserList() {
         fetchUsers();
     }, []); 
 
-    // 🗑️ ડેટા ડીલીટ કરવાનો લોજિક
     const handleDeleteUser = async (suid: number) => {
-        if (!window.confirm("શું તમે આ યુઝરને kharekhar ડિલીટ કરવા માંગો છો?")) return;
-
+        if (!window.confirm("શું તમે આ યુઝરને ખરેખર ડિલીટ કરવા માંગો છો?")) return;
         try {
-            // અહીં ભવિષ્યમાં API કોલ જોડી શકો છો
             setUsers((prevUsers) => prevUsers.filter((user) => user.suid !== suid));
         } catch (err) {
             alert("યુઝર ડિલીટ કરવામાં સમસ્યા આવી.");
@@ -92,8 +102,8 @@ export default function UserList() {
         switch (filterType) {
             case "suid":
                 return { type: "number", placeholder: "Enter SUID number..." };
-            case "date":
-                return { type: "text", placeholder: "Search Date..." };
+            case "role":
+                return { type: "text", placeholder: "Search Role (ADMIN/MANAGER)..." };
             case "status":
                 return { type: "text", placeholder: "Search Status (APPROVED/PENDING)..." };
             case "performance":
@@ -107,29 +117,30 @@ export default function UserList() {
 
     const inputConfig = getSearchInputConfig();
 
-    // 🔍 સ્માર્ટ ફિલ્ટરિંગ લોજિક
     const filteredUsers = users.filter((user) => {
         const query = searchQuery.toLowerCase().trim();
         if (!query) return true;
 
         const userDate = (user.requestDate || user.joiningDate || "").toLowerCase();
         const userPerf = (user.performance || "AVERAGE").toLowerCase();
+        const userRole = (user.role || "").toLowerCase();
 
         switch (filterType) {
             case "name":
                 return user.name.toLowerCase().includes(query);
             case "suid":
                 return user.suid.toString().includes(query);
+            case "role":
+                return userRole.includes(query);
             case "status":
                 return user.status.toLowerCase().startsWith(query);
             case "performance":
                 return userPerf.startsWith(query);
-            case "date":
-                return userDate.includes(query);
             default: 
                 return (
                     user.name.toLowerCase().includes(query) ||
                     user.suid.toString().includes(query) ||
+                    userRole.includes(query) ||
                     user.status.toLowerCase().startsWith(query) ||
                     userPerf.startsWith(query) ||
                     userDate.includes(query)
@@ -146,6 +157,17 @@ export default function UserList() {
         return theme
             ? "bg-gray-700 border-gray-600 text-gray-300"
             : "bg-neutral-50 border-neutral-200 text-neutral-600";
+    };
+
+    // 🟢 ૨. રોલના કલર સેટ કરવાનું ફંક્શન
+    const getRoleStyle = (role: string) => {
+        const cleanRole = role.toUpperCase();
+        if (cleanRole.includes("ADMIN")) {
+            return theme ? "bg-red-950/40 border-red-900/50 text-red-400" : "bg-red-50 border-red-200 text-red-700";
+        } else if (cleanRole.includes("MANAGER")) {
+            return theme ? "bg-amber-950/40 border-amber-900/50 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-700";
+        }
+        return theme ? "bg-blue-950/40 border-blue-900/50 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-700";
     };
 
     const columns = [
@@ -168,6 +190,56 @@ export default function UserList() {
             ),
         },
         {
+            header: "Role",
+            className: "text-center",
+            accessor: (user: UserData) => (
+                <span className={`inline-block px-2.5 py-0.5 text-xs font-bold rounded-md border tracking-wide uppercase ${getRoleStyle(user.role || "SEVAK")}`}>
+                    {user.role || "SEVAK"}
+                </span>
+            ),
+        },
+        // 🟢 ૩. નવો પરમિશન કોલમ (દરેક મોડ્યુલની True એક્શન્સ નાના બેજમાં બતાવશે)
+        {
+            header: "Permissions",
+            className: "text-left max-w-xs",
+            accessor: (user: UserData) => {
+                if (!user.permissions || Object.keys(user.permissions).length === 0) {
+                    return <span className="text-xs text-gray-400 italic">No custom permissions</span>;
+                }
+
+                return (
+                    <div className="flex flex-col gap-1">
+                        {Object.entries(user.permissions).map(([moduleName, actions]) => {
+                            // ફક્ત એ જ એક્શન્સ ફિલ્ટર કરો જે True હોય
+                            const activeActions = Object.entries(actions)
+                                .filter(([_, allowed]) => allowed)
+                                .map(([actionName]) => actionName);
+
+                            if (activeActions.length === 0) return null;
+
+                            return (
+                                <div key={moduleName} className="flex items-center gap-1.5 text-xs">
+                                    <span className={`font-semibold shrink-0 ${theme ? "text-gray-300" : "text-neutral-700"}`}>{moduleName}:</span>
+                                    <div className="flex flex-wrap gap-0.5">
+                                        {activeActions.map((act) => (
+                                            <span 
+                                                key={act} 
+                                                className={`px-1 py-0.5 text-[10px] font-bold rounded uppercase scale-90 ${
+                                                    theme ? "bg-gray-800 border border-gray-700 text-blue-400" : "bg-neutral-100 border border-neutral-200 text-blue-600"
+                                                }`}
+                                            >
+                                                {act}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                );
+            }
+        },
+        {
             header: "Performance",
             accessor: (user: UserData) => (
                 <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full border tracking-wide ${getPerformanceStyle(user.performance || "AVERAGE")}`}>
@@ -181,14 +253,6 @@ export default function UserList() {
             accessor: (user: UserData) => (
                 <span className={`inline-block px-2.5 py-1 rounded-full font-bold text-xs tabular-nums ${theme ? "bg-blue-950/40 text-blue-400" : "bg-red-50 text-red-600"}`}>
                     #{user.suid}
-                </span>
-            ),
-        },
-        {
-            header: "Date",
-            accessor: (user: UserData) => (
-                <span className={`text-sm tabular-nums ${theme ? "text-gray-400" : "text-neutral-500"}`}>
-                    {user.requestDate || user.joiningDate || "N/A"}
                 </span>
             ),
         },
@@ -220,7 +284,6 @@ export default function UserList() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-
                 <div className="flex items-center gap-3">
                     <span className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 transition-colors ${theme ? "bg-blue-500/10 text-blue-300" : "bg-[#9b001c]/10 text-[#9b001c]"}`}>
                         <HiOutlineUsers size={20} />
@@ -236,7 +299,6 @@ export default function UserList() {
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto mt-2 sm:mt-1">
-
                     <div className="relative group">
                         <button
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -302,15 +364,13 @@ export default function UserList() {
                                 } [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                         />
                     </div>
-
                 </div>
             </div>
 
-            {/* 🌟 UI સ્ટેટ હેન્ડલિંગ: લોડિંગ અથવા એરર અહીં પ્રોપર હેન્ડલ થશે */}
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
                     <div className={`w-10 h-10 rounded-full border-4 border-t-transparent animate-spin ${theme ? "border-blue-500" : "border-[#9b001c]"}`} />
-                    <p className={`text-sm ${theme ? "text-gray-400" : "text-neutral-500"}`}>Loading dynamic user pool...</p>
+                    <p className={`text-sm ${theme ? "text-gray-400" : "text-neutral-500"}`}>Loading user data pool...</p>
                 </div>
             ) : error ? (
                 <div className={`p-4 rounded-xl border text-center text-sm font-medium ${theme ? "bg-red-500/10 border-red-500/20 text-red-300" : "bg-red-50 border-red-100 text-red-700"}`}>

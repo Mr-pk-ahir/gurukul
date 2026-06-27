@@ -13,6 +13,8 @@ import {
 } from "react-icons/hi";
 import { FaUserGraduate } from "react-icons/fa";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 function SectionHeading({
     icon,
     title,
@@ -56,10 +58,6 @@ export default function CreateAdmission() {
     const [applicantSuid, setApplicantSuid] = useState<string>("");
     const [additionalDetails, setAdditionalDetails] = useState<string>(""); // 👈 નવું ડિસ્ક્રિપ્શન સ્ટેટ
 
-    const backendBaseUrl = window.location.hostname === "localhost"
-        ? "http://localhost:5000"
-        : "https://તમારા-બેકએન્ડની-vercel-લિંક.vercel.app";
-
     const handleApply = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -92,7 +90,7 @@ export default function CreateAdmission() {
 
             const token = localStorage.getItem("token");
 
-            const response = await fetch(`${backendBaseUrl}/admissions/create`, {
+            const response = await fetch(`${API_URL}/admissions/create`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

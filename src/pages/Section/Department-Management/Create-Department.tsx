@@ -3,17 +3,15 @@ import { useTheme } from "../../../components/theme/ThemeContext";
 import Input from "../../../components/common/Input";
 import Button from "../../../components/common/Button";
 import DescriptionInput from "../../../components/common/DescriptionInput";
-import SearchableDropdown from "../../../components/common/SearchableDropdown";
 
 import {
     HiOutlineOfficeBuilding,
-    HiOutlineUserGroup,
     HiOutlineDocumentText,
 } from "react-icons/hi";
 import { FaBuilding } from "react-icons/fa";
 
-// 🌟 ફોર્મને વિઝ્યુઅલી ગ્રુપ કરવા માટેનું નાનું હેડર — CreateUserForm માંથી
-// સેમ pattern, જેથી બંને ફોર્મ્સ વચ્ચે consistency રહે
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 function SectionHeading({
     icon,
     title,
@@ -42,30 +40,20 @@ function SectionHeading({
     );
 }
 
-// 🌟 બેકએન્ડ ID જાતે બનાવશે એટલે અહિયાંથી departmentId કાઢી નાખ્યું છે
+// 👑 Interface માંથી departmentHeadId કાઢી નાખ્યું છે
 export interface DepartmentCreate {
     departmentName: string;
-    departmentHeadId: number | "";
     description: string;
 }
 
-// 👥 Mock ડેટા (ભવિષ્યમાં આ ૬-ડિજિટ ID વાળા ડેટા API દ્વારા આવશે)
-const AVAILABLE_HEADS = [
-    { id: 221355, name: "Rahul Patel (Admin)" },
-    { id: 334512, name: "Sneha Sharma (Senior Prof.)" },
-    { id: 112233, name: "Amit Shah (HOD)" },
-    { id: 998877, name: "Priya Desai (Coordinator)" },
-];
-
 export default function CreateDepartment() {
     const { theme } = useTheme();
-
     const [loading, setLoading] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string>("");
-
+    
+    // 👑 સ્ટેટમાંથી પણ departmentHeadId રીમુવ કર્યું
     const [formData, setFormData] = useState<DepartmentCreate>({
         departmentName: "",
-        departmentHeadId: "",
         description: "",
     });
 
@@ -83,11 +71,32 @@ export default function CreateDepartment() {
         setErrorMessage("");
 
         try {
-            console.log("Create Department ઓબ્જેક્ટ API માટે રેડી છે:", formData);
-            // 🎯 અહિયાં તમે API કોલ કરી શકો છો, બેકએન્ડ જાતે જ નવો ૬-ડિજિટ ID એસાઇન કરી દેશે.
+            const response = await fetch(`${API_URL}/departments/create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const result = await response.json();
+
+            console.log("Backend Department Response:", result);
+
+            if (result.success) {
+                alert("ડિપાર્ટમેન્ટ સફળતાપૂર્વક બની ગયો છે!");
+
+                // 👑 સક્સેસ પછી ફોર્મ રીસેટ
+                setFormData({
+                    departmentName: "",
+                    description: "",
+                });
+            } else {
+                setErrorMessage(result.message || "ડિપાર્ટમેન્ટ બનાવવામાં કંઈક સમસ્યા આવી.");
+            }
         } catch (error: any) {
             console.error("API Error:", error);
-            setErrorMessage(error.message || "કંઈક ખોટું થયું છે, ફરી પ્રયાસ કરો.");
+            setErrorMessage("સર્વર કનેક્શન ફેલ થયું છે, ફરી પ્રયાસ કરો.");
         } finally {
             setLoading(false);
         }
@@ -102,17 +111,17 @@ export default function CreateDepartment() {
             <div className="mb-8 pb-6 border-b flex flex-col items-center text-center gap-2 border-neutral-200 dark:border-gray-800">
                 <div
                     className={`w-16 h-16 text-white rounded-full shadow-lg ${theme
-                            ? "bg-linear-to-bl from-blue-300 to-blue-900 shadow-blue-950/40"
-                            : "bg-linear-to-bl from-red-300 to-red-900 shadow-red-950/20"
+                        ? "bg-linear-to-bl from-blue-300 to-blue-900 shadow-blue-950/40"
+                        : "bg-linear-to-bl from-red-300 to-red-900 shadow-red-950/20"
                         } flex items-center justify-center mb-1`}
                 >
                     <FaBuilding size={24} />
                 </div>
                 <h2 className={`text-3xl sm:text-4xl font-bold tracking-tight ${theme ? "text-blue-200" : "text-red-600"}`}>
-                    Create Department & Allocate Head
+                    Create Department
                 </h2>
                 <p className={`text-sm max-w-md ${theme ? "text-gray-400" : "text-neutral-500"}`}>
-                    Fill in the details below to register a new department and assign its head.
+                    Fill in the details below to register a new department.
                 </p>
             </div>
 
@@ -121,8 +130,8 @@ export default function CreateDepartment() {
                 <div
                     role="alert"
                     className={`mb-6 flex items-start gap-2.5 p-3.5 rounded-xl text-sm font-medium border ${theme
-                            ? "bg-red-500/10 text-red-300 border-red-500/20"
-                            : "bg-red-50 text-red-700 border-red-100"
+                        ? "bg-red-500/10 text-red-300 border-red-500/20"
+                        : "bg-red-50 text-red-700 border-red-100"
                         }`}
                 >
                     <span className="mt-0.5 shrink-0">⚠</span>
@@ -144,22 +153,6 @@ export default function CreateDepartment() {
                             onChange={handleInputChange}
                             icon={<HiOutlineOfficeBuilding className="text-lg" />}
                             placeholder="Enter department name"
-                            required
-                        />
-                    </div>
-                </div>
-
-                {/* ===== Head Allocation section ===== */}
-                <div>
-                    <SectionHeading icon={<HiOutlineUserGroup size={15} />} title="Head Allocation" theme={theme} />
-                    <div>
-                        <SearchableDropdown
-                            label="Assign Department Head *"
-                            placeholder="Search and select head..."
-                            searchPlaceholder="Type name to search..."
-                            options={AVAILABLE_HEADS}
-                            selectedId={formData.departmentHeadId}
-                            onSelect={(id) => setFormData((prev) => ({ ...prev, departmentHeadId: id }))}
                             required
                         />
                     </div>

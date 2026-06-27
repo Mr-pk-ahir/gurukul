@@ -101,7 +101,7 @@ export default function DataCruding({
             ref={menuRef}
             role="menu"
             style={{ top: coords.top, left: coords.left, width: MENU_WIDTH }}
-            className={`fixed z-[9999] rounded-xl shadow-xl border p-1 origin-top-right ${
+            className={`fixed z-9999 rounded-xl shadow-xl border p-1 origin-top-right ${
               theme
                 ? "bg-gray-800 border-gray-700 text-white"
                 : "bg-white border-neutral-100 text-neutral-700"
@@ -123,7 +123,6 @@ export default function DataCruding({
               {editLabel}
             </button>
 
-            {/* Delete બટન */}
             <button
               type="button"
               role="menuitem"
