@@ -8,7 +8,7 @@ import { IoIosLock } from "react-icons/io";
 import { FaLock } from "react-icons/fa";
 import { toast } from "sonner";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://gurukul-backend-svd7.onrender.com";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 
 

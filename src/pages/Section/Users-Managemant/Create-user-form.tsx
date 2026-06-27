@@ -19,7 +19,6 @@ import { FaUserCircle } from "react-icons/fa";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-
 interface RoleOption {
     role_id: number;
     role_name: string;
@@ -144,7 +143,6 @@ export default function CreateUserForm() {
                 }
 
                 if (deptsRes.ok && deptsResult.success) {
-
                     setDepartments(deptsResult.data);
                 } else {
                     console.error(deptsResult.message);
@@ -201,7 +199,7 @@ export default function CreateUserForm() {
                 throw new Error(result.message || "સર્વર પર યુઝર ક્રિએટ કરવામાં સમસ્યા આવી.");
             }
 
-            if (isFromPipeline) {
+            if (isFromPipeline && incomingData) {
                 const allReqs = localStorage.getItem("admission_requests");
                 if (allReqs) {
                     const parsedReqs = JSON.parse(allReqs);
@@ -219,6 +217,7 @@ export default function CreateUserForm() {
             setLoading(false);
         }
     };
+
     return (
         <div
             className={`max-w-7xl mx-auto p-6 sm:p-8 rounded-2xl shadow-sm mt-6 border transition-all duration-200 ${theme ? "bg-gray-900 border-gray-800 text-white" : "bg-white border-neutral-200 text-neutral-900"
@@ -242,7 +241,7 @@ export default function CreateUserForm() {
                         ? "Review the applicant's details below, then confirm to generate their account."
                         : "Fill in the details below to add a new user to the system."}
                 </p>
-                {isFromPipeline && (
+                {isFromPipeline && incomingData && (
                     <span
                         className={`inline-flex items-center gap-1.5 mt-1 px-3 py-1 rounded-full text-xs font-medium ${theme ? "bg-amber-500/10 text-amber-400" : "bg-amber-50 text-amber-700"
                             }`}
@@ -343,24 +342,22 @@ export default function CreateUserForm() {
                 <div>
                     <SectionHeading icon={<HiOutlineShieldCheck className="text-sm" />} title="Role & Department" theme={theme} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
+                        
+                        {/* 🌟 1. Role Dropdown (Updated with value and label) */}
                         <SearchableDropdown
                             label="Select Role *"
                             placeholder={roles.length === 0 ? "Loading roles..." : "Choose Role"}
-                            options={roles.map(r => ({ id: r.role_id, name: `${r.role_name} (${r.role_code})` }))}
-                            selectedId={formData.roleId || ""}
-                            onSelect={(id) => {
-                                const selectedRole = roles.find(r => r.role_id === Number(id));
+                            options={roles.map(r => ({ value: r.role_code, label: `${r.role_name} (${r.role_code})` }))}
+                            selectedValue={formData.roleCode || ""}
+                            onSelect={(val) => {
+                                const selectedRole = roles.find(r => r.role_code === String(val));
 
                                 setFormData(prev => ({
                                     ...prev,
-                                    roleId: Number(id),
+                                    roleId: selectedRole?.role_id ?? 0,
                                     roleCode: selectedRole?.role_code ?? "",
 
-                                    status:
-                                        selectedRole?.role_code === "USER"
-                                            ? "PENDING"
-                                            : "APPROVED",
+                                    status: selectedRole?.role_code === "USER" ? "PENDING" : "APPROVED",
 
                                     ...(selectedRole?.role_code !== "HEAD100" && {
                                         departmentId: 0,
@@ -371,17 +368,18 @@ export default function CreateUserForm() {
                             disabled={isFromPipeline || roles.length === 0}
                         />
 
+                        {/* 🌟 2. Department Dropdown (Updated with value and label) */}
                         {(isHeadRole || isFromPipeline) ? (
                             <SearchableDropdown
                                 label="Assign Department *"
                                 placeholder={departments.length === 0 ? "Loading departments..." : "Choose Department"}
                                 options={departments.map((d) => ({
-                                    id: d.departmentId,
-                                    name: d.departmentName,
+                                    value: d.departmentId,
+                                    label: d.departmentName,
                                 }))}
-                                selectedId={formData.departmentId || ""}
-                                onSelect={(id) => {
-                                    setFormData((prev) => ({ ...prev, departmentId: Number(id) }))
+                                selectedValue={formData.departmentId || ""}
+                                onSelect={(val) => {
+                                    setFormData((prev) => ({ ...prev, departmentId: Number(val) }))
                                 }}
                                 required
                                 disabled={departments.length === 0}

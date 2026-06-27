@@ -81,12 +81,10 @@ export default function Routers() {
             <Route path="/daily-darshan" element={<PublicDailyDarshan />} />
             <Route path="/login" element={<Login />} />
 
-            {/* Protected Dashboard Layout */}
             <Route path="/dashboard" element={<Layout />} >
                 <Route index element={<Dashboard />} />
                 <Route path="unauthorized" element={<UnauthorizedView />} />
 
-                {/* Users Management */}
                 <Route element={<ProtectedRoute module="Users" action="create" />}>
                     <Route path="users/create" element={<CreateUserForm />} />
                 </Route>
@@ -94,7 +92,6 @@ export default function Routers() {
                     <Route path="users/list" element={<UserList />} />
                 </Route>
 
-                {/* Department Management */}
                 <Route element={<ProtectedRoute module="Department" action="create" />}>
                     <Route path="departments/create" element={<CreateDepartment />} />
                 </Route>
@@ -105,7 +102,6 @@ export default function Routers() {
                     <Route path="departments/:deptId/student-list" element={<StudentListPage />} />
                 </Route>
 
-                {/* Roles & Permissions */}
                 <Route element={<ProtectedRoute module="Roles & Permissions" action="create" />}>
                     <Route path="permissions/role" element={<CreateRole />} />
                 </Route>
@@ -118,7 +114,6 @@ export default function Routers() {
                     <Route path="settings/profile" element={<ProfileSetting />} />
                 </Route>
 
-                {/* Overview Management (Dynamic Action Checks) */}
                 <Route element={<ProtectedRoute module="overview-management" action="view" />}>
                     <Route path="overview-management" element={<OverviewManagement />} />
                 </Route>
@@ -127,7 +122,6 @@ export default function Routers() {
                     <Route path="overview-management/daily-darshan" element={<AdminDailyDarshan />} />
                 </Route>
 
-                {/* Fallback */}
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
         </Routes>

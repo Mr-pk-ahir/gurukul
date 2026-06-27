@@ -16,15 +16,27 @@ import { SiGoogledataproc, SiGoogleearth, SiNginxproxymanager } from "react-icon
 import { RiEditBoxLine } from "react-icons/ri";
 import type { AuthUser } from "../../Types/Role-create";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+
 interface NavbarProps {
     setSidebarOpen: (isOpen: boolean) => void;
     isMiniSidebar: boolean;
+}
+
+interface DepartmentData {
+    departmentId: number;
+    departmentName: string;
+    departmentHeadId: number | null;
+    departmentHeadName: string | null;
+    description: string;
 }
 
 export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
     const { theme } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
+    const [departments, setDepartment] = useState<DepartmentData[]>()
 
     const [user, setUser] = useState<AuthUser | null>(null);
 
@@ -39,7 +51,20 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
             }
         }
     }, []);
-
+    useEffect(() => {
+        const fetchDepartments = async () => {
+            try {
+                const response = await fetch(`${API_URL}/departments`);
+                const result = await response.json();
+                if (result.success) {
+                    setDepartment(result.data);
+                }
+            } catch (error) {
+                console.error("Error fetching departments:", error);
+            }
+        };
+        fetchDepartments();
+    }, []);
     // ૧. ડિપાર્ટમેન્ટ આઇટમ્સ
     const departmentItems = [];
     if (user?.permissions?.["Department"]?.create) {
@@ -116,22 +141,12 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 <span className={`transition-colors ${isActive
                     ? theme ? "text-blue-200" : "text-red-600"
                     : theme ? "text-gray-300 group-hover:text-blue-200" : "text-gray-400 group-hover:text-red-600"
-                }`}>
+                    }`}>
                     <HiOutlineHome className="text-xl" />
                 </span>
                 {!isMiniSidebar && "Dashboard"}
             </button>
 
-            {/* Pipeline Dropdown */}
-            {pipelineItems.length > 0 && (
-                <SidebarDropdown
-                    title="My Pipeline"
-                    icon={<HiOutlineAcademicCap className="text-xl" />}
-                    items={pipelineItems}
-                    setSidebarOpen={setSidebarOpen}
-                    isMiniSidebar={isMiniSidebar}
-                />
-            )}
 
             {/* Department Dropdown */}
             {departmentItems.length > 0 && (
@@ -176,6 +191,38 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                     isMiniSidebar={isMiniSidebar}
                 />
             )}
+
+            <h1 className={`text-sm font-normal my-4 ${theme ? "text-gray-400" : "text-gray-600"}`}>
+                Departments Pipeline
+            </h1>
+
+            {/* 🚀 દરેક ડિપાર્ટમેન્ટ માટે ડાયનેમિક ડ્રોપડાઉન */}
+            {departments?.map((dept) => (
+                <SidebarDropdown
+                    key={dept.departmentId}
+                    title={dept.departmentName}
+                    icon={<HiOutlineAcademicCap className="text-xl" />}
+                    items={[
+                        {
+                            name: "Create Admission",
+                            path: `/dashboard/departments/${dept.departmentId}/create-admission`,
+                            icon: <HiOutlineAcademicCap />
+                        },
+                        {
+                            name: "Admission Requests",
+                            path: `/dashboard/departments/${dept.departmentId}/admission-requests`,
+                            icon: <HiOutlineClipboardList />
+                        },
+                        {
+                            name: "Student List",
+                            path: `/dashboard/departments/${dept.departmentId}/student-list`,
+                            icon: <HiOutlineAcademicCap />
+                        }
+                    ]}
+                    setSidebarOpen={setSidebarOpen}
+                    isMiniSidebar={isMiniSidebar}
+                />
+            ))}
         </div>
     );
 }

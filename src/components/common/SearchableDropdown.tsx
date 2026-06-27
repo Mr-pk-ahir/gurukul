@@ -2,9 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { useTheme } from "../theme/ThemeContext";
 import Input from "./Input";
 
-interface DropdownOption {
-    id: number;
-    name: string;
+export interface DropdownOption {
+    value: string | number; 
+    label: string;
 }
 
 interface SearchableDropdownProps {
@@ -12,8 +12,8 @@ interface SearchableDropdownProps {
     placeholder: string;
     searchPlaceholder?: string;
     options: DropdownOption[];
-    selectedId: number | string;
-    onSelect: (id: number) => void;
+    selectedValue: string | number; // selectedId ની જગ્યાએ
+    onSelect: (value: string | number) => void;
     required?: boolean;
     disabled?: boolean;
 }
@@ -23,7 +23,7 @@ export default function SearchableDropdown({
     placeholder,
     searchPlaceholder = "Search...",
     options,
-    selectedId,
+    selectedValue,
     onSelect,
     required = false,
     disabled = false,
@@ -32,27 +32,25 @@ export default function SearchableDropdown({
 
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [highlightedIndex, setHighlightedIndex] = useState(0); // 🌟 નવું: કીબોર્ડ હાઇલાઇટ ટ્રેક કરવા
+    const [highlightedIndex, setHighlightedIndex] = useState(0);
 
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const listRef = useRef<HTMLDivElement>(null); // 🌟 નવું: ઓટો-સ્ક્રોલિંગ માટે
+    const listRef = useRef<HTMLDivElement>(null);
 
-    const selectedOption = options.find((opt) => opt.id === Number(selectedId));
+    // 🎯 કઈ વસ્તુ સિલેક્ટ થઈ છે તે શોધવા
+    const selectedOption = options.find((opt) => String(opt.value) === String(selectedValue));
 
+    // 🎯 સર્ચ માટેનું લોજીક (હવે label નો ઉપયોગ કરશે)
     const filteredOptions = options.filter((option) => {
-        // જો option.name undefined હોય, તો ખાલી સ્ટ્રિંગ ("") ધારી લેશે, જેથી એરર ન આવે.
-        const optionName = option?.name || "";
+        const optionLabel = option?.label || "";
         const query = searchQuery || "";
-
-        return optionName.toLowerCase().includes(query.toLowerCase());
+        return optionLabel.toLowerCase().includes(query.toLowerCase());
     });
 
-    // 🌟 જ્યારે પણ સર્ચ બદલાય અથવા ડ્રોપડાઉન ખુલે, ત્યારે હાઇલાઇટ પાછું 0 પર લાવી દો
     useEffect(() => {
         setHighlightedIndex(0);
     }, [searchQuery, isOpen]);
 
-    // 🌟 ઓટો-સ્ક્રોલ લોજીક: જ્યારે કીબોર્ડથી નીચે જાઓ ત્યારે લિસ્ટ પણ નીચે સ્ક્રોલ થવું જોઈએ
     useEffect(() => {
         if (isOpen && listRef.current && listRef.current.children[highlightedIndex]) {
             const activeItem = listRef.current.children[highlightedIndex] as HTMLElement;
@@ -60,7 +58,6 @@ export default function SearchableDropdown({
         }
     }, [highlightedIndex, isOpen]);
 
-    // બહાર ક્લિક કરવાથી બંધ કરવાનું લોજીક
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -71,20 +68,24 @@ export default function SearchableDropdown({
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    const handleSelect = (val: string | number) => {
+        onSelect(val);
+        setSearchQuery("");
+        setIsOpen(false);
+    };
+
     return (
         <div className="relative w-full" ref={dropdownRef}>
             <label className={`block text-sm font-medium mb-1.5 ${theme ? "text-gray-300" : "text-neutral-700"} ${disabled ? "opacity-60" : ""}`}>
                 {label} {required && !disabled && <span className="text-red-500">*</span>}
             </label>
 
-            {/* 🎯 મેઇન બટન / બોક્સ */}
             <div
                 tabIndex={disabled ? -1 : 0}
                 onClick={() => {
                     if (!disabled) setIsOpen(!isOpen);
                 }}
                 onKeyDown={(e) => {
-                    // બંધ હોય ત્યારે Enter, Space કે ArrowDown દબાવવાથી ખૂલશે
                     if (!isOpen && !disabled && (e.key === "Enter" || e.key === " " || e.key === "ArrowDown")) {
                         e.preventDefault();
                         setIsOpen(true);
@@ -101,7 +102,7 @@ export default function SearchableDropdown({
                     }`}
             >
                 <span className={selectedOption ? "" : disabled ? "" : "text-gray-400"}>
-                    {selectedOption?.name || placeholder}
+                    {selectedOption?.label || placeholder}
                 </span>
 
                 {!disabled && (
@@ -111,12 +112,10 @@ export default function SearchableDropdown({
                 )}
             </div>
 
-            {/* 🎯 ડ્રોપડાઉન લિસ્ટ (ખુલે ત્યારે) */}
             {isOpen && !disabled && (
                 <div
                     className={`absolute z-20 w-full mt-1 border rounded-xl shadow-lg max-h-60 overflow-hidden flex flex-col ${theme ? "bg-gray-800 border-gray-700" : "bg-white border-neutral-200"
                         }`}
-                    // 🌟 જ્યારે ડ્રોપડાઉન ખુલ્લું હોય ત્યારે કીબોર્ડ ઇવેન્ટ્સ કેચ કરવા માટે
                     onKeyDown={(e) => {
                         if (e.key === "ArrowDown") {
                             e.preventDefault();
@@ -127,9 +126,7 @@ export default function SearchableDropdown({
                         } else if (e.key === "Enter") {
                             e.preventDefault();
                             if (filteredOptions[highlightedIndex]) {
-                                onSelect(filteredOptions[highlightedIndex].id);
-                                setSearchQuery("");
-                                setIsOpen(false);
+                                handleSelect(filteredOptions[highlightedIndex].value);
                             }
                         } else if (e.key === "Escape") {
                             setIsOpen(false);
@@ -149,20 +146,16 @@ export default function SearchableDropdown({
                     <div className="overflow-y-auto p-2 space-y-0.5" ref={listRef}>
                         {filteredOptions.length > 0 ? (
                             filteredOptions.map((option, index) => {
-                                const isSelected = Number(selectedId) === option.id;
+                                const isSelected = String(selectedValue) === String(option.value);
                                 const isHighlighted = highlightedIndex === index;
-
-                                // 🟢 સોલ્યુશન: option.id ની સાથે index ને પણ જોડી દો જેથી કી હંમેશા યુનિક જ રહે
-                                const uniqueKey = option.id ? `opt-${option.id}-${index}` : `opt-idx-${index}`;
 
                                 return (
                                     <div
-                                        key={uniqueKey} // 👈 અહીં `uniqueKey` પાસ કરો
+                                        key={String(option.value)}
                                         onMouseEnter={() => setHighlightedIndex(index)}
-                                        onClick={() => {
-                                            onSelect(option.id);
-                                            setSearchQuery("");
-                                            setIsOpen(false);
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleSelect(option.value);
                                         }}
                                         className={`px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors duration-150 ${isSelected
                                             ? theme ? "bg-blue-900/40 text-blue-300 font-medium" : "bg-blue-50 text-blue-600 font-medium"
@@ -171,7 +164,7 @@ export default function SearchableDropdown({
                                                 : theme ? "hover:bg-gray-700 text-gray-300" : "hover:bg-neutral-100 text-neutral-700"
                                             }`}
                                     >
-                                        {option.name}
+                                        {option.label}
                                     </div>
                                 );
                             })

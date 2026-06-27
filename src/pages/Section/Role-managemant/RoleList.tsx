@@ -33,15 +33,8 @@ export default function RoleList() {
     const fetchRoles = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem("token"); // મિડલવેર માટે ઓથોરાઇઝેશન ટોકન
 
-            const response = await fetch(`${API_URL}/roles`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                }
-            });
+            const response = await fetch(`${API_URL}/roles`);
 
             const result = await response.json();
 
