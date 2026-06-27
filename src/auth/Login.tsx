@@ -8,7 +8,7 @@ import { IoIosLock } from "react-icons/io";
 import { FaLock } from "react-icons/fa";
 import { toast } from "sonner";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "https://gurukul-backend-svd7.onrender.com";
 
 
 
@@ -41,7 +41,7 @@ export default function Login() {
             if (result.success) {
 
                 if (!result.user) {
-                    setError("લોગિન સફળ થયું, પણ યુઝર પ્રોફાઈલ ડેટા મળ્યો નથી!");
+                    toast.error("natwork error");
                     return;
                 }
 
@@ -74,16 +74,12 @@ export default function Login() {
                     permissions: result.user?.permissions || defaultPermissions
                 };
 
-                // 🤝 માત્ર એક જ કી ("user") માં આખો મર્જ થયેલો ડેટા લોકલ સ્ટોરેજમાં સેવ થશે
                 localStorage.setItem("user", JSON.stringify(loggedInUserData));
 
-                // 🚀 ડાબી/જમણી બાજુ બીજા કોઈ સિંગલ ટોકન સેવ કરવાની જરૂર નથી
-                // સીધા ડેશબોર્ડ પર રીડાયરેક્ટ
                 navigate("/dashboard");
 
             } else {
-                // બેકએન્ડ તરફથી આવતી વેલિડેશન એરર
-                setError(result.message || "લોગિન આઈડી અથવા પાસવર્ડ ખોટો છે!");
+                toast.error("Invalid Username or Password.")
             }
 
         } catch (err) {
