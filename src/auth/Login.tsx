@@ -7,6 +7,9 @@ import { HiOutlineMail } from "react-icons/hi";
 import { IoIosLock } from "react-icons/io";
 import { FaLock } from "react-icons/fa";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+
 export default function Login() {
     const { theme } = useTheme();
     const navigate = useNavigate();
@@ -20,7 +23,7 @@ export default function Login() {
 
         try {
             // ૧. બેકએન્ડ લોગિન API કોલ
-            const response = await fetch("http://localhost:5000/users/login", {
+            const response = await fetch(`${API_URL}/users/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
