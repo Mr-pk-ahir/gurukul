@@ -34,27 +34,40 @@ export default function CreateRole() {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handlePermissionChange = (module: string, action: keyof PermissionRow) => {
-        setFormData((prev) => ({
-            ...prev,
-            permissions: {
-                ...prev.permissions,
-                [module]: {
-                    ...prev.permissions[module],
-                    [action]: !prev.permissions[module][action],
+    const handlePermissionChange = (
+        module: string,
+        action: keyof PermissionRow
+    ) => {
+        setFormData((prev) => {
+            const currentPermission: PermissionRow =
+                prev.permissions[module] ?? {
+                    create: false,
+                    edit: false,
+                    view: false,
+                    delete: false,
+                };
+
+            return {
+                ...prev,
+                permissions: {
+                    ...prev.permissions,
+                    [module]: {
+                        ...currentPermission,
+                        [action]: !currentPermission[action],
+                    },
                 },
-            },
-        }));
+            };
+        });
     };
 
     // 🚀 સબમિટ હેન્ડલર - જેમાં fetch API કનેક્ટ કર્યું છે
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
-        
+
         try {
             // 🔑 LocalStorage માંથી લોગિન વખતે સેવ કરેલો ટોકન મેળવો
-            const token = localStorage.getItem("token"); 
+            const token = localStorage.getItem("token");
 
             // ⚡ બેકએન્ડ API કોલ (જો પોર્ટ અલગ હોય તો 5000 ની જગ્યાએ તમારો પોર્ટ લખવો)
             const response = await fetch(`${API_URL}/roles/create`, {
@@ -70,7 +83,7 @@ export default function CreateRole() {
 
             if (response.ok && result.success) {
                 alert("🎉 રોલ સફળતાપૂર્વક બની ગયો છે!");
-                
+
                 setFormData({
                     roleName: "",
                     roleCode: "",
@@ -93,12 +106,10 @@ export default function CreateRole() {
     };
 
     return (
-        <div className={`max-w-4xl mx-auto p-6 rounded-2xl shadow-md mt-6 transition-all duration-200 border ${
-            theme ? "bg-gray-900 border-gray-800 text-white" : "bg-white border-neutral-200 text-neutral-900"
-        }`}>
-            <h2 className={`text-2xl font-bold mb-6 border-b pb-3 ${
-                theme ? "border-gray-800 text-blue-200" : "border-neutral-200 text-red-600"
+        <div className={`max-w-4xl mx-auto p-6 rounded-2xl shadow-md mt-6 transition-all duration-200 border ${theme ? "bg-gray-900 border-gray-800 text-white" : "bg-white border-neutral-200 text-neutral-900"
             }`}>
+            <h2 className={`text-2xl font-bold mb-6 border-b pb-3 ${theme ? "border-gray-800 text-blue-200" : "border-neutral-200 text-red-600"
+                }`}>
                 Create New Role
             </h2>
 
@@ -144,11 +155,10 @@ export default function CreateRole() {
                         rows={3}
                         placeholder="Enter role details or responsibilities..."
                         disabled={isSubmitting}
-                        className={`w-full px-4 py-2.5 text-sm rounded-xl border outline-none transition-all ${
-                            theme 
-                                ? "bg-gray-800 border-gray-700 text-white focus:border-blue-500" 
+                        className={`w-full px-4 py-2.5 text-sm rounded-xl border outline-none transition-all ${theme
+                                ? "bg-gray-800 border-gray-700 text-white focus:border-blue-500"
                                 : "bg-neutral-50 border-neutral-200 text-neutral-900 focus:border-red-500"
-                        } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                            } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                     />
                 </div>
 

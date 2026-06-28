@@ -4,8 +4,6 @@ import { AiOutlineFileProtect } from "react-icons/ai";
 import { useState, useEffect } from "react";
 // નોંધ: જો Table કમ્પોનન્ટ કસ્ટમ હોય તો તેનો સાચો પાથ આપવો, lucide-react માં Table આઇકોન છે.
 import Table from "../../../components/common/Table";
-import DataCruding from "../../../components/common/DataCruding";
-import Button from "../../../components/common/Button";
 
 interface UserData {
     suid: number;
@@ -25,8 +23,8 @@ export default function Permission() {
     const [filterType, setFilterType] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
+    const [loading] = useState<boolean>(false);
+    const [error] = useState<string | null>(null);
     const [users, setUsers] = useState<UserData[]>([]);
 
     // ડેમો ડેટા માટે (તમે આને API થી બદલી શકો છો)
@@ -37,28 +35,10 @@ export default function Permission() {
         ]);
     }, []);
 
-    // 🟢 એક્સેસ (True/False) ટોગલ કરવાનું ફંક્શન
-    const handleAccessToggle = (suid: number) => {
-        setUsers((prevUsers) =>
-            prevUsers.map((user) =>
-                user.suid === suid ? { ...user, hasAccess: !user.hasAccess } : user
-            )
-        );
-        // અહીં ભવિષ્યમાં બેકએન્ડ API કોલ મૂકી શકાશે
-    };
 
-    const handleDeleteUser = async (suid: number) => {
-        if (!window.confirm("શું તમે આ યુઝરને ખરેખર ડિલીટ કરવા માંગો છો?")) return;
-        try {
-            setUsers(users.filter(user => user.suid !== suid));
-        } catch (err) {
-            alert("યુઝર ડિલીટ કરવામાં સમસ્યા આવી.");
-        }
-    };
+    
 
-    const handleEditUser = (suid: number) => {
-        console.log("Edit કરાયેલ SUID:", suid);
-    };
+    
 
     const getPerformanceStyle = (performance: string) => {
         if (performance === "HIGH PERF.") {
@@ -72,6 +52,7 @@ export default function Permission() {
     };
 
     const getRoleStyle = (role: string) => {
+        role
         return theme ? "text-gray-300 border-gray-600" : "text-gray-700 border-gray-300";
     };
 

@@ -6,7 +6,6 @@ import {
     HiOutlineHome,
     HiOutlineLibrary,
     HiOutlineShieldCheck,
-    HiOutlineClipboardList,
     HiOutlineAcademicCap,
     HiOutlineOfficeBuilding // 👑 સેક્શન માટે આઇકોન ઇમ્પોર્ટ કર્યો
 } from "react-icons/hi";
