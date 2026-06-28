@@ -36,7 +36,7 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
     const { theme } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
-    const [departments, setDepartment] = useState<DepartmentData[]>()
+    const [departments, setDepartment] = useState<DepartmentData[]>([]);
 
     const [user, setUser] = useState<AuthUser | null>(null);
 
@@ -87,6 +87,10 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
             { name: "Student List", path: `/dashboard/departments/${deptId}/student-list`, icon: <HiOutlineAcademicCap /> }
         );
     }
+
+    const filteredDepartments = user?.roleCode === "SUPER_ADMIN"
+        ? departments
+        : departments.filter(d => d.departmentId === (user as any)?.departmentId);
 
     // ૩. યુઝર આઇટમ્સ
     const userItems = [];
@@ -197,27 +201,15 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
             </h1>
 
             {/* 🚀 દરેક ડિપાર્ટમેન્ટ માટે ડાયનેમિક ડ્રોપડાઉન */}
-            {departments?.map((dept) => (
+            {filteredDepartments.map((dept) => (
                 <SidebarDropdown
                     key={dept.departmentId}
                     title={dept.departmentName}
                     icon={<HiOutlineAcademicCap className="text-xl" />}
                     items={[
-                        {
-                            name: "Create Admission",
-                            path: `/dashboard/departments/${dept.departmentId}/create-admission`,
-                            icon: <HiOutlineAcademicCap />
-                        },
-                        {
-                            name: "Admission Requests",
-                            path: `/dashboard/departments/${dept.departmentId}/admission-requests`,
-                            icon: <HiOutlineClipboardList />
-                        },
-                        {
-                            name: "Student List",
-                            path: `/dashboard/departments/${dept.departmentId}/student-list`,
-                            icon: <HiOutlineAcademicCap />
-                        }
+                        { name: "Create Admission", path: `/dashboard/departments/${dept.departmentId}/create-admission`, icon: <IoCreateOutline /> },
+                        { name: "Admission Requests", path: `/dashboard/departments/${dept.departmentId}/admission-requests`, icon: <HiOutlineClipboardList /> },
+                        { name: "Student List", path: `/dashboard/departments/${dept.departmentId}/student-list`, icon: <HiOutlineAcademicCap /> }
                     ]}
                     setSidebarOpen={setSidebarOpen}
                     isMiniSidebar={isMiniSidebar}
