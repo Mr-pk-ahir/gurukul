@@ -17,13 +17,15 @@ import CreateDepartment from "../pages/Section/Department-Management/Create-Depa
 import DepartmentList from "../pages/Section/Department-Management/Department-List";
 
 // નવા ડાયનેમિક પેજ
-import AdmissionRequestPage from "../pages/Section/Department-Management/AdmissionRequestPage";
 import StudentListPage from "../pages/Section/Department-Management/StudentListPage";
+
+// 👑 સેક્શન મેનેજમેન્ટ ઇમ્પોર્ટ (Path tamara project mujab adjust karvi)
+import CreateSection from "../pages/Section/Section-Managemant/Section-Create";
+import SectionList from "../pages/Section/Section-Managemant/Section-list";
 
 // રોલ મેનેજમેન્ટ
 import CreateRole from "../pages/Section/Role-managemant/Create-Role";
 import RoleList from "../pages/Section/Role-managemant/RoleList";
-import CreateAdmission from "../pages/Section/Department-Management/CreateAdmission";
 
 // પ્રોફાઈલ
 import Profile from "../pages/Profile";
@@ -34,6 +36,7 @@ import type { AuthUser } from "../Types/Role-create";
 import OverviewManagement from "../pages/Section/Overview-Management/Overview-Management";
 import AdminAmrutNuAachaman from "../pages/Section/Overview-Management/Amrut-Nu-Aachaman";
 import AdminDailyDarshan from "../pages/Section/Overview-Management/Daily-Darshan";
+import Permission from "../pages/Section/Permissions-Managemant/Permission";
 
 interface ProtectedRouteProps {
     module?: string;
@@ -97,10 +100,18 @@ export default function Routers() {
                 </Route>
                 <Route element={<ProtectedRoute module="Department" action="view" />}>
                     <Route path="departments/list" element={<DepartmentList />} />
-                    <Route path="departments/:deptId/create-admission" element={<CreateAdmission />} />
-                    <Route path="departments/:deptId/admission-requests" element={<AdmissionRequestPage />} />
                     <Route path="departments/:deptId/student-list" element={<StudentListPage />} />
                 </Route>
+
+                {/* 👑 Section Management Routes (Module "Section" thi handle thase) */}
+                <Route element={<ProtectedRoute module="Section" action="create" />}>
+                    <Route path="sections/create" element={<CreateSection />} />
+                </Route>
+                <Route element={<ProtectedRoute module="Section" action="view" />}>
+                    <Route path="sections/list" element={<SectionList />} />
+                </Route>
+
+                <Route path="permissions/messages" element={<Permission />} />
 
                 <Route element={<ProtectedRoute module="Roles & Permissions" action="create" />}>
                     <Route path="permissions/role" element={<CreateRole />} />

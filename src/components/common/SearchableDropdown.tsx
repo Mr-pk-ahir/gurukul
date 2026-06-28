@@ -3,7 +3,7 @@ import { useTheme } from "../theme/ThemeContext";
 import Input from "./Input";
 
 export interface DropdownOption {
-    value: string | number; 
+    value: string | number;
     label: string;
 }
 
@@ -37,8 +37,9 @@ export default function SearchableDropdown({
     const dropdownRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
 
-    // 🎯 કઈ વસ્તુ સિલેક્ટ થઈ છે તે શોધવા
-    const selectedOption = options.find((opt) => String(opt.value) === String(selectedValue));
+    const selectedOption = options.find(
+    (opt) => opt && String(opt.value).trim() === String(selectedValue).trim()
+);
 
     // 🎯 સર્ચ માટેનું લોજીક (હવે label નો ઉપયોગ કરશે)
     const filteredOptions = options.filter((option) => {
@@ -149,11 +150,17 @@ export default function SearchableDropdown({
                                 const isSelected = String(selectedValue) === String(option.value);
                                 const isHighlighted = highlightedIndex === index;
 
+                                // 👑 જો value ન હોય અથવા ક્યાંક ડુપ્લિકેટ થતી હોય તો પણ index ના લીધે key હંમેશા ૧૦૦% યુનિક રહેશે
+                                const uniqueKey = option.value !== undefined && option.value !== null
+                                    ? `${option.value}-${index}`
+                                    : `opt-${index}`;
+
                                 return (
                                     <div
-                                        key={String(option.value)}
+                                        key={uniqueKey} // સાચી અને સેફ કી
                                         onMouseEnter={() => setHighlightedIndex(index)}
                                         onClick={(e) => {
+                                            e.preventDefault();
                                             e.stopPropagation();
                                             handleSelect(option.value);
                                         }}

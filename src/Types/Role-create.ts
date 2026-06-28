@@ -6,7 +6,12 @@ export interface PermissionRow {
 }
 
 export interface ModulePermissions {
-    [moduleName: string]: PermissionRow;
+    "Department"?: PermissionRow;
+    "Users"?: PermissionRow;
+    "Section"?: PermissionRow; // 👑 નવું સેક્શન મોડ્યુલ અહી એડ કર્યું
+    "Roles & Permissions"?: PermissionRow;
+    "overview-management"?: PermissionRow;
+    [moduleName: string]: PermissionRow | undefined; // આ ડાયનેમિક કી રાખવાથી બીજા મોડ્યુલ્સ પણ સપોર્ટ કરશે
 }
 
 export interface RoleCreate {
@@ -23,4 +28,6 @@ export interface AuthUser {
     roleName: string;
     roleCode: string;
     permissions: ModulePermissions;
+    departmentId?: number | null; // તમારી જરૂરિયાત મુજબ
+    sectionId?: number | null;    // તમારી જરૂરિયાત મુજબ
 }

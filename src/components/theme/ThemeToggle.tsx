@@ -13,11 +13,10 @@ export default function ThemeToggle() {
         className={`relative w-14 h-7 rounded-full flex items-center justify-between px-1 cursor-pointer transition-all duration-500 ease-in-out border outline-none select-none active:scale-95
           ${theme
             ? "bg-linear-to-b from-slate-900 to-slate-800 border-slate-700 shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]"
-            : "bg-linear-to-b from-sky-400 to-blue-200 border-sky-300 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]"
+            : "bg-linear-to-b from-red-400 to-red-200 border-red-300 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]"
           }
         `}
       >
-        {/* --- બેકગ્રાઉન્ડ આઈકોન્સ (નાના કર્યા - text-[10px]) --- */}
         <HiOutlineMoon
           className={`text-slate-100 text-[10px] transition-all duration-500 z-0 ${theme ? "opacity-40 translate-x-0.5" : "opacity-0 -translate-x-2"
             }`}

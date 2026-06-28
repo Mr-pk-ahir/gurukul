@@ -7,7 +7,8 @@ import {
     HiOutlineLibrary,
     HiOutlineShieldCheck,
     HiOutlineClipboardList,
-    HiOutlineAcademicCap
+    HiOutlineAcademicCap,
+    HiOutlineOfficeBuilding // 👑 સેક્શન માટે આઇકોન ઇમ્પોર્ટ કર્યો
 } from "react-icons/hi";
 import { FiUsers } from "react-icons/fi";
 import { CiCircleList } from "react-icons/ci";
@@ -15,9 +16,10 @@ import { IoCreateOutline } from "react-icons/io5";
 import { SiGoogledataproc, SiGoogleearth, SiNginxproxymanager } from "react-icons/si";
 import { RiEditBoxLine } from "react-icons/ri";
 import type { AuthUser } from "../../Types/Role-create";
+import { AiOutlineFileProtect } from "react-icons/ai";
+import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
 
 interface NavbarProps {
     setSidebarOpen: (isOpen: boolean) => void;
@@ -51,6 +53,7 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
             }
         }
     }, []);
+
     useEffect(() => {
         const fetchDepartments = async () => {
             try {
@@ -59,12 +62,13 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 if (result.success) {
                     setDepartment(result.data);
                 }
-            } catch (error) {
-                console.error("Error fetching departments:", error);
+            } catch {
+                toast.error("Error fetching departments:");
             }
         };
         fetchDepartments();
     }, []);
+
     // ૧. ડિપાર્ટમેન્ટ આઇટમ્સ
     const departmentItems = [];
     if (user?.permissions?.["Department"]?.create) {
@@ -74,23 +78,21 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
         departmentItems.push({ name: "Departments List", path: "/dashboard/departments/list", icon: <CiCircleList /> });
     }
 
+    const isPermActive = location.pathname === "/dashboard/permissions/messages";
+    
     // ૨. પાઇપલાઇન આઇટમ્સ
     const pipelineItems = [];
     const deptId = user && ('departmentId' in user ? (user as any).departmentId : null);
 
     if (deptId && user?.permissions?.["Department"]?.view) {
-        if (user?.permissions?.["Department"]?.create) {
-            pipelineItems.push({ name: "Create Admission", path: `/dashboard/departments/${deptId}/create-admission`, icon: <IoCreateOutline /> });
-        }
         pipelineItems.push(
-            { name: "Admission Requests", path: `/dashboard/departments/${deptId}/admission-requests`, icon: <HiOutlineClipboardList /> },
             { name: "Student List", path: `/dashboard/departments/${deptId}/student-list`, icon: <HiOutlineAcademicCap /> }
         );
     }
 
-    const filteredDepartments = user?.roleCode === "SUPER_ADMIN"
+    const filteredDepartments = (user?.roleCode === "SUPER_ADMIN"
         ? departments
-        : departments.filter(d => d.departmentId === (user as any)?.departmentId);
+        : (departments || []).filter(d => d.departmentId === (user as any)?.departmentId)) || [];
 
     // ૩. યુઝર આઇટમ્સ
     const userItems = [];
@@ -101,7 +103,7 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
         userItems.push({ name: "User List", path: "/dashboard/users/list", icon: <CiCircleList /> });
     }
 
-    // ૪. વેબસાઇટ / ઓવરવ્યૂ મેનેજમેન્ટ આઇટમ્સ (Fixed Syntax & Permissions)
+    // ૪. વેબસાઇટ / ઓવરવ્યૂ મેનેજમેન્ટ આઇટમ્સ
     const websiteItems = [];
     if (user?.permissions?.["overview-management"]?.view) {
         websiteItems.push({ name: "Overview", path: "/dashboard/overview-management", icon: <RiEditBoxLine /> });
@@ -113,7 +115,15 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
         );
     }
 
-    // ૫. રોલ આઇટમ્સ
+    const sectionItems = [];
+    if (user?.permissions?.["Section"]?.create) {
+        sectionItems.push({ name: "Create Section", path: "/dashboard/sections/create", icon: <IoCreateOutline /> });
+    }
+    if (user?.permissions?.["Section"]?.view) {
+        sectionItems.push({ name: "Section List", path: "/dashboard/sections/list", icon: <CiCircleList /> });
+    }
+
+    // ૬. રોલ આઇટમ્સ
     const roleItems = [];
     if (user?.permissions?.["Roles & Permissions"]?.create) {
         roleItems.push({ name: "Create Role", path: "/dashboard/permissions/role", icon: <IoCreateOutline /> });
@@ -145,12 +155,34 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 <span className={`transition-colors ${isActive
                     ? theme ? "text-blue-200" : "text-red-600"
                     : theme ? "text-gray-300 group-hover:text-blue-200" : "text-gray-400 group-hover:text-red-600"
-                    }`}>
+                }`}>
                     <HiOutlineHome className="text-xl" />
                 </span>
                 {!isMiniSidebar && "Dashboard"}
             </button>
 
+            <button
+                onClick={() => {
+                    navigate("/dashboard/permissions/messages");
+                    setSidebarOpen(false);
+                }}
+                title={isMiniSidebar ? "Permissions" : ""}
+                className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-[15px] transition-all duration-200 group cursor-pointer 
+        ${isMiniSidebar ? "justify-center px-2" : ""}
+        ${isPermActive 
+            ? theme ? "text-blue-200 bg-gray-800" : "text-red-600 bg-red-50"
+            : theme ? "text-white hover:bg-gray-800" : "text-gray-500 hover:bg-red-50"
+        }
+    `}
+            >
+                <span className={`transition-colors ${isActive
+                    ? theme ? "text-blue-200" : "text-red-600"
+                    : theme ? "text-gray-300 group-hover:text-blue-200" : "text-gray-400 group-hover:text-red-600"
+                }`}>
+                    <AiOutlineFileProtect className="text-xl" />
+                </span>
+                {!isMiniSidebar && "Permissions"}
+            </button>
 
             {/* Department Dropdown */}
             {departmentItems.length > 0 && (
@@ -174,12 +206,22 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 />
             )}
 
-            {/* Overview Management Dropdown (Fixed Reference Error) */}
+            {/* Overview Management Dropdown */}
             {websiteItems.length > 0 && (
                 <SidebarDropdown
                     title="Overview Manage"
                     icon={<SiNginxproxymanager className="text-xl" />}
                     items={websiteItems}
+                    setSidebarOpen={setSidebarOpen}
+                    isMiniSidebar={isMiniSidebar}
+                />
+            )}
+
+            {sectionItems.length > 0 && (
+                <SidebarDropdown
+                    title="Section Management"
+                    icon={<HiOutlineOfficeBuilding className="text-xl" />}
+                    items={sectionItems}
                     setSidebarOpen={setSidebarOpen}
                     isMiniSidebar={isMiniSidebar}
                 />
@@ -200,15 +242,12 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 Departments Pipeline
             </h1>
 
-            {/* 🚀 દરેક ડિપાર્ટમેન્ટ માટે ડાયનેમિક ડ્રોપડાઉન */}
             {filteredDepartments.map((dept) => (
                 <SidebarDropdown
                     key={dept.departmentId}
                     title={dept.departmentName}
                     icon={<HiOutlineAcademicCap className="text-xl" />}
                     items={[
-                        { name: "Create Admission", path: `/dashboard/departments/${dept.departmentId}/create-admission`, icon: <IoCreateOutline /> },
-                        { name: "Admission Requests", path: `/dashboard/departments/${dept.departmentId}/admission-requests`, icon: <HiOutlineClipboardList /> },
                         { name: "Student List", path: `/dashboard/departments/${dept.departmentId}/student-list`, icon: <HiOutlineAcademicCap /> }
                     ]}
                     setSidebarOpen={setSidebarOpen}

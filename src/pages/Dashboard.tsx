@@ -242,7 +242,7 @@ export default function Dashboard() {
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b pb-4 dark:border-gray-800 border-neutral-200">
                 <div>
                     <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-                        Welcome back, <span className={theme ? "text-blue-400" : "text-red-600"}>{username}</span> 👋
+                        Welcome back, <span className={theme ? "text-blue-400" : "text-red-600"}>{username}</span>
                     </h1>
                     <p className={`text-xs mt-1 ${theme ? "text-gray-400" : "text-neutral-500"}`}>
                         Here is what's happening with your Gurukul management today.
