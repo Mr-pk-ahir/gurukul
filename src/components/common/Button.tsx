@@ -1,13 +1,12 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { useTheme } from "../theme/ThemeContext";
 
-// HTML Button na badha j default attributes support thase
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
-  isLoading?: boolean; // Loading state mate
-  loadingText?: string; // Loading vakhate batavavu text (default: "Loading...")
-  leftIcon?: ReactNode; // Text ni dabi baju icon mate
-  rightIcon?: ReactNode; // Text ni jamni baju icon mate
+  isLoading?: boolean; 
+  loadingText?: string; 
+  leftIcon?: ReactNode; 
+  rightIcon?: ReactNode; 
 }
 
 export default function Button({
@@ -47,7 +46,7 @@ export default function Button({
       `}
       {...props}
     >
-      {/* Loading Spinner */}
+      {/* Loading Spinner - Left Side */}
       {isLoading && (
         <svg
           className="h-4 w-4 shrink-0 animate-spin text-white"

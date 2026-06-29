@@ -78,7 +78,7 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
     }
 
     const isPermActive = location.pathname === "/dashboard/permissions/messages";
-    
+
     // ૨. પાઇપલાઇન આઇટમ્સ
     const pipelineItems = [];
     const deptId = user && ('departmentId' in user ? (user as any).departmentId : null);
@@ -154,7 +154,7 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 <span className={`transition-colors ${isActive
                     ? theme ? "text-blue-200" : "text-red-600"
                     : theme ? "text-gray-300 group-hover:text-blue-200" : "text-gray-400 group-hover:text-red-600"
-                }`}>
+                    }`}>
                     <HiOutlineHome className="text-xl" />
                 </span>
                 {!isMiniSidebar && "Dashboard"}
@@ -168,16 +168,16 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 title={isMiniSidebar ? "Permissions" : ""}
                 className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-[15px] transition-all duration-200 group cursor-pointer 
         ${isMiniSidebar ? "justify-center px-2" : ""}
-        ${isPermActive 
-            ? theme ? "text-blue-200 bg-gray-800" : "text-red-600 bg-red-50"
-            : theme ? "text-white hover:bg-gray-800" : "text-gray-500 hover:bg-red-50"
-        }
+        ${isPermActive
+                        ? theme ? "text-blue-200 bg-gray-800" : "text-red-600 bg-red-50"
+                        : theme ? "text-white hover:bg-gray-800" : "text-gray-500 hover:bg-red-50"
+                    }
     `}
             >
                 <span className={`transition-colors ${isActive
                     ? theme ? "text-blue-200" : "text-red-600"
                     : theme ? "text-gray-300 group-hover:text-blue-200" : "text-gray-400 group-hover:text-red-600"
-                }`}>
+                    }`}>
                     <AiOutlineFileProtect className="text-xl" />
                 </span>
                 {!isMiniSidebar && "Permissions"}
@@ -247,7 +247,16 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                     title={dept.departmentName}
                     icon={<HiOutlineAcademicCap className="text-xl" />}
                     items={[
-                        { name: "Student List", path: `/dashboard/departments/${dept.departmentId}/student-list`, icon: <HiOutlineAcademicCap /> }
+                        {
+                            name: "Create Student",
+                            path: `/dashboard/departments/${dept.departmentId}/create-student`,
+                            icon: <IoCreateOutline />
+                        },
+                        {
+                            name: "Student List",
+                            path: `/dashboard/departments/${dept.departmentId}/student-list`,
+                            icon: <CiCircleList />
+                        }
                     ]}
                     setSidebarOpen={setSidebarOpen}
                     isMiniSidebar={isMiniSidebar}

@@ -99,18 +99,18 @@ export default function StudentListPage() {
   // 📋 ટેબલ કોલમ કન્ફિગ્યુરેશન
   const columns = [
     {
-      header: "SUID (PK)",
-      className: `w-32 text-center font-mono font-bold ${theme ? "text-blue-400" : "text-blue-600"}`,
+      header: "SUID",
+      className: `w-32 text-center font-mono font-bold ${theme ? "text-white" : "text-white"}`,
       accessor: (student: UserCreate) => student.suid,
     },
     {
       header: "Full Name",
-      className: `text-left font-semibold ${theme ? "text-neutral-200" : "text-gray-800"}`,
+      className: `text-left font-semibold ${theme ? "text-white" : "text-white"}`,
       accessor: (student: UserCreate) => student.name,
     },
     {
       header: "Username",
-      className: "text-left font-mono text-xs text-gray-500",
+      className: "text-left font-mono text-xs text-white",
       accessor: (student: UserCreate) => `@${student.username}`,
     },
     {
@@ -166,7 +166,7 @@ export default function StudentListPage() {
             <HiOutlineUserGroup size={20} />
           </span>
           <div>
-            <h2 className={`text-xl font-bold leading-tight ${theme ? "text-blue-200" : "text-[#9b001c]"}`}>
+            <h2 className={`text-xl font-bold leading-tight ${theme ? "text-blue-100" : "text-[#9b001c]"}`}>
               Official Student Roster
             </h2>
             <p className={`text-xs mt-0.5 ${theme ? "text-gray-500" : "text-neutral-400"}`}>

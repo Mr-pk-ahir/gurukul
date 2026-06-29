@@ -15,11 +15,10 @@ import UserList from "../pages/Section/Users-Managemant/User-list";
 // ડિપાર્ટમેન્ટ મેનેજમેન્ટ
 import CreateDepartment from "../pages/Section/Department-Management/Create-Department";
 import DepartmentList from "../pages/Section/Department-Management/Department-List";
-
-// નવા ડાયનેમિક પેજ
+import CreateStudent from "../pages/Section/Department-Management/Create-Student";
 import StudentListPage from "../pages/Section/Department-Management/StudentListPage";
 
-// 👑 સેક્શન મેનેજમેન્ટ ઇમ્પોર્ટ (Path tamara project mujab adjust karvi)
+// 👑 સેક્શન મેનેજમેન્ટ ઇમ્પોર્ટ
 import CreateSection from "../pages/Section/Section-Managemant/Section-Create";
 import SectionList from "../pages/Section/Section-Managemant/Section-list";
 
@@ -37,6 +36,9 @@ import OverviewManagement from "../pages/Section/Overview-Management/Overview-Ma
 import AdminAmrutNuAachaman from "../pages/Section/Overview-Management/Amrut-Nu-Aachaman";
 import AdminDailyDarshan from "../pages/Section/Overview-Management/Daily-Darshan";
 import Permission from "../pages/Section/Permissions-Managemant/Permission";
+
+// Event Calendar Page (If you create a full page to manage events later)
+// import EventCalendarPage from "../pages/Section/Event-Calendar/EventCalendarPage"; 
 
 interface ProtectedRouteProps {
     module?: string;
@@ -100,10 +102,10 @@ export default function Routers() {
                 </Route>
                 <Route element={<ProtectedRoute module="Department" action="view" />}>
                     <Route path="departments/list" element={<DepartmentList />} />
+                    <Route path="departments/:deptId/create-student" element={<CreateStudent />} />
                     <Route path="departments/:deptId/student-list" element={<StudentListPage />} />
                 </Route>
 
-                {/* 👑 Section Management Routes (Module "Section" thi handle thase) */}
                 <Route element={<ProtectedRoute module="Section" action="create" />}>
                     <Route path="sections/create" element={<CreateSection />} />
                 </Route>
@@ -123,6 +125,9 @@ export default function Routers() {
                 <Route element={<ProtectedRoute requireLoginOnly />}>
                     <Route path="profile" element={<Profile />} />
                     <Route path="settings/profile" element={<ProfileSetting />} />
+
+                    {/* Event Calendar Route (Full Page) */}
+                    {/* <Route path="event-calendar" element={<EventCalendarPage />} /> */}
                 </Route>
 
                 <Route element={<ProtectedRoute module="overview-management" action="view" />}>

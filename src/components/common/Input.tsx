@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useTheme } from "../theme/ThemeContext";
 
-// React.InputHTMLAttributes વાપરવાથી HTML input ના બધા જ એટ્રીબ્યુટ્સ ઓટોમેટિક સપોર્ટ થઈ જશે
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     type: string;
     value: string | number;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     icon?: React.ReactNode;
-    label?: string; // 👑 લેબલ માટે ઓપ્શનલ પ્રોપર્ટી ઉમેરી દીધી
+    label?: string;
 }
 
 export default function Input({
@@ -15,19 +14,47 @@ export default function Input({
     value,
     onChange,
     icon,
-    label, // 👑 લેબલ અહીં ડિસ્ટ્રક્ચર કરી લીધું
+    label,
     className = "",
     ...props
 }: InputProps) {
-    const { theme } = useTheme(); // ડાર્ક/લાઇટ થીમ લેવા માટે
+    const { theme } = useTheme();
     const [showPassword, setShowPassword] = useState(false);
 
     const isPasswordField = type === "password";
     const inputType = isPasswordField && showPassword ? "text" : type;
 
+    // 1. Wrapper Classes
+    const inputWrapperClasses = "relative group transition-all duration-300 w-full";
+
+    // 2. Input Classes (Padding dynamic made for icon and password field)
+    const inputClasses = `w-full border rounded-xl py-3 ${
+        icon ? "pl-11" : "pl-4"
+    } ${
+        isPasswordField ? "pr-11" : "pr-4"
+    } focus:outline-none transition-all duration-500 ease-out transform group-hover:-translate-y-1 focus-within:-translate-y-1 ${
+        theme 
+            ? "bg-[#1f2937]/80 border-gray-700/60 text-white placeholder-gray-500 group-hover:border-blue-500/50 group-hover:bg-[#1f2937] group-hover:shadow-[0_8px_20px_-5px_rgba(59,130,246,0.15)] focus:border-blue-500 focus:bg-[#1f2937] focus:shadow-[0_8px_25px_-5px_rgba(59,130,246,0.2)] focus:ring-2 focus:ring-blue-500/20"
+            : "bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 group-hover:border-red-400/60 group-hover:bg-white group-hover:shadow-[0_8px_20px_-5px_rgba(239,68,68,0.1)] focus:border-red-500 focus:bg-white focus:shadow-[0_8px_25px_-5px_rgba(239,68,68,0.15)] focus:ring-2 focus:ring-red-500/10" 
+    } ${className}`;
+    
+    // 3. Left Icon Classes
+    const iconClasses = `absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors duration-500 z-10 ${
+        theme 
+            ? "text-gray-500 group-focus-within:text-blue-400 group-hover:text-blue-400" 
+            : "text-slate-400 group-focus-within:text-red-500 group-hover:text-red-500"
+    }`;
+
+    // 4. Right Password Toggle Icon Classes
+    const rightIconClasses = `absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors duration-500 z-10 focus:outline-none cursor-pointer ${
+        theme 
+            ? "text-gray-500 hover:text-blue-400 group-focus-within:text-blue-400 group-hover:text-blue-400" 
+            : "text-slate-400 hover:text-red-500 group-focus-within:text-red-500 group-hover:text-red-500"
+    }`;
+
     return (
         <div className="w-full">
-            {/* 👑 જો બહારથી label મોકલવામાં આવે, તો જ આ સેક્શન રેન્ડર થશે */}
+            {/* લેબલ */}
             {label && (
                 <label className={`block text-sm font-medium mb-1.5 ${
                     theme ? "text-gray-300" : "text-neutral-700"
@@ -36,27 +63,22 @@ export default function Input({
                 </label>
             )}
 
-            {/* તમારું ઓરિજિનલ ઇનપુટ બોક્સ */}
-            <div className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition border outline-none ${
-                theme 
-                    ? "bg-gray-800 border-gray-700 text-white focus-within:border-blue-200 focus-within:ring-2 focus-within:ring-blue-200/20 focus-within:bg-gray-900" 
-                    : "bg-neutral-50 border-neutral-200 text-neutral-900 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-100 focus-within:bg-white"
-            } ${className}`}>
-
+            {/* નવું ઇનપુટ રેપર */}
+            <div className={inputWrapperClasses}>
+                
                 {/* Left Side Icon */}
                 {icon && (
-                    <span className={`flex items-center shrink-0 ${theme ? "text-gray-400" : "text-neutral-400"}`}>
+                    <span className={iconClasses}>
                         {icon}
                     </span>
                 )}
 
+                {/* Main Input */}
                 <input
                     type={inputType}
                     value={value}
                     onChange={onChange}
-                    className={`w-full bg-transparent outline-none ${
-                        theme ? "placeholder:text-gray-500 text-white" : "placeholder:text-neutral-400 text-neutral-900"
-                    }`}
+                    className={inputClasses}
                     {...props}
                 />
 
@@ -65,11 +87,7 @@ export default function Input({
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className={`flex items-center transition shrink-0 focus:outline-none cursor-pointer ${
-                            theme 
-                                ? "text-gray-400 hover:text-gray-200" 
-                                : "text-neutral-400 hover:text-neutral-600"
-                        }`}
+                        className={rightIconClasses}
                         aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                         {showPassword ? (

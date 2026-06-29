@@ -25,7 +25,6 @@ interface RoleOption {
     role_code: string;
 }
 
-// 🎯 ડિપાર્ટમેન્ટ માટેનું નવું ઇન્ટરફેસ
 interface DepartmentOption {
     departmentId: number;
     departmentName: string;
@@ -72,7 +71,6 @@ export default function CreateUserForm() {
     const [errorMessage, setErrorMessage] = useState<string>("");
 
     const [roles, setRoles] = useState<RoleOption[]>([]);
-    // 🌐 ડેટાબેઝમાંથી આવતા ડિપાર્ટમેન્ટ્સ સ્ટોર કરવા માટેનું નવું સ્ટેટ
     const [departments, setDepartments] = useState<DepartmentOption[]>([]);
 
     const incomingData = location.state as { id: number; applicantName: string; requestedRole: string; departmentId: number } | null;
@@ -88,17 +86,15 @@ export default function CreateUserForm() {
         roleId: 0,
         bod: new Date().toISOString().split("T")[0],
         roleCode: "",
-        departmentId: incomingData?.departmentId || 0,
+        // 🎯 અહિયાં 0 ની જગ્યાએ default null રાખ્યું છે
+        departmentId: incomingData?.departmentId || (null as any), 
         sectionId: 0,
         standardId: 0,
         joiningDate: new Date().toISOString().split("T")[0],
-
-        // USER => PENDING
-        // HEAD100 & SUPER_ADMIN => APPROVED
         status: isUserRole ? "PENDING" : "APPROVED",
     });
 
-    const isHeadRole = formData.roleCode === "HEAD100"; // 🎯 HOD રોલ કોડ
+    const isHeadRole = formData.roleCode === "HEAD100"; 
     const isFromPipeline = !!incomingData;
 
     useEffect(() => {
@@ -126,7 +122,6 @@ export default function CreateUserForm() {
                 const rolesResult = await rolesRes.json();
                 const deptsResult = await deptsRes.json();
 
-                // 👥 રોલ્સ સેટ કરો
                 if (rolesRes.ok && rolesResult.success) {
                     setRoles(rolesResult.data);
 
@@ -185,12 +180,18 @@ export default function CreateUserForm() {
                 ? "http://localhost:5000"
                 : "https://તમારા-બેકએન્ડની-vercel-લિંક.vercel.app";
 
+            // 🎯 રોલ HEAD100 હોય તો જ ડિપાર્ટમેન્ટ આઈડી જશે, નહિતર null જશે
+            const finalPayload = {
+                ...formData,
+                departmentId: formData.roleCode === "HEAD100" ? formData.departmentId : null
+            };
+
             const response = await fetch(`${backendBaseUrl}/users/register`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(finalPayload), // અહિયાં નવો પેલોડ મોકલ્યો
             });
 
             const result = await response.json();
@@ -343,7 +344,7 @@ export default function CreateUserForm() {
                     <SectionHeading icon={<HiOutlineShieldCheck className="text-sm" />} title="Role & Department" theme={theme} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         
-                        {/* 🌟 1. Role Dropdown (Updated with value and label) */}
+                        {/* 🌟 1. Role Dropdown */}
                         <SearchableDropdown
                             label="Select Role *"
                             placeholder={roles.length === 0 ? "Loading roles..." : "Choose Role"}
@@ -356,11 +357,10 @@ export default function CreateUserForm() {
                                     ...prev,
                                     roleId: selectedRole?.role_id ?? 0,
                                     roleCode: selectedRole?.role_code ?? "",
-
                                     status: selectedRole?.role_code === "USER" ? "PENDING" : "APPROVED",
-
+                                    // 🎯 જો HEAD100 ના હોય તો અહિયાં પણ 0 ની જગ્યાએ null સેટ કર્યું
                                     ...(selectedRole?.role_code !== "HEAD100" && {
-                                        departmentId: 0,
+                                        departmentId: null as any,
                                     }),
                                 }));
                             }}
@@ -368,7 +368,7 @@ export default function CreateUserForm() {
                             disabled={isFromPipeline || roles.length === 0}
                         />
 
-                        {/* 🌟 2. Department Dropdown (Updated with value and label) */}
+                        {/* 🌟 2. Department Dropdown */}
                         {(isHeadRole || isFromPipeline) ? (
                             <SearchableDropdown
                                 label="Assign Department *"
