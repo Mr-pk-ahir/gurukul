@@ -7,10 +7,10 @@ import EventCalendarPopup, { eventsData } from "../../components/Event-Calendar/
 
 const STATIC_DATA = {
     section1: {
-        images: [],
         menuOptions: [
-            { id: 1, label: "Amrut Nu Aachaman" },
-            { id: 2, label: "Daily Darshan" },
+            // 🚀 અહી બંને ઓપ્શન માટે path ઉમેરેલ છે
+            { id: 1, label: "Amrut Nu Aachaman", path: "/amrut-nu-aachaman" },
+            { id: 2, label: "Daily Darshan", path: "/daily-darshan" },
         ],
     },
     section2: {
@@ -67,26 +67,27 @@ function Reveal({
 }
 
 export default function Overview() {
-    const { theme } = useTheme(); // theme = true (Dark), theme = false (Light)
+    const { theme } = useTheme();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
-    // કેલેન્ડર પોપઅપ માટે state
-    const [isEventCalendarOpen, setIsEventCalendarOpen] = useState(false);
+    // 🚀 બેકએન્ડ/લોકલસ્ટોરેજમાંથી આવતા ડેટા માટેનું સ્ટેટ
+    const [overviewImages, setOverviewImages] = useState({
+        heroSlider: [] as string[],
+        featureImage: [] as string[],
+        smartInfrastructure: [] as string[]
+    });
 
-    // નવી સિલેક્ટ કરેલી તારીખ સાચવવા માટે state (Default આજની તારીખ)
+    const [isEventCalendarOpen, setIsEventCalendarOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-    // ફોર્મ માટેના States
     const [formData, setFormData] = useState({ suid: "", fullName: "", std: "", grNo: "" });
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
     const { section1, section2, section3, footer } = STATIC_DATA;
 
-    // સિલેક્ટ કરેલા દિવસ અને મહિનાની માહિતી
     const dayNumber = selectedDate.getDate().toString().padStart(2, '0');
     const monthShort = selectedDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-
     const yearStr = selectedDate.getFullYear();
     const monthStr = String(selectedDate.getMonth() + 1).padStart(2, '0');
     const dateStr = String(selectedDate.getDate()).padStart(2, '0');
@@ -94,14 +95,42 @@ export default function Overview() {
 
     const todayEvent = eventsData ? eventsData[todayStr] : null;
 
+    // 🚀 નવો અપડેટ કરેલો useEffect: LocalStorage અને વિન્ડો ફોકસ ઇવેન્ટ હેન્ડલિંગ સાથે
     useEffect(() => {
+        const fetchOverviewData = () => {
+            try {
+                // LocalStorage માંથી ડેટા ચેક કરો
+                const savedData = localStorage.getItem("overview_data");
+                if (savedData) {
+                    const result = JSON.parse(savedData);
+                    setOverviewImages({
+                        heroSlider: result.heroSlider || [],
+                        featureImage: result.featureImage || [],
+                        smartInfrastructure: result.smartInfrastructure || []
+                    });
+                }
+            } catch (error) {
+                console.error("Error loading localStorage data:", error);
+            }
+        };
+
+        fetchOverviewData();
+
+        // જો ડેટા લાઈવ ચેન્જ જોવો હોય તો બ્રાઉઝર વિન્ડો ફોકસ થાય ત્યારે પણ અપડેટ થશે
+        window.addEventListener("focus", fetchOverviewData);
+        return () => window.removeEventListener("focus", fetchOverviewData);
+    }, []);
+
+    // 🚀 ડાયનેમિક હીરો સ્લાઈડર માટે ઈમેજ ચેન્જ કરવાનું લોજીક
+    useEffect(() => {
+        if (overviewImages.heroSlider.length === 0) return;
+
         const timer = setInterval(() => {
-            setCurrentImgIndex((prevIndex) => (prevIndex + 1) % (section1.images.length || 1));
+            setCurrentImgIndex((prevIndex) => (prevIndex + 1) % overviewImages.heroSlider.length);
         }, 3000);
         return () => clearInterval(timer);
-    }, [section1.images.length]);
+    }, [overviewImages.heroSlider.length]);
 
-    // ફોટો અપલોડ હેન્ડલર
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
@@ -116,11 +145,11 @@ export default function Overview() {
         setPhotoPreview(null);
     };
 
-    // Ultra Premium Luxury Inputs Styling 
-    const inputClasses = `w-full px-5 py-3.5 rounded-2xl text-sm font-medium transition-all duration-500 outline-none border backdrop-blur-md shadow-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield] ${theme
+    const inputClasses = `w-full px-5 py-3.5 rounded-2xl text-sm font-medium transition-all duration-500 outline-none border backdrop-blur-md shadow-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield] ${
+        theme
             ? "bg-slate-900/40 border-slate-800 text-slate-100 placeholder-slate-500 hover:border-blue-900/60 focus:border-blue-500 focus:bg-slate-900/80 focus:shadow-[0_0_20px_rgba(37,99,235,0.07)]"
             : "bg-white/70 border-slate-200/60 text-slate-800 placeholder-slate-400 hover:border-red-300/60 focus:border-red-600 focus:bg-white focus:shadow-[0_0_20px_rgba(239,68,68,0.06)]"
-        }`;
+    }`;
 
     return (
         <div className={`h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth [&::-webkit-scrollbar]:none [-ms-overflow-style:none] scrollbar-none relative transition-colors duration-500 ${theme ? "bg-slate-950" : "bg-slate-50/50"}`}>
@@ -128,13 +157,19 @@ export default function Overview() {
             {/* ---------------- SECTION 1: HERO / IMAGES ---------------- */}
             <section className={`h-screen w-full snap-start relative flex flex-col justify-between p-6 overflow-hidden transition-colors duration-500 ${theme ? "bg-slate-950" : "bg-white"}`}>
                 <div className="absolute inset-0 z-0" style={maskFade(40)}>
-                    {section1.images.map((img, index) => (
-                        <div
-                            key={index}
-                            className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === currentImgIndex ? "opacity-100" : "opacity-0"}`}
-                            style={{ backgroundImage: `url(${img})` }}
-                        />
-                    ))}
+                    {/* 🚀 API માંથી આવેલા હીરો સ્લાઈડર ઈમેજીસ */}
+                    {overviewImages.heroSlider.length > 0 ? (
+                        overviewImages.heroSlider.map((img, index) => (
+                            <div
+                                key={index}
+                                className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === currentImgIndex ? "opacity-100" : "opacity-0"}`}
+                                style={{ backgroundImage: `url(${img})` }}
+                            />
+                        ))
+                    ) : (
+                        // ડિફોલ્ટ પ્લેસહોલ્ડર (જ્યાં સુધી ડેટા લોડ ના થાય)
+                        <div className="absolute inset-0 bg-slate-800 transition-opacity duration-1000 ease-in-out opacity-100"></div>
+                    )}
                 </div>
 
                 <motion.div
@@ -160,10 +195,14 @@ export default function Overview() {
                                 <div className="flex flex-col p-2 gap-1">
                                     {section1.menuOptions.map((option, idx) => (
                                         <div key={option.id}>
-                                            <button className={`w-full flex items-center gap-3 cursor-pointer p-3 rounded-xl transition-colors hover:bg-gray-50 font-bold text-sm ${theme ? "text-blue-600" : "text-red-600"}`}>
+                                            <Link
+                                                to={option.path}
+                                                onClick={() => setIsMenuOpen(false)}
+                                                className={`w-full flex items-center gap-3 cursor-pointer p-3 rounded-xl transition-colors hover:bg-gray-50 font-bold text-sm ${theme ? "text-blue-600" : "text-red-600"}`}
+                                            >
                                                 <span className={`w-2 h-2 rounded-full ${theme ? "bg-blue-600" : "bg-red-600"}`} />
                                                 {option.label}
-                                            </button>
+                                            </Link>
                                             {idx !== section1.menuOptions.length - 1 && (
                                                 <div className={`h-px w-full opacity-10 ${theme ? "bg-blue-600" : "bg-red-600"}`} />
                                             )}
@@ -174,7 +213,10 @@ export default function Overview() {
                         </div>
                     </div>
 
-                    <Link to={"/login"} className={`flex items-center justify-center px-4 py-2 bg-white rounded-xl shadow-md border font-bold text-sm transition-all active:scale-90 ${theme ? "border-blue-200 text-blue-600 hover:bg-blue-50/30" : "border-red-200 text-red-600 hover:bg-red-50/30"}`}>
+                    <Link 
+                        to="/login" 
+                        className={`flex items-center justify-center px-4 py-2 rounded-xl shadow-md text-sm font-bold transition-all active:scale-90 bg-white border ${theme ? "border-blue-200 text-blue-600 hover:bg-blue-50/30" : "border-red-200 text-red-600 hover:bg-red-50/30"}`}
+                    >
                         Login
                     </Link>
                 </motion.div>
@@ -186,7 +228,8 @@ export default function Overview() {
                     className="relative z-10 flex flex-col items-center gap-3 mt-auto mb-2"
                 >
                     <div className="flex justify-center gap-2">
-                        {(section1.images.length > 0 ? section1.images : [1, 2, 3]).map((_, idx) => (
+                        {/* 🚀 ડાયનેમિક સ્લાઈડર ડોટ્સ */}
+                        {(overviewImages.heroSlider.length > 0 ? overviewImages.heroSlider : [1, 2, 3]).map((_, idx) => (
                             <div key={idx} className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentImgIndex ? (theme ? "w-6 bg-blue-500" : "w-6 bg-red-500") : "w-2 bg-white/40"}`} />
                         ))}
                     </div>
@@ -204,7 +247,7 @@ export default function Overview() {
                 </motion.div>
             </section>
 
-            {/* ---------------- SECTION 2: TEXT INTRODUCTION ---------------- */}
+            {/* ---------------- SECTION 2: TEXT INTRODUCTION & FEATURE IMAGE ---------------- */}
             <section className={`relative h-screen w-full snap-start flex flex-col items-center gap-10 justify-center text-center px-6 transition-colors duration-500 ${theme ? "bg-slate-950" : "bg-white"}`}>
                 <div className="relative z-20">
                     <Reveal>
@@ -218,18 +261,28 @@ export default function Overview() {
                         </p>
                     </Reveal>
                 </div>
-                <div className={`w-200 h-150 p-5 rounded-[50px] bg-amber-300`}>
-                    <div className={`w-full h-full rounded-[40px] bg-gray-900`}></div>
+
+                {/* API માંથી આવતી Feature Image અહી દેખાશે */}
+                <div className={`w-150 max-w-full h-87.5 p-5 rounded-[50px] bg-amber-300 shadow-xl`}>
+                    {overviewImages.featureImage.length > 0 ? (
+                        <img
+                            src={overviewImages.featureImage[0]}
+                            alt="Feature"
+                            className="w-full h-full rounded-[40px] object-cover shadow-inner"
+                        />
+                    ) : (
+                        <div className={`w-full h-full rounded-[40px] bg-gray-900 flex items-center justify-center text-gray-500 text-sm`}>
+                            No Feature Image Available
+                        </div>
+                    )}
                 </div>
             </section>
 
-            {/* ---------------- SECTION 3: NEW 70% - 30% LUXURY LAYOUT ---------------- */}
+            {/* ---------------- SECTION 3: 70% - 30% LUXURY LAYOUT ---------------- */}
             <section className="h-screen w-full snap-start relative flex flex-col lg:flex-row gap-6 p-6 lg:p-8 overflow-hidden">
 
                 {/* --- 70% LEFT PART --- */}
-                <div className={`relative flex-1 lg:w-[70%] h-[50%] lg:h-full rounded-4xl p-8 flex items-center justify-center shadow-[0_22px_50px_rgba(0,0,0,0.03)] border transition-all duration-500 ${theme ? "bg-slate-900/95 border-slate-800 shadow-black/40" : "bg-white border-slate-100"
-                    }`}>
-                    {/* Your 70% content goes here */}
+                <div className={`relative flex-1 lg:w-[70%] h-[50%] lg:h-full rounded-4xl p-8 flex items-center justify-center shadow-[0_22px_50px_rgba(0,0,0,0.03)] border transition-all duration-500 ${theme ? "bg-slate-900/95 border-slate-800 shadow-black/40" : "bg-white border-slate-100"}`}>
                 </div>
 
                 {/* --- 30% RIGHT PART: ULTRA PREMIUM REGISTRATION BOX --- */}
@@ -240,7 +293,6 @@ export default function Overview() {
 
                     {/* --- HEADER & CALENDAR BAR --- */}
                     <div className="flex justify-between items-center w-full mb-8 relative z-30">
-                        {/* Ultra Premium Header */}
                         <div className="flex flex-col gap-0.5">
                             <h3 className={`text-sm font-black tracking-tight leading-tight uppercase ${theme ? "text-blue-500" : "text-red-600"}`}>
                                 Join Us
@@ -250,7 +302,6 @@ export default function Overview() {
                             </p>
                         </div>
 
-                        {/* Calendar Button */}
                         <div className="relative flex flex-col items-end">
                             <button
                                 onClick={() => setIsEventCalendarOpen(!isEventCalendarOpen)}
@@ -263,25 +314,19 @@ export default function Overview() {
                                     <span className={`text-[16px] font-black tracking-tight ${theme ? "text-blue-500" : "text-red-600"}`}>
                                         {dayNumber}
                                     </span>
-
                                     <span className={`text-[12px] font-light mx-2 ${theme ? "text-slate-700" : "text-slate-300"}`}>|</span>
-
                                     <span className="text-[11px] font-black tracking-widest mt-0.5 opacity-80">
                                         {monthShort}
                                     </span>
                                 </div>
-
-                                {/* Dynamic Event Pulse Dot */}
                                 {todayEvent && (
-                                    <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 animate-pulse border-white ${todayEvent.category === 'event' ? "bg-emerald-500" : "bg-blue-500"
-                                        }`}></span>
+                                    <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 animate-pulse border-white ${todayEvent.category === 'event' ? "bg-emerald-500" : "bg-blue-500"}`}></span>
                                 )}
                             </button>
 
-                            {/* Calendar Popup */}
                             <div className="absolute top-14 right-0 origin-top-right">
-                                <EventCalendarPopup
-                                    isOpen={isEventCalendarOpen}
+                                <EventCalendarPopup 
+                                    isOpen={isEventCalendarOpen} 
                                     onClose={() => setIsEventCalendarOpen(false)}
                                     selectedDate={selectedDate}
                                     onSelectDate={(date: Date) => {
@@ -295,8 +340,6 @@ export default function Overview() {
 
                     {/* --- REGISTRATION FORM --- */}
                     <form onSubmit={handleFormSubmit} className="flex flex-col flex-1 gap-5 overflow-y-auto scrollbar-none pb-1">
-
-                        {/* Student Photo Luxury Avatar Picker */}
                         <div className="flex justify-center mb-4">
                             <label className="relative cursor-pointer group">
                                 <motion.div
@@ -322,53 +365,21 @@ export default function Overview() {
                             </label>
                         </div>
 
-                        {/* SUID Field */}
                         <div className="w-full">
-                            <input
-                                type="number"
-                                required
-                                placeholder="SUID *"
-                                value={formData.suid}
-                                onChange={(e) => setFormData({ ...formData, suid: e.target.value })}
-                                className={inputClasses}
-                            />
+                            <input type="number" required placeholder="SUID *" value={formData.suid} onChange={(e) => setFormData({ ...formData, suid: e.target.value })} className={inputClasses} />
                         </div>
-
-                        {/* Full Name Field */}
                         <div className="w-full">
-                            <input
-                                type="text"
-                                required
-                                placeholder="Full Name *"
-                                value={formData.fullName}
-                                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                                className={inputClasses}
-                            />
+                            <input type="text" required placeholder="Full Name *" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} className={inputClasses} />
                         </div>
-
-                        {/* STD & G.R. No. Row */}
                         <div className="flex gap-4 w-full">
                             <div className="flex-1">
-                                <input
-                                    type="text"
-                                    placeholder="STD "
-                                    value={formData.std}
-                                    onChange={(e) => setFormData({ ...formData, std: e.target.value })}
-                                    className={inputClasses}
-                                />
+                                <input type="text" placeholder="STD " value={formData.std} onChange={(e) => setFormData({ ...formData, std: e.target.value })} className={inputClasses} />
                             </div>
                             <div className="flex-1">
-                                <input
-                                    type="number"
-                                    placeholder="G.R. Number"
-                                    value={formData.grNo}
-                                    onChange={(e) => setFormData({ ...formData, grNo: e.target.value })}
-                                    className={inputClasses}
-                                />
+                                <input type="number" placeholder="G.R. Number" value={formData.grNo} onChange={(e) => setFormData({ ...formData, grNo: e.target.value })} className={inputClasses} />
                             </div>
                         </div>
 
-                        {/* Luxury Calm Submit Button */}
                         <motion.button
                             whileTap={{ scale: 0.98 }}
                             type="submit"
@@ -384,15 +395,24 @@ export default function Overview() {
             </section>
 
             {/* ---------------- SECTION 4: SMART & OFFLINE INFRASTRUCTURE ---------------- */}
-            <section className={`h-screen w-full snap-start relative flex items-center justify-center transition-colors duration-500 ${theme ? "bg-slate-950" : "bg-white"}`}>
-                <Reveal className={`relative z-10 text-center px-6 max-w-2xl p-6 rounded-3xl shadow-xl border ${theme ? "bg-slate-900/80 border-slate-800" : "bg-white/80 border-gray-100"}`}>
+            <section className={`h-screen w-full snap-start relative flex items-center justify-center transition-colors duration-500 overflow-hidden ${theme ? "bg-slate-950" : "bg-white"}`}>
+                
+                {/* 🚀 API માંથી આવતી Smart Infrastructure ની ઈમેજને બેકગ્રાઉન્ડ તરીકે સેટ કરેલ છે */}
+                {overviewImages.smartInfrastructure.length > 0 && (
+                    <div
+                        className="absolute inset-0 bg-cover bg-center opacity-30 md:opacity-40 transition-opacity duration-700"
+                        style={{ backgroundImage: `url(${overviewImages.smartInfrastructure[0]})` }}
+                    />
+                )}
+
+                <Reveal className={`relative max-w-2xl p-8 px-6 rounded-3xl shadow-xl text-center z-10 backdrop-blur-md border ${theme ? "bg-slate-900/85 border-slate-800" : "bg-white/85 border-gray-100"}`}>
                     <span className={`text-xs font-black tracking-widest uppercase ${theme ? "text-blue-500" : "text-red-500"}`}>
                         {section3.tagline}
                     </span>
                     <h2 className={`text-3xl md:text-4xl font-extrabold mt-2 mb-4 ${theme ? "text-white" : "text-slate-800"}`}>
                         {section3.title}
                     </h2>
-                    <p className={`text-sm md:text-base leading-relaxed ${theme ? "text-gray-400" : "text-gray-600"}`}>
+                    <p className={`text-sm md:text-base leading-relaxed ${theme ? "text-gray-300" : "text-gray-600"}`}>
                         {section3.description}
                     </p>
                 </Reveal>
@@ -410,7 +430,7 @@ export default function Overview() {
                         </p>
                     </Reveal>
 
-                    <Reveal delay={0.1} className="flex flex-col gap-2">
+                    <Reveal className="flex flex-col gap-2" delay={0.1}>
                         <h4 className="text-white font-bold text-sm uppercase tracking-wider">Quick Links</h4>
                         <nav className="flex flex-col gap-1 text-sm">
                             {footer.links.map((link, idx) => (
@@ -421,7 +441,7 @@ export default function Overview() {
                         </nav>
                     </Reveal>
 
-                    <Reveal delay={0.2} className="flex flex-col gap-2">
+                    <Reveal className="flex flex-col gap-2" delay={0.2}>
                         <h4 className="text-white font-bold text-sm uppercase tracking-wider">Contact Support</h4>
                         <p className="text-sm text-gray-500">Have questions? Reach out to us at:</p>
                         <a href={`mailto:${footer.contactEmail}`} className={`text-sm font-bold ${theme ? "text-blue-400 hover:text-blue-300" : "text-red-400 hover:text-red-300"}`}>

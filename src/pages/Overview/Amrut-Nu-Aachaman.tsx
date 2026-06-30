@@ -1,49 +1,18 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../components/theme/ThemeContext';
 import DatePicker from '../../components/common/Calendar';
 
-// ઈમેજ ડેટા માટેનું ઇન્ટરફેસ
-interface AmrutItem {
-  id: number;
-  imageUrl: string;
-  title: string;
-  description: string;
-  uploadDate: string; // Format: YYYY-MM-DD
-}
+// બેકએન્ડનું યુઆરએલ (તમારા સર્વર પોર્ટ મુજબ સેટ કરો)
+const BACKEND_URL = 'http://localhost:5000'; 
 
-// ડેમો ડેટા
-const dummyData: AmrutItem[] = [
-  {
-    id: 1,
-    imageUrl: 'https://images.unsplash.com/photo-1609137144813-2d14878696bf?w=600&auto=format&fit=crop&q=80',
-    title: 'Divine Kirtan',
-    description: 'Daily kirtan and devotional songs that uplift the soul and bring peace to the mind.',
-    uploadDate: '2026-06-23',
-  },
-  {
-    id: 2,
-    imageUrl: 'https://images.unsplash.com/photo-1545128485-c400e7702796?w=600&auto=format&fit=crop&q=80',
-    title: 'Morning Puja',
-    description: 'Beautiful morning prayers and devotional songs that set the tone for the day.',
-    uploadDate: '2026-06-23',
-  },
-  {
-    id: 3,
-    imageUrl: 'https://images.unsplash.com/photo-1561361058-c24cecae35ca?w=600&auto=format&fit=crop&q=80',
-    title: 'Youth Inspiration Session',
-    description: 'Inspiring sessions for the youth, focusing on spiritual growth and cultural values.',
-    uploadDate: '2026-06-23',
-  },
-  {
-    id: 4,
-    imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&auto=format&fit=crop&q=80',
-    title: 'Evening Aarti',
-    description: 'Beautiful evening prayers and devotional songs that bring peace to the mind.',
-    uploadDate: '2026-06-22',
-  }
-];
+// બેકએન્ડ ડેટા મુજબનું ઇન્ટરફેસ
+interface AmrutItem {
+  _id: string; // MongoDB ની ID
+  image: string; // બેકએન્ડમાં 'image' ફિલ્ડ છે
+  description: string;
+  date: string; // Format: YYYY-MM-DD
+}
 
 export default function AmrutNuAachaman() {
   const { theme } = useTheme();
@@ -52,14 +21,46 @@ export default function AmrutNuAachaman() {
   const today = new Date().toISOString().split('T')[0];
   
   const [selectedDate, setSelectedDate] = useState<string>(today);
-  const [filteredData, setFilteredData] = useState<AmrutItem[]>(
-    dummyData.filter(item => item.uploadDate === today)
-  );
-  
+  const [allRecords, setAllRecords] = useState<AmrutItem[]>([]); // બધો ડેટા સ્ટોર કરવા
+  const [filteredData, setFilteredData] = useState<AmrutItem[]>([]); // ફિલ્ટર કરેલો ડેટા
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeItem, setActiveItem] = useState<AmrutItem | null>(null);
 
+  // ૧. બેકએન્ડમાંથી ડેટા ફેચ કરવાનું ફંક્શન
+  const fetchRecords = async () => {
+    try {
+      setLoading(true);
+      // અહીં તમારા સાચા API રાઉટનો પાથ લખો (દા.ત. /api/amrut-aachaman)
+      const response = await fetch(`${BACKEND_URL}/amrut-aachaman`); 
+      const result = await response.json();
+
+      if (result.success) {
+        setAllRecords(result.data);
+        
+        // બાય-ડિફોલ્ટ આજનો ડેટા ફિલ્ટર કરીને બતાવો
+        const todayData = result.data.filter((item: AmrutItem) => item.date === today);
+        setFilteredData(todayData);
+        setError(null);
+      } else {
+        setError(result.message || "Failed to load data");
+      }
+    } catch (err) {
+      setError("સર્વર સાથે કનેક્ટ થઈ શક્યું નથી!");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // પેજ લોડ થાય ત્યારે ડેટા લાવો
+  useEffect(() => {
+    fetchRecords();
+  }, []);
+
+  // ૨. સર્ચ બટન પર ક્લિક કરવાથી તારીખ મુજબ ફિલ્ટર થશે
   const handleSearch = () => {
-    const result = dummyData.filter(item => item.uploadDate === selectedDate);
+    const result = allRecords.filter(item => item.date === selectedDate);
     setFilteredData(result);
   };
 
@@ -88,7 +89,7 @@ export default function AmrutNuAachaman() {
           </Link>
         </div>
 
-        {/* ૧. પ્રીમિયમ હેડર સેક્શન */}
+        {/* હેડર સેક્શન */}
         <div className="text-center mb-12 animate-fade-in">
           <h1 className={`text-4xl md:text-5xl font-sans font-black tracking-tight drop-shadow-sm transition-colors duration-300 ${
             isDark ? 'text-white' : 'text-slate-950'
@@ -105,7 +106,7 @@ export default function AmrutNuAachaman() {
           </p>
         </div>
 
-        {/* ૨. ડેટ પીકર અને સર્ચ બટન સેક્શન (અહીં જ સુધારો કર્યો છે: relative z-40) */}
+        {/* ડેટ પીકર સેક્શન */}
         <div className={`relative z-40 rounded-2xl shadow-md p-6 max-w-xl mx-auto mb-12 backdrop-blur-sm transition-all duration-300 ${
           isDark 
             ? 'bg-slate-900 border border-slate-800 hover:border-slate-700' 
@@ -135,97 +136,96 @@ export default function AmrutNuAachaman() {
           </div>
         </div>
 
-        {/* ૩. પ્રીમિયમ ૩ બોક્સ લેઆઉટ */}
-        {filteredData.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredData.map((item) => (
-              <div 
-                key={item.id} 
-                onClick={() => setActiveItem(item)}
-                className={`rounded-2xl overflow-hidden shadow-sm hover:shadow-xl flex flex-col group h-full cursor-pointer transition-all duration-300 transform hover:-translate-y-1.5 border ${
-                  isDark 
-                    ? 'bg-slate-900 border-slate-800/80 hover:border-slate-700 shadow-black/40' 
-                    : 'bg-white border-slate-100 hover:border-slate-200'
-                }`}
-              >
-                <div className={`relative overflow-hidden h-52 border-b ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                    loading="lazy"
-                  />
-                  <div className={`absolute top-3 right-3 backdrop-blur-md rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 shadow-md ${
-                    isDark ? 'bg-slate-950/80 border border-slate-700 text-blue-400' : 'bg-white/90 border border-slate-200 text-slate-800'
-                  }`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  </div>
-                </div>
+        {/* લોડિંગ અને એરર સ્ટેટસ */}
+        {loading && <div className="text-center py-10 font-bold">ડેટા લોડ થઈ રહ્યો છે...</div>}
+        {error && <div className="text-center text-red-500 py-10 font-bold">{error}</div>}
 
-                <div className={`p-5 flex-1 flex flex-col justify-between transition-colors duration-300 ${
-                  isDark 
-                    ? 'bg-linear-to-b from-slate-900 to-slate-950/40' 
-                    : 'bg-linear-to-b from-white to-slate-50/40'
-                }`}>
-                  <div>
-                    <h3 className={`text-xl font-bold mb-2 line-clamp-1 transition-colors ${
-                      isDark ? 'text-white group-hover:text-blue-400' : 'text-slate-900 group-hover:text-red-600'
-                    }`}>
-                      {item.title}
-                    </h3>
-                    <p className={`text-sm leading-relaxed font-normal line-clamp-3 transition-colors ${
-                      isDark ? 'text-slate-400' : 'text-slate-600'
-                    }`}>
-                      {item.description}
-                    </p>
+        {/* ડેટા ડિસ્પ્લે સેક્શન */}
+        {!loading && !error && (
+          filteredData.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredData.map((item) => (
+                <div 
+                  key={item._id} 
+                  onClick={() => setActiveItem(item)}
+                  className={`rounded-2xl overflow-hidden shadow-sm hover:shadow-xl flex flex-col group h-full cursor-pointer transition-all duration-300 transform hover:-translate-y-1.5 border ${
+                    isDark 
+                      ? 'bg-slate-900 border-slate-800/80 hover:border-slate-700 shadow-black/40' 
+                      : 'bg-white border-slate-100 hover:border-slate-200'
+                  }`}
+                >
+                  {/* ઈમેજ પાથ બેકએન્ડ URL સાથે જોડ્યો */}
+                  <div className={`relative overflow-hidden h-52 border-b ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
+                    <img
+                      src={`${BACKEND_URL}${item.image}`}
+                      alt="Amrut Aachaman"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                      loading="lazy"
+                    />
                   </div>
 
-                  <div className={`mt-5 pt-3 border-t-2 border-dashed flex items-center justify-between text-xs font-bold ${
-                    isDark ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-500'
+                  <div className={`p-5 flex-1 flex flex-col justify-between transition-colors duration-300 ${
+                    isDark 
+                      ? 'bg-linear-to-b from-slate-900 to-slate-950/40' 
+                      : 'bg-linear-to-b from-white to-slate-50/40'
                   }`}>
-                    <span className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border ${
-                      isDark ? 'bg-slate-950 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'
+                    <div>
+                      <h3 className={`text-xl font-bold mb-2 line-clamp-1 transition-colors ${
+                        isDark ? 'text-white group-hover:text-blue-400' : 'text-slate-900 group-hover:text-red-600'
+                      }`}>
+                        Amrut Nu Aachaman
+                      </h3>
+                      <p className={`text-sm leading-relaxed font-normal line-clamp-3 transition-colors ${
+                        isDark ? 'text-slate-400' : 'text-slate-600'
+                      }`}>
+                        {item.description}
+                      </p>
+                    </div>
+
+                    <div className={`mt-5 pt-3 border-t-2 border-dashed flex items-center justify-between text-xs font-bold ${
+                      isDark ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-500'
                     }`}>
-                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${isDark ? 'text-blue-500' : 'text-red-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 3V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      Uploaded on
-                    </span>
-                    <span className={`text-white px-2.5 py-1 rounded-md font-mono shadow-sm transition-all ${
-                      isDark ? 'bg-blue-600' : 'bg-red-600'
-                    }`}>
-                      {item.uploadDate}
-                    </span>
+                      <span className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border ${
+                        isDark ? 'bg-slate-950 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'
+                      }`}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${isDark ? 'text-blue-500' : 'text-red-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 3V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Uploaded on
+                      </span>
+                      <span className={`text-white px-2.5 py-1 rounded-md font-mono shadow-sm transition-all ${
+                        isDark ? 'bg-blue-600' : 'bg-red-600'
+                      }`}>
+                        {item.date}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className={`text-center py-16 rounded-2xl border-2 border-dashed max-w-lg mx-auto ${
-            isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'
-          }`}>
-            <svg xmlns="http://www.w3.org/2000/svg" className={`h-16 w-16 mx-auto mb-4 animate-bounce ${isDark ? 'text-slate-700' : 'text-slate-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <p className={`font-bold text-lg tracking-wide ${isDark ? 'text-slate-300' : 'text-slate-900'}`}>No images uploaded for this date.</p>
-            <p className={`text-sm mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Please select another date.</p>
-          </div>
-        )}      
+              ))}
+            </div>
+          ) : (
+            <div className={`text-center py-16 rounded-2xl border-2 border-dashed max-w-lg mx-auto ${
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'
+            }`}>
+              <svg xmlns="http://www.w3.org/2000/svg" className={`h-16 w-16 mx-auto mb-4 ${isDark ? 'text-slate-700' : 'text-slate-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p className={`font-bold text-lg tracking-wide ${isDark ? 'text-slate-300' : 'text-slate-900'}`}>No images uploaded for this date.</p>
+              <p className={`text-sm mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Please select another date.</p>
+            </div>
+          )
+        )}
 
       </div>
 
-      {/* ૪. મોડલ પોપઅપ */}
+      {/* મોડલ પોપઅપ */}
       {activeItem && (
         <div 
           className="fixed inset-0 bg-black/75 backdrop-blur-xl z-50 flex items-center justify-center p-4 transition-all duration-300"
           onClick={() => setActiveItem(null)}
         >
           <div 
-            className={`rounded-3xl overflow-hidden shadow-2xl max-w-4xl w-full flex flex-col md:flex-row transform transition-all duration-300 scale-100 relative animate-[fadeIn_0.2s_ease-out] border ${
+            className={`rounded-3xl overflow-hidden shadow-2xl max-w-4xl w-full flex flex-col md:flex-row transform transition-all duration-300 scale-100 relative border ${
               isDark ? 'bg-slate-900 border-slate-800 shadow-black/80' : 'bg-white border-slate-200'
             }`}
             onClick={(e) => e.stopPropagation()}
@@ -244,8 +244,8 @@ export default function AmrutNuAachaman() {
 
             <div className={`w-full md:w-1/2 h-64 md:h-auto min-h-80 relative ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
               <img 
-                src={activeItem.imageUrl} 
-                alt={activeItem.title} 
+                src={`${BACKEND_URL}${activeItem.image}`} 
+                alt="Amrut Aachaman" 
                 className="w-full h-full object-cover"
               />
             </div>
@@ -257,7 +257,7 @@ export default function AmrutNuAachaman() {
                 <h2 className={`text-2xl md:text-3xl font-sans font-black mb-4 tracking-tight border-b pb-3 ${
                   isDark ? 'text-white border-slate-800' : 'text-slate-950 border-slate-100'
                 }`}>
-                  {activeItem.title}
+                  Amrut Nu Aachaman
                 </h2>
                 <p className={`text-base md:text-md leading-relaxed font-normal mb-6 max-h-60 overflow-y-auto pr-2 custom-scrollbar ${
                   isDark ? 'text-slate-300' : 'text-slate-600'
@@ -280,7 +280,7 @@ export default function AmrutNuAachaman() {
                 <span className={`text-white px-3 py-1.5 rounded-lg font-mono shadow-md tracking-wider ${
                   isDark ? 'bg-blue-600' : 'bg-red-600'
                 }`}>
-                  {activeItem.uploadDate}
+                  {activeItem.date}
                 </span>
               </div>
             </div>
