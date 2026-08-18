@@ -11,13 +11,15 @@ import {
   ShieldCheck,
   User,
   Gift,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useTheme } from "../components/theme/ThemeContext";
 
 /* ----------------------------- Types ----------------------------- */
 
 export interface ProfileSettingsUser {
-  suid: string; // User ID
+  suid: string;
   username: string;
   fullName: string;
   birthDate: string;
@@ -78,15 +80,7 @@ const TextField: React.FC<{
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleContainerClick = () => {
-    if (type === "date" && inputRef.current) {
-      try {
-        inputRef.current.showPicker();
-      } catch (e) {
-        inputRef.current.focus();
-      }
-    } else {
-      inputRef.current?.focus();
-    }
+    inputRef.current?.focus();
   };
 
   return (
@@ -120,10 +114,6 @@ const TextField: React.FC<{
           onChange={onChange}
           className={`w-full bg-transparent text-base font-semibold outline-none transition-colors ${
             theme ? "text-gray-100 scheme-dark" : "text-neutral-900 scheme-light"
-          } ${
-            type === "date"
-              ? "[&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-inner-spin-button]:hidden"
-              : ""
           }`}
         />
       </div>
@@ -131,6 +121,243 @@ const TextField: React.FC<{
   );
 };
 
+/* ===== New Custom Date Field ===== */
+const DateField: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  onChange: (dateStr: string) => void;
+  theme: boolean;
+}> = ({ icon, label, value, onChange, theme }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [view, setView] = useState<"days" | "months" | "years">("days");
+
+  let initialDate = new Date();
+  if (value) {
+    const parts = value.split("-");
+    if (parts.length === 3) {
+      initialDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    }
+  }
+
+  const [currentDate, setCurrentDate] = useState(initialDate);
+  const [yearRangeStart, setYearRangeStart] = useState(() => Math.floor(initialDate.getFullYear() / 12) * 12);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const monthsShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const daysOfWeek = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const handlePrevMonth = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentDate(new Date(year, month - 1, 1)); };
+  const handleNextMonth = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentDate(new Date(year, month + 1, 1)); };
+  const handlePrevYearRange = (e: React.MouseEvent) => { e.stopPropagation(); setYearRangeStart((y) => y - 12); };
+  const handleNextYearRange = (e: React.MouseEvent) => { e.stopPropagation(); setYearRangeStart((y) => y + 12); };
+
+  const handleMonthLabelClick = (e: React.MouseEvent) => { e.stopPropagation(); setView("months"); };
+  const handleYearLabelClick = (e: React.MouseEvent) => { e.stopPropagation(); setYearRangeStart(Math.floor(year / 12) * 12); setView("years"); };
+
+  const handleMonthSelect = (monthIndex: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentDate(new Date(year, monthIndex, 1));
+    setView("days");
+  };
+
+  const handleYearSelect = (selectedYear: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentDate(new Date(selectedYear, month, 1));
+    setView("months");
+  };
+
+  const handleDateClick = (day: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const formattedMonth = String(month + 1).padStart(2, "0");
+    const formattedDay = String(day).padStart(2, "0");
+    onChange(`${year}-${formattedMonth}-${formattedDay}`);
+    setIsOpen(false);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setView("days");
+      setYearRangeStart(Math.floor(year / 12) * 12);
+    }
+  }, [isOpen, year]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const getDisplayDate = () => {
+    if (!value) return "";
+    const parts = value.split("-");
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+    return value;
+  };
+
+  const isToday = (day: number) => { const today = new Date(); return today.getDate() === day && today.getMonth() === month && today.getFullYear() === year; };
+  const isSelected = (day: number) => { if (!value) return false; const parts = value.split("-"); return Number(parts[2]) === day && (Number(parts[1]) - 1) === month && Number(parts[0]) === year; };
+  const isCurrentMonth = (monthIndex: number) => { const today = new Date(); return today.getMonth() === monthIndex && today.getFullYear() === year; };
+  const isSelectedMonth = (monthIndex: number) => { if (!value) return false; return (Number(value.split("-")[1]) - 1) === monthIndex && Number(value.split("-")[0]) === year; };
+  const isCurrentYear = (y: number) => new Date().getFullYear() === y;
+  const isSelectedYear = (y: number) => { if (!value) return false; return Number(value.split("-")[0]) === y; };
+
+  const blanks = Array(firstDayOfMonth).fill(null);
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const yearGrid = Array.from({ length: 12 }, (_, i) => yearRangeStart + i);
+
+  const cellBase = "text-xs font-bold rounded-lg transition-all duration-300 cursor-pointer flex items-center justify-center py-2";
+  const cellSelected = theme ? "bg-blue-600 text-white shadow-[0_0_10px_rgba(37,99,235,0.4)] scale-105" : "bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)] scale-105";
+  const cellCurrent = theme ? "bg-gray-800 border border-blue-500/50 text-blue-300" : "bg-red-50 border border-red-300 text-red-600";
+  const cellDefault = theme ? "hover:bg-gray-800 text-gray-300 hover:text-white" : "hover:bg-neutral-100 text-neutral-800";
+
+  return (
+    <div className="block group relative" ref={containerRef}>
+      {/* Outer Label matching TextField */}
+      <span className={`text-xs font-bold uppercase tracking-wider transition-colors duration-300 block ${
+          theme ? "text-gray-400 group-focus-within:text-blue-400 group-hover:text-blue-300" : "text-neutral-500 group-focus-within:text-red-600 group-hover:text-red-500"
+        } ${isOpen ? (theme ? "text-blue-400!" : "text-red-600!") : ""}`}
+      >
+        {label}
+      </span>
+      
+      {/* Input container matching TextField */}
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className={`mt-2 flex items-center gap-4 rounded-xl border px-4 py-4 transition-all duration-300 cursor-pointer shadow-sm ${
+          theme
+            ? "border-gray-800 bg-gray-950/50 hover:-translate-y-1 hover:border-blue-500/30 hover:bg-gray-900/40 hover:shadow-[0_10px_20px_-5px_rgba(59,130,246,0.15)]"
+            : "border-neutral-200 bg-white hover:-translate-y-1 hover:border-red-200 hover:shadow-[0_10px_20px_-5px_rgba(220,38,38,0.08)]"
+        } ${isOpen ? (theme ? "border-blue-500/50! bg-gray-900/80! ring-2 ring-blue-500/10" : "border-red-400! ring-2 ring-red-600/10") : ""}`}
+      >
+        <span className={`transition-all duration-300 ${
+            theme ? "text-blue-400 group-hover:scale-110" : "text-red-500 group-hover:scale-110"
+          } ${isOpen ? "scale-110" : ""}`}
+        >
+          {icon}
+        </span>
+        <input
+          type="text"
+          readOnly
+          value={getDisplayDate()}
+          placeholder="DD/MM/YYYY"
+          className={`w-full bg-transparent text-base font-semibold outline-none cursor-pointer transition-colors ${
+            theme ? "text-gray-100 placeholder:text-gray-600" : "text-neutral-900 placeholder:text-neutral-400"
+          }`}
+        />
+      </div>
+
+      {/* Dropdown Calendar UI */}
+      <div className={`absolute z-40 mt-3 w-full min-w-70 p-5 border rounded-2xl shadow-2xl transition-all duration-300 origin-top ${
+        isOpen ? "opacity-100 scale-100 translate-y-0 visible" : "opacity-0 scale-95 -translate-y-2 invisible"
+      } ${theme ? "bg-gray-900 border-gray-800 shadow-black/60" : "bg-white border-neutral-200 shadow-neutral-200/60"}`}>
+        
+        {view === "days" && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className={`text-sm font-bold flex items-center gap-1 ${theme ? "text-white" : "text-neutral-900"}`}>
+                <button type="button" onClick={handleMonthLabelClick} className={`px-2 py-1 rounded-lg transition-colors cursor-pointer ${theme ? "hover:bg-gray-800 text-gray-200" : "hover:bg-neutral-100 text-neutral-800"}`}>
+                  {months[month]}
+                </button>
+                <button type="button" onClick={handleYearLabelClick} className={`px-2 py-1 rounded-lg transition-colors cursor-pointer ${theme ? "hover:bg-gray-800 text-gray-200" : "hover:bg-neutral-100 text-neutral-800"}`}>
+                  {year}
+                </button>
+              </h4>
+              <div className="flex space-x-1">
+                <button type="button" onClick={handlePrevMonth} className={`p-1.5 rounded-lg border transition-all cursor-pointer ${theme ? "border-gray-700 bg-gray-800 hover:bg-gray-700 hover:border-gray-600 text-gray-300" : "border-neutral-200 bg-neutral-50 hover:bg-neutral-100 hover:border-neutral-300 text-neutral-600"}`}>
+                  <ChevronLeft size={16} />
+                </button>
+                <button type="button" onClick={handleNextMonth} className={`p-1.5 rounded-lg border transition-all cursor-pointer ${theme ? "border-gray-700 bg-gray-800 hover:bg-gray-700 hover:border-gray-600 text-gray-300" : "border-neutral-200 bg-neutral-50 hover:bg-neutral-100 hover:border-neutral-300 text-neutral-600"}`}>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-center mb-2">
+              {daysOfWeek.map((d) => (
+                <div key={d} className={`text-[10px] font-black uppercase tracking-wider ${theme ? "text-gray-500" : "text-neutral-400"}`}>
+                  {d}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-center">
+              {blanks.map((_, idx) => <div key={`blank-${idx}`} className="py-2"></div>)}
+              {days.map((day) => (
+                <button key={day} type="button" onClick={(e) => handleDateClick(day, e)} className={`${cellBase} ${isSelected(day) ? cellSelected : isToday(day) ? cellCurrent : cellDefault}`}>
+                  {day}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {view === "months" && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <button type="button" onClick={handleYearLabelClick} className={`text-sm font-bold px-2 py-1 rounded-lg transition-colors cursor-pointer ${theme ? "hover:bg-gray-800 text-gray-200" : "hover:bg-neutral-100 text-neutral-800"}`}>
+                {year}
+              </button>
+              <div className="flex space-x-1">
+                <button type="button" onClick={(e) => { e.stopPropagation(); setCurrentDate(new Date(year - 1, month, 1)); }} className={`p-1.5 rounded-lg border transition-all cursor-pointer ${theme ? "border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300" : "border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-neutral-600"}`}>
+                  <ChevronLeft size={16} />
+                </button>
+                <button type="button" onClick={(e) => { e.stopPropagation(); setCurrentDate(new Date(year + 1, month, 1)); }} className={`p-1.5 rounded-lg border transition-all cursor-pointer ${theme ? "border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300" : "border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-neutral-600"}`}>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {monthsShort.map((m, idx) => (
+                <button key={m} type="button" onClick={(e) => handleMonthSelect(idx, e)} className={`${cellBase} py-3! ${isSelectedMonth(idx) ? cellSelected : isCurrentMonth(idx) ? cellCurrent : cellDefault}`}>
+                  {m}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {view === "years" && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className={`text-sm font-bold ${theme ? "text-gray-200" : "text-neutral-800"}`}>
+                {yearRangeStart} - {yearRangeStart + 11}
+              </h4>
+              <div className="flex space-x-1">
+                <button type="button" onClick={handlePrevYearRange} className={`p-1.5 rounded-lg border transition-all cursor-pointer ${theme ? "border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300" : "border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-neutral-600"}`}>
+                  <ChevronLeft size={16} />
+                </button>
+                <button type="button" onClick={handleNextYearRange} className={`p-1.5 rounded-lg border transition-all cursor-pointer ${theme ? "border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300" : "border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-neutral-600"}`}>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {yearGrid.map((y) => (
+                <button key={y} type="button" onClick={(e) => handleYearSelect(y, e)} className={`${cellBase} py-3! ${isSelectedYear(y) ? cellSelected : isCurrentYear(y) ? cellCurrent : cellDefault}`}>
+                  {y}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+      </div>
+    </div>
+  );
+};
+
+/* ------------------------- Password Field ------------------------- */
 const PasswordField: React.FC<{
   label: string;
   value: string;
@@ -201,13 +428,13 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
     avatarUrl: user.avatarUrl || "",
   });
 
-  // Load existing saved local data if any on mount
   useEffect(() => {
     if (user === DEFAULT_USER) {
       const stored = localStorage.getItem("adminData");
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setForm((prev) => ({ ...prev, ...parsed }));
         } catch (e) {
           console.error(e);
@@ -222,6 +449,12 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
 
   const handleFormChange = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    setProfileSaved(false);
+  };
+
+  // Custom handler for our new DateField
+  const handleDateChange = (key: keyof typeof form) => (dateStr: string) => {
+    setForm((prev) => ({ ...prev, [key]: dateStr }));
     setProfileSaved(false);
   };
 
@@ -435,20 +668,19 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
                 theme={theme}
               />
               
-              <TextField
+              {/* ===== New Custom DateFields Used Here ===== */}
+              <DateField
                 icon={<Gift size={18} />}
                 label="Birthdate"
-                type="date"
                 value={form.birthDate}
-                onChange={handleFormChange("birthDate")}
+                onChange={handleDateChange("birthDate")}
                 theme={theme}
               />
-              <TextField
+              <DateField
                 icon={<Calendar size={18} />}
                 label="Joined Date"
-                type="date"
                 value={form.joinedDate}
-                onChange={handleFormChange("joinedDate")}
+                onChange={handleDateChange("joinedDate")}
                 theme={theme}
               />
             </div>

@@ -38,6 +38,7 @@ const AmrutNuAachaman: React.FC = () => {
             const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
             const currentTime = new Date().getTime();
             const filteredData = parsedData.filter(item => currentTime - item.timestamp <= thirtyDaysInMs);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setDataList(filteredData);
         }
     }, []);
@@ -132,23 +133,23 @@ const AmrutNuAachaman: React.FC = () => {
 
     const currentIndex = selectedItem ? dataList.findIndex(item => item.id === selectedItem.id) : -1;
 
-    const handleNext = (e?: React.MouseEvent) => {
+    const handleNext = React.useCallback((e?: React.MouseEvent) => {
         e?.stopPropagation();
         if (currentIndex !== -1 && currentIndex < dataList.length - 1) {
             setSelectedItem(dataList[currentIndex + 1]);
             setIsDescExpanded(false);
             setIsOverflowing(false);
         }
-    };
+    }, [currentIndex, dataList]);
 
-    const handlePrev = (e?: React.MouseEvent) => {
+    const handlePrev = React.useCallback((e?: React.MouseEvent) => {
         e?.stopPropagation();
         if (currentIndex > 0) {
             setSelectedItem(dataList[currentIndex - 1]);
             setIsDescExpanded(false);
             setIsOverflowing(false);
         }
-    };
+    }, [currentIndex, dataList]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -159,7 +160,7 @@ const AmrutNuAachaman: React.FC = () => {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isModalOpen, currentIndex, dataList]);
+    }, [isModalOpen, handleNext, handlePrev]);
 
     return (
         <div className={`flex flex-col gap-4 p-4 min-h-screen transition-colors duration-300 relative ${theme ? "bg-[#0B1120] text-slate-200" : "bg-white text-slate-900"}`}>

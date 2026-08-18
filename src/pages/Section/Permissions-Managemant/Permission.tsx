@@ -2,57 +2,109 @@ import { HiChevronDown, HiFilter, HiSearch } from "react-icons/hi";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import { AiOutlineFileProtect } from "react-icons/ai";
 import { useState, useEffect } from "react";
-// નોંધ: જો Table કમ્પોનન્ટ કસ્ટમ હોય તો તેનો સાચો પાથ આપવો, lucide-react માં Table આઇકોન છે.
+import { toast } from "sonner";
 import Table from "../../../components/common/Table";
 
-interface UserData {
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+// 🎯 FIX: Backend actual ma je fields mokle chhe e j rakhya.
+// "performance" ane "hasAccess" jevu koi field database/backend ma nathi,
+// etle e static/fake fields remove kari didha.
+interface PendingUser {
     suid: number;
-    avatar: string;
+    avatar: string | null;
     name: string;
-    performance: string;
-    requestDate?: string;
-    joiningDate?: string;
-    status: "APPROVED" | "PENDING" | "REJECTED";
-    role: string;
-    // 🟢 નવું Boolean ફિલ્ડ: True = Approved, False = Denied
-    hasAccess: boolean;
+    username: string;
+    roleCode: string;
+    role: string | null; // roles table thi role_name (LEFT JOIN)
+    departmentId: number | null;
+    sectionId: number | null;
+    joiningDate: string;
+    status: "PENDING" | "APPROVED";
 }
 
 export default function Permission() {
-    const theme = useTheme();
+    const { theme } = useTheme();
     const [filterType, setFilterType] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [loading] = useState<boolean>(false);
-    const [error] = useState<string | null>(null);
-    const [users, setUsers] = useState<UserData[]>([]);
 
-    // ડેમો ડેટા માટે (તમે આને API થી બદલી શકો છો)
-    useEffect(() => {
-        setUsers([
-            { suid: 101, name: "Rahul Patel", role: "ADMIN", status: "APPROVED", performance: "HIGH PERF.", avatar: "", hasAccess: true },
-            { suid: 102, name: "Amit Shah", role: "SEVAK", status: "PENDING", performance: "AVERAGE", avatar: "", hasAccess: false }
-        ]);
-    }, []);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [users, setUsers] = useState<PendingUser[]>([]);
 
+    // 🎯 FIX: Static demo data ni jagya e — backend thi real PENDING users fetch karo
+    const fetchPendingUsers = async () => {
+        try {
+            setLoading(true);
+            setError(null);
 
-    
+            const res = await fetch(`${API_URL}/users/pending`);
+            const json = await res.json();
 
-    
+            if (!res.ok || !json.success) {
+                throw new Error(json.message || "Failed to load pending users.");
+            }
 
-    const getPerformanceStyle = (performance: string) => {
-        if (performance === "HIGH PERF.") {
-            return theme
-                ? "bg-emerald-950/30 border-emerald-900/50 text-emerald-400"
-                : "bg-emerald-50 border-emerald-200 text-emerald-600";
+            setUsers(json.data || []);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Failed to load pending users.";
+            setError(message);
+            toast.error(message);
+        } finally {
+            setLoading(false);
         }
-        return theme
-            ? "bg-gray-700 border-gray-600 text-gray-300"
-            : "bg-neutral-50 border-neutral-200 text-neutral-600";
     };
 
-    const getRoleStyle = (role: string) => {
-        role
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchPendingUsers();
+    }, []);
+
+    // 🎯 Approve — status ne APPROVED karo, pachi list mathi remove karo
+    // (kem ke aa screen fakt PENDING users batave chhe)
+    const handleApprove = async (suid: number) => {
+        try {
+            const res = await fetch(`${API_URL}/users/approve/${suid}`, {
+                method: "PUT",
+            });
+            const json = await res.json();
+
+            if (!res.ok || !json.success) {
+                throw new Error(json.message || "Failed to approve user.");
+            }
+
+            toast.success("User approved successfully.");
+            setUsers((prev) => prev.filter((u) => u.suid !== suid));
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to approve user.");
+        }
+    };
+
+    // 🎯 Deny — database na CHECK constraint ma fakt PENDING/APPROVED j allowed
+    // chhe (REJECTED nathi), etle Deny no matlab chhe user ne delete karvo.
+    const handleDeny = async (suid: number) => {
+        const confirmed = window.confirm("Are you sure you want to deny and remove this user?");
+        if (!confirmed) return;
+
+        try {
+            const res = await fetch(`${API_URL}/users/delete/${suid}`, {
+                method: "DELETE",
+            });
+            const json = await res.json();
+
+            if (!res.ok || !json.success) {
+                throw new Error(json.message || "Failed to deny user.");
+            }
+
+            toast.success("User denied and removed.");
+            setUsers((prev) => prev.filter((u) => u.suid !== suid));
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to deny user.");
+        }
+    };
+
+    const getRoleStyle = () => {
         return theme ? "text-gray-300 border-gray-600" : "text-gray-700 border-gray-300";
     };
 
@@ -60,7 +112,7 @@ export default function Permission() {
         {
             header: "Profile",
             className: "w-16 text-center",
-            accessor: (user: UserData) => (
+            accessor: (user: PendingUser) => (
                 <img
                     src={user.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"}
                     alt={user.name}
@@ -71,49 +123,50 @@ export default function Permission() {
         {
             header: "Sevak Name",
             className: "text-left font-bold",
-            accessor: (user: UserData) => (
+            accessor: (user: PendingUser) => (
                 <span className={theme ? "text-white" : "text-neutral-900"}>{user.name}</span>
             ),
         },
         {
-            header: "Role", // 🟢 સુધારો: SUID ની જગ્યાએ Role
+            header: "Role",
             className: "text-center",
-            accessor: (user: UserData) => (
-                <span className={`inline-block px-2.5 py-0.5 text-xs font-bold rounded-md border tracking-wide uppercase ${getRoleStyle(user.role || "SEVAK")}`}>
-                    {user.role} {/* 🟢 સુધારો: user.suid ની જગ્યાએ user.role */}
-                </span>
-            ),
-        },
-        {
-            header: "Performance",
-            accessor: (user: UserData) => (
-                <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full border tracking-wide ${getPerformanceStyle(user.performance || "AVERAGE")}`}>
-                    {user.performance || "AVERAGE"}
+            accessor: (user: PendingUser) => (
+                <span className={`inline-block px-2.5 py-0.5 text-xs font-bold rounded-md border tracking-wide uppercase ${getRoleStyle()}`}>
+                    {user.role || user.roleCode || "N/A"}
                 </span>
             ),
         },
         {
             header: "SUID / Code",
             className: "text-center",
-            accessor: (user: UserData) => (
+            accessor: (user: PendingUser) => (
                 <span className={`inline-block px-2.5 py-1 rounded-full font-bold text-xs tabular-nums ${theme ? "bg-blue-950/40 text-blue-400" : "bg-red-50 text-red-600"}`}>
                     #{user.suid}
                 </span>
             ),
         },
         {
+            header: "Joining Date",
+            className: "text-center",
+            accessor: (user: PendingUser) => (
+                <span className={theme ? "text-gray-300" : "text-neutral-700"}>
+                    {user.joiningDate ? new Date(user.joiningDate).toLocaleDateString() : "-"}
+                </span>
+            ),
+        },
+        {
             header: "Actions",
             className: "text-center",
-            accessor: (user: UserData) => (
+            accessor: (user: PendingUser) => (
                 <div className="flex items-center justify-center gap-2">
                     <button
-                        onClick={() => console.log("Approved", user.suid)} // અહીં તમારું એપ્રૂવ ફંક્શન મૂકો
+                        onClick={() => handleApprove(user.suid)}
                         className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 active:scale-95 rounded-md transition-all shadow-sm"
                     >
                         Approve
                     </button>
                     <button
-                        onClick={() => console.log("Denied", user.suid)} // અહીં તમારું ડિનાય ફંક્શન મૂકો
+                        onClick={() => handleDeny(user.suid)}
                         className="px-3 py-1.5 text-xs font-bold text-white bg-red-500 hover:bg-red-600 active:scale-95 rounded-md transition-all shadow-sm"
                     >
                         Deny
@@ -127,8 +180,6 @@ export default function Permission() {
         switch (filterType) {
             case "suid": return { type: "number", placeholder: "Enter SUID number..." };
             case "role": return { type: "text", placeholder: "Search Role..." };
-            case "status": return { type: "text", placeholder: "Search Status..." };
-            case "performance": return { type: "text", placeholder: "Search Performance..." };
             case "name": return { type: "text", placeholder: "Search Name..." };
             default: return { type: "text", placeholder: "Search Across All Records..." };
         }
@@ -141,11 +192,8 @@ export default function Permission() {
         { value: "name", label: "Name" },
         { value: "suid", label: "SUID" },
         { value: "role", label: "Role" },
-        { value: "status", label: "Status" },
-        { value: "performance", label: "Performance" }
     ];
 
-    // 🟢 સર્ચ અને ફિલ્ટર લોજિક
     const filteredUsers = users.filter((user) => {
         if (!searchQuery) return true;
         const query = searchQuery.toLowerCase();
@@ -153,14 +201,12 @@ export default function Permission() {
         switch (filterType) {
             case "suid": return user.suid.toString().includes(query);
             case "name": return user.name.toLowerCase().includes(query);
-            case "role": return user.role.toLowerCase().includes(query);
-            case "status": return user.status.toLowerCase().includes(query);
-            case "performance": return user.performance.toLowerCase().includes(query);
+            case "role": return (user.role || user.roleCode || "").toLowerCase().includes(query);
             default:
                 return (
                     user.name.toLowerCase().includes(query) ||
                     user.suid.toString().includes(query) ||
-                    user.role.toLowerCase().includes(query)
+                    (user.role || user.roleCode || "").toLowerCase().includes(query)
                 );
         }
     });
@@ -176,6 +222,9 @@ export default function Permission() {
                         <h2 className={`text-xl font-bold leading-tight ${theme ? "text-blue-200" : "text-[#9b001c]"}`}>
                             Permission Messages
                         </h2>
+                        <p className={`text-xs mt-0.5 ${theme ? "text-gray-500" : "text-neutral-400"}`}>
+                            {loading ? "Loading..." : `${filteredUsers.length} pending approval${filteredUsers.length === 1 ? "" : "s"}`}
+                        </p>
                     </div>
                 </div>
 
@@ -261,11 +310,11 @@ export default function Permission() {
                 <Table
                     columns={columns}
                     data={filteredUsers}
-                    keyExtractor={(user: UserData) => user.suid.toString()}
+                    keyExtractor={(user: PendingUser) => user.suid.toString()}
                     emptyMessage={
                         searchQuery
                             ? `No users found matching "${searchQuery}"`
-                            : "No users found in the system!"
+                            : "No pending approval requests right now."
                     }
                 />
             )}

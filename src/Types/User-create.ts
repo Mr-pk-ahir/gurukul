@@ -7,7 +7,7 @@ export type UserCreate = {
     password: string;
     bod: string,
     departmentId: number; // 🌟 department માંથી departmentId કર્યું
-    sectionId: number;    
+    sectionId: number | null;
     standardId: number;   // 🌟 standard માંથી standardId કર્યું
     roleId: number;       // 🌟 નવું ઉમેર્યું
     roleCode: string;     // 🌟 નવું ઉમેર્યું

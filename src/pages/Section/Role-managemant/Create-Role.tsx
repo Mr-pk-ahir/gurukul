@@ -5,20 +5,29 @@ import Button from "../../../components/common/Button";
 import Checkbox from "../../../components/common/Checkbox";
 import { HiOutlineShieldCheck, HiOutlineDocumentText } from "react-icons/hi";
 
-// 🛠️ આપણો નવો ટાઇપ અહીં ઇમ્પોર્ટ કર્યો
 import type { RoleCreate, PermissionRow } from "../../../Types/Role-create";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+// 🎯 FIX: Tamara aapel permission JSON pramane exact 10 modules
+const modules = [
+    "Dashboard",
+    "Department",
+    "Section",
+    "Student",
+    "Users",
+    "Permissions",
+    "RolesPermissions",
+    "OverviewEdit",
+    "AmrutNuAachaman",
+    "DailyDarshan",
+];
 
 export default function CreateRole() {
     const { theme } = useTheme();
-    const modules = ["Department", "Users", "Roles & Permissions"];
 
-    // ⏳ રિક્વેસ્ટ પ્રોસેસ થાય ત્યારે લોડિંગ બતાવવા માટેની સ્ટેટ
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // 🛠️ useState માં RoleCreate ટાઇપ સેટ કર્યો
     const [formData, setFormData] = useState<RoleCreate>({
         roleName: "",
         roleCode: "",
@@ -60,21 +69,29 @@ export default function CreateRole() {
         });
     };
 
-    // 🚀 સબમિટ હેન્ડલર - જેમાં fetch API કનેક્ટ કર્યું છે
+    // 🎯 નવું: "બધા Select" ટૉગલ — module ની બધી actions એક સાથે on/off કરવા
+    const toggleAllForModule = (module: string, value: boolean) => {
+        setFormData((prev) => ({
+            ...prev,
+            permissions: {
+                ...prev.permissions,
+                [module]: { create: value, edit: value, view: value, delete: value },
+            },
+        }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
 
         try {
-            // 🔑 LocalStorage માંથી લોગિન વખતે સેવ કરેલો ટોકન મેળવો
             const token = localStorage.getItem("token");
 
-            // ⚡ બેકએન્ડ API કોલ (જો પોર્ટ અલગ હોય તો 5000 ની જગ્યાએ તમારો પોર્ટ લખવો)
             const response = await fetch(`${API_URL}/roles/create`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}` // બેકએન્ડ મિડલવેર માટે ટોકન મોકલ્યો
+                    "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify(formData),
             });
@@ -94,14 +111,13 @@ export default function CreateRole() {
                     }, {} as { [key: string]: PermissionRow }),
                 });
             } else {
-                // બેકએન્ડમાંથી આવેલી એરર મેસેજ બતાવશે (દા.ત. રોલ ઓલરેડી એક્ઝિસ્ટ કરે છે)
                 alert(`⚠️ ભૂલ: ${result.message || "રોલ ક્રિએટ ન થઈ શક્યો."}`);
             }
         } catch (error) {
             console.error("API Error:", error);
             alert("❌ સર્વર સાથે કનેક્ટ થવામાં સમસ્યા આવી રહી છે!");
         } finally {
-            setIsSubmitting(false); // લોડિંગ પૂરું કરો
+            setIsSubmitting(false);
         }
     };
 
@@ -114,7 +130,6 @@ export default function CreateRole() {
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* ફોર્મ ઇનપુટ્સ */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className={`block text-sm font-medium mb-1.5 ${theme ? "text-gray-300" : "text-neutral-700"}`}>Role Name</label>
@@ -145,7 +160,6 @@ export default function CreateRole() {
                     </div>
                 </div>
 
-                {/* Description */}
                 <div>
                     <label className={`block text-sm font-medium mb-1.5 ${theme ? "text-gray-300" : "text-neutral-700"}`}>Description (Optional)</label>
                     <textarea
@@ -162,43 +176,53 @@ export default function CreateRole() {
                     />
                 </div>
 
-                {/* Permissions Matrix */}
                 <div>
                     <label className={`block text-sm font-bold mb-3 ${theme ? "text-gray-200" : "text-neutral-800"}`}>
                         Module Permissions
                     </label>
-                    <div className={`overflow-hidden border rounded-xl ${theme ? "border-gray-800" : "border-neutral-200"}`}>
+                    <div className={`overflow-x-auto border rounded-xl ${theme ? "border-gray-800" : "border-neutral-200"}`}>
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className={`text-xs font-bold uppercase tracking-wider ${theme ? "bg-gray-800 text-gray-300" : "bg-[#9b001c] text-white"}`}>
-                                    <th className="p-4">Module Name</th>
+                                    <th className="p-4 whitespace-nowrap">Module Name</th>
                                     <th className="p-4 text-center">Create</th>
                                     <th className="p-4 text-center">Edit</th>
                                     <th className="p-4 text-center">View</th>
                                     <th className="p-4 text-center">Delete</th>
+                                    <th className="p-4 text-center whitespace-nowrap">All</th>
                                 </tr>
                             </thead>
                             <tbody className={`divide-y text-sm ${theme ? "divide-gray-800 bg-gray-800/20" : "divide-neutral-100 bg-white"}`}>
-                                {modules.map((module) => (
-                                    <tr key={module} className={theme ? "hover:bg-gray-800/40" : "hover:bg-neutral-50"}>
-                                        <td className="p-4 font-semibold">{module}</td>
-                                        {(["create", "edit", "view", "delete"] as const).map((action) => (
-                                            <td key={action} className="p-4 text-center">
+                                {modules.map((module) => {
+                                    const perm = formData.permissions[module];
+                                    const allChecked = perm.create && perm.edit && perm.view && perm.delete;
+                                    return (
+                                        <tr key={module} className={theme ? "hover:bg-gray-800/40" : "hover:bg-neutral-50"}>
+                                            <td className="p-4 font-semibold whitespace-nowrap">{module}</td>
+                                            {(["create", "edit", "view", "delete"] as const).map((action) => (
+                                                <td key={action} className="p-4 text-center">
+                                                    <Checkbox
+                                                        checked={perm[action]}
+                                                        onChange={() => handlePermissionChange(module, action)}
+                                                        disabled={isSubmitting}
+                                                    />
+                                                </td>
+                                            ))}
+                                            <td className="p-4 text-center">
                                                 <Checkbox
-                                                    checked={formData.permissions[module][action]}
-                                                    onChange={() => handlePermissionChange(module, action)}
+                                                    checked={allChecked}
+                                                    onChange={() => toggleAllForModule(module, !allChecked)}
                                                     disabled={isSubmitting}
                                                 />
                                             </td>
-                                        ))}
-                                    </tr>
-                                ))}
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                {/* Button */}
                 <div className="flex justify-end pt-4 border-t border-neutral-200 dark:border-gray-800">
                     <Button
                         type="submit"

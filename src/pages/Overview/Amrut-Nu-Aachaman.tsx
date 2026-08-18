@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../components/theme/ThemeContext';
 import DatePicker from '../../components/common/Calendar';
@@ -27,18 +27,14 @@ export default function AmrutNuAachaman() {
   const [error, setError] = useState<string | null>(null);
   const [activeItem, setActiveItem] = useState<AmrutItem | null>(null);
 
-  // ૧. બેકએન્ડમાંથી ડેટા ફેચ કરવાનું ફંક્શન
-  const fetchRecords = async () => {
+  const fetchRecords = useCallback(async () => {
     try {
       setLoading(true);
-      // અહીં તમારા સાચા API રાઉટનો પાથ લખો (દા.ત. /api/amrut-aachaman)
-      const response = await fetch(`${BACKEND_URL}/amrut-aachaman`); 
+      const response = await fetch(`${BACKEND_URL}/amrut-aachaman`);
       const result = await response.json();
 
       if (result.success) {
         setAllRecords(result.data);
-        
-        // બાય-ડિફોલ્ટ આજનો ડેટા ફિલ્ટર કરીને બતાવો
         const todayData = result.data.filter((item: AmrutItem) => item.date === today);
         setFilteredData(todayData);
         setError(null);
@@ -51,12 +47,24 @@ export default function AmrutNuAachaman() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [today]);
 
-  // પેજ લોડ થાય ત્યારે ડેટા લાવો
   useEffect(() => {
-    fetchRecords();
-  }, []);
+    let isMounted = true;
+
+    const loadRecords = async () => {
+      await fetchRecords();
+      if (!isMounted) {
+        return;
+      }
+    };
+
+    void loadRecords();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchRecords]);
 
   // ૨. સર્ચ બટન પર ક્લિક કરવાથી તારીખ મુજબ ફિલ્ટર થશે
   const handleSearch = () => {

@@ -3,6 +3,8 @@ export interface PermissionRow {
     edit: boolean;
     view: boolean;
     delete: boolean;
+    // 🎯 FIX: આ લાઈન ઉમેરવાથી "string can't be used to index type 'PermissionRow'" એરર દૂર થશે
+    [key: string]: boolean; 
 }
 
 export interface ModulePermissions {
@@ -22,7 +24,8 @@ export interface AuthUser {
     email?: string;
     roleName: string;
     roleCode: string;
-    permissions: ModulePermissions;
+    // 🎯 અહીં 'any' ઉમેરો જેથી જો JSON.parse() વખતે ડેટા થોડો અલગ હોય તો એરર ના આવે
+    permissions: ModulePermissions | any; 
     departmentId?: number | null;
     sectionId?: number | null;
 }

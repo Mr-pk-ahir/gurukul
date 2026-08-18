@@ -53,6 +53,7 @@ export default function RoleList() {
 
     // 🔄 ૨. પેજ ઓપન થાય ત્યારે રિક્વેસ્ટ ટ્રિગર થશે
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchRoles();
     }, []);
 

@@ -1,41 +1,64 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import Table from "../../../components/common/Table";
 import { HiOutlineUserGroup, HiSearch, HiFilter, HiChevronDown } from "react-icons/hi";
+import { toast } from "sonner";
 
-// 💾 Type-Safe Data Model (Database Interface)
-interface UserCreate {
-  suid: string;          // Unique Primary Key
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+// 🎯 FIX: Backend have camelCase mokle che (departmentId, sectionId, roleCode)
+interface Student {
+  suid: string;
   name: string;
   username: string;
   roleCode: string;
   departmentId: number;
-  sectionId: number;     // ⚠️ 4 નંબર સિવાયના ડિપાર્ટમેન્ટ માટે 0 રહેશે
-  standard: string;      // Academic વિગત
+  sectionId: number;
+  standardId?: number;
 }
 
 export default function StudentListPage() {
   const { theme } = useTheme();
 
-  // 🎯 URL માંથી ડાયનેમિક ડિપાર્ટમેન્ટ ID મેળવવા માટે
-  const { deptId } = useParams<{ deptId: string }>();
+  // 🎯 FIX: sectionId pan URL thi aave che have (section-specific list)
+  const { deptId, sectionId } = useParams<{ deptId: string; sectionId: string }>();
   const currentDeptId = Number(deptId);
+  const currentSectionId = sectionId ? Number(sectionId) : null;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // 🗃️ માસ્ટર સ્ટુડન્ટ લિસ્ટ (મિક્સ ડિપાર્ટમેન્ટ ડેટા)
-  const allStudents: UserCreate[] = [
-    { suid: "SUID-1001", name: "Aarav Mehta", username: "aarav_mehta", roleCode: "STUDENT", departmentId: 4, sectionId: 1, standard: "10th-A" },
-    { suid: "SUID-1002", name: "Diya Patel", username: "diya_patel", roleCode: "STUDENT", departmentId: 4, sectionId: 2, standard: "12th-B" },
-    { suid: "SUID-2001", name: "Rajesh Kumar", username: "rajesh_k", roleCode: "STUDENT", departmentId: 10, sectionId: 0, standard: "Not Required" },
-    { suid: "SUID-2002", name: "Megha Patel", username: "megha_p", roleCode: "STAFF", departmentId: 10, sectionId: 0, standard: "Not Required" },
-    { suid: "SUID-3001", name: "Smit Shah", username: "smit_shah", roleCode: "STUDENT", departmentId: 20, sectionId: 0, standard: "Not Required" },
-  ];
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // 🎯 ૧. જે તે ડિપાર્ટમેન્ટ પ્રમાણે ડેટા આઇસોલેશન (Isolation)
+  // 🎯 FIX: Sirf is section na students j fetch karo (badha /users nahi)
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        setLoading(true);
+
+        const url = currentSectionId
+          ? `${API_URL}/users/section/${currentSectionId}`
+          : `${API_URL}/users`;
+
+        const res = await fetch(url);
+        const json = await res.json();
+
+        const students: Student[] = json.data || [];
+        setAllStudents(students);
+      } catch {
+        toast.error("Failed to load students.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, [currentSectionId]);
+
+  // 🎯 FIX: department_id nahi, departmentId (camelCase) — ane already section-specific API vaparyu che
   const deptFilteredStudents = allStudents.filter((s) => s.departmentId === currentDeptId);
 
   const filterOptions = [
@@ -44,20 +67,16 @@ export default function StudentListPage() {
     { label: "SUID", value: "suid" },
     { label: "Username", value: "username" },
     { label: "Role", value: "roleCode" },
-    { label: "Class", value: "standard" },
   ];
 
-  // 🌟 ડાયનેમિક પ્લેસહોલ્ડર (UserList.tsx જેવો જ pattern)
   const getSearchInputConfig = () => {
     switch (filterType) {
       case "suid":
-        return { type: "text", placeholder: "Enter SUID (e.g. SUID-1001)..." };
+        return { type: "text", placeholder: "Enter SUID..." };
       case "username":
         return { type: "text", placeholder: "Search Username" };
       case "roleCode":
         return { type: "text", placeholder: "Search Role" };
-      case "standard":
-        return { type: "text", placeholder: "Search Class" };
       case "name":
         return { type: "text", placeholder: "Search Name" };
       default:
@@ -67,56 +86,51 @@ export default function StudentListPage() {
 
   const inputConfig = getSearchInputConfig();
 
-  // 🌟 સ્માર્ટ ફિલ્ટરિંગ લોજિક — UserList.tsx જેવો જ pattern
   const finalTableData = deptFilteredStudents.filter((s) => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
 
     switch (filterType) {
       case "name":
-        return s.name.toLowerCase().includes(query);
+        return s.name?.toLowerCase().includes(query);
       case "suid":
-        return s.suid.toLowerCase().includes(query);
+        return String(s.suid).toLowerCase().includes(query);
       case "username":
-        return s.username.toLowerCase().includes(query);
+        return s.username?.toLowerCase().includes(query);
       case "roleCode":
-        return s.roleCode.toLowerCase().startsWith(query);
-      case "standard":
-        return s.standard.toLowerCase().includes(query);
-      default: // "all"
+        return s.roleCode?.toLowerCase().startsWith(query);
+      default:
         return (
-          s.name.toLowerCase().includes(query) ||
-          s.suid.toLowerCase().includes(query) ||
-          s.username.toLowerCase().includes(query) ||
-          s.roleCode.toLowerCase().startsWith(query) ||
-          s.standard.toLowerCase().includes(query)
+          s.name?.toLowerCase().includes(query) ||
+          String(s.suid).toLowerCase().includes(query) ||
+          s.username?.toLowerCase().includes(query) ||
+          s.roleCode?.toLowerCase().startsWith(query)
         );
     }
   });
 
   const totalStudents = deptFilteredStudents.length;
 
-  // 📋 ટેબલ કોલમ કન્ફિગ્યુરેશન
   const columns = [
     {
       header: "SUID",
-      className: `w-32 text-center font-mono font-bold ${theme ? "text-white" : "text-white"}`,
-      accessor: (student: UserCreate) => student.suid,
+      className: "w-32 text-center font-mono font-bold",
+      accessor: (student: Student) => student.suid,
     },
     {
       header: "Full Name",
-      className: `text-left font-semibold ${theme ? "text-white" : "text-white"}`,
-      accessor: (student: UserCreate) => student.name,
+      className: "text-left font-semibold",
+      accessor: (student: Student) => student.name,
     },
     {
       header: "Username",
-      className: "text-left font-mono text-xs text-white",
-      accessor: (student: UserCreate) => `@${student.username}`,
+      className: "text-left font-mono text-xs",
+      accessor: (student: Student) => `@${student.username}`,
     },
     {
       header: "Role",
       className: "text-center",
-      accessor: (student: UserCreate) => (
+      accessor: (student: Student) => (
         <span
           className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
             student.roleCode === "STUDENT"
@@ -128,24 +142,7 @@ export default function StudentListPage() {
                 : "bg-purple-100 text-purple-700"
           }`}
         >
-          {student.roleCode}
-        </span>
-      ),
-    },
-    {
-      header: "Academic Class",
-      className: "text-center font-medium",
-      accessor: (student: UserCreate) => (
-        <span
-          className={`text-sm ${
-            student.departmentId === 4
-              ? theme
-                ? "text-neutral-300"
-                : "text-gray-700"
-              : "text-gray-400 italic"
-          }`}
-        >
-          {student.departmentId === 4 ? student.standard : "N/A (Dept 0)"}
+          {student.roleCode || "N/A"}
         </span>
       ),
     },
@@ -154,7 +151,6 @@ export default function StudentListPage() {
   return (
     <div className="p-6 space-y-6 max-w-full mx-auto">
 
-      {/* 🏷️ હેડર સેક્શન + ફિલ્ટર/સર્ચ — UserList.tsx જેવો જ pattern */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 
         <div className="flex items-center gap-3">
@@ -170,14 +166,15 @@ export default function StudentListPage() {
               Official Student Roster
             </h2>
             <p className={`text-xs mt-0.5 ${theme ? "text-gray-500" : "text-neutral-400"}`}>
-              Showing {finalTableData.length} of {totalStudents} students · Dept #{currentDeptId}
+              {loading
+                ? "Loading students..."
+                : `Showing ${finalTableData.length} of ${totalStudents} students · Section #${currentSectionId}`}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto mt-2 sm:mt-1">
 
-          {/* 🌀 ફિલ્ટર ડ્રોપડાઉન */}
           <div className="relative group">
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -244,7 +241,6 @@ export default function StudentListPage() {
             )}
           </div>
 
-          {/* 🔍 સર્ચ ઇનપુટ */}
           <div className="relative group">
             <div
               className={`absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none transition-colors ${
@@ -269,7 +265,6 @@ export default function StudentListPage() {
         </div>
       </div>
 
-      {/* 🗂️ ડેટા ટેબલ સેક્શન */}
       <div
         className={`rounded-2xl border shadow-sm overflow-hidden p-2 ${
           theme ? "bg-gray-900 border-gray-800" : "bg-white border-gray-100"
@@ -280,9 +275,11 @@ export default function StudentListPage() {
           data={finalTableData}
           keyExtractor={(student) => student.suid}
           emptyMessage={
-            searchQuery
+            loading
+              ? "Loading students..."
+              : searchQuery
               ? `No student matches "${searchQuery}"`
-              : "No registered students found in this department pipeline yet."
+              : "No registered students found in this section yet."
           }
         />
       </div>

@@ -255,11 +255,6 @@ export default function DescriptionInput({
         }
 
         const formattedLines = lines.map((line, i) => {
-            let marker = "";
-            if (kind === "bullet") marker = "- ";
-            else if (kind === "numbered") marker = `${startIndex + i + 1}. `;
-            else marker = `${toAlphaIndex(startIndex + i)}. `;
-
             // જે-તે લાઇન પર પહેલેથી આ જ પ્રકારનું માર્કર હોય તો ડુપ્લિકેટ ન કરો
             const alreadyMarked =
                 (kind === "bullet" && /^-\s/.test(line)) ||
@@ -267,6 +262,13 @@ export default function DescriptionInput({
                 (kind === "alpha" && /^[a-z]+\.\s/.test(line));
 
             if (alreadyMarked) return line;
+
+            // eslint-disable-next-line no-useless-assignment
+            let marker = "";
+            if (kind === "bullet") marker = "- ";
+            else if (kind === "numbered") marker = `${startIndex + i + 1}. `;
+            else marker = `${toAlphaIndex(startIndex + i)}. `;
+
             return marker + (line.length > 0 ? line : "List Item");
         });
 

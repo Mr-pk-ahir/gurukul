@@ -1,17 +1,19 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import Input from "../../../components/common/Input";
 import Button from "../../../components/common/Button";
-import SearchableDropdown from "../../../components/common/SearchableDropdown"; // 👑 SearchableDropdown Import karyu
+import SearchableDropdown from "../../../components/common/SearchableDropdown";
+import { departmentService } from "../../../services/departmentService";
+import { sectionService } from "../../../services/sectionService";
+import { SECTION_HEAD_ROLE_CODE } from "../../../Types/Section-create";
 
 import {
     HiOutlineOfficeBuilding,
     HiOutlineUser,
-    HiOutlineClipboardList
+    HiOutlineClipboardList,
 } from "react-icons/hi";
 import { toast } from "sonner";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 function SectionHeading({
     icon,
@@ -45,6 +47,7 @@ export interface SectionCreate {
     sectionName: string;
     sectionHead: string;
     departmentId: string;
+    description: string;
 }
 
 interface DropdownOption {
@@ -52,140 +55,119 @@ interface DropdownOption {
     label: string;
 }
 
-interface User {
-    id: string;
-    name: string;
-    departmentId: string;
-}
-
 export default function CreateSection() {
     const { theme } = useTheme();
     const [loading, setLoading] = useState<boolean>(false);
 
-    // Dropdown Data States (Dropdown Option format ma convert kariyu chhe)
     const [deptOptions, setDeptOptions] = useState<DropdownOption[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
     const [userOptions, setUserOptions] = useState<DropdownOption[]>([]);
+    const [headsLoading, setHeadsLoading] = useState<boolean>(false);
 
     const [formData, setFormData] = useState<SectionCreate>({
         sectionName: "",
         sectionHead: "",
         departmentId: "",
+        description: "",
     });
 
-    // Fetch Departments and Users on mount
-    useEffect(() => {
-        fetchInitialData();
-    }, []);
-
-    // Filter users dynamically whenever departmentId changes
-    // 1. Filter users dynamically whenever departmentId changes
-    useEffect(() => {
-        // ખાતરી કરો કે 'users' એરે છે અને તેમાં ડેટા છે
-        if (formData.departmentId && Array.isArray(users) && users.length > 0) {
-            const associatedUsers = users.filter((user: any) => {
-                // ડેટાબેઝના સાચા ફિલ્ડ 'department_id' સાથે સરખામણી
-                const userDeptId = user.department_id || user.departmentId;
-                return String(userDeptId) === String(formData.departmentId);
-            });
-
-            const mappedUsers = associatedUsers.map((u: any) => {
-                // જો suid કે id બંને ન હોય તો સેફ્ટી માટે રેન્ડમ કી જશે, જેથી 'undefined' ની એરર ક્યારેય ન આવે
-                const uniqueId = u.suid || u.id || `user-${Math.random()}`;
-                return {
-                    value: uniqueId,
-                    label: u.name || "Unknown User",
-                };
-            });
-            setUserOptions(mappedUsers);
-        } else {
-            setUserOptions([]);
-        }
-        // જ્યારે ડિપાર્ટમેન્ટ બદલાય ત્યારે સેક્શન હેડ રીસેટ કરવો
-        setFormData((prev) => ({ ...prev, sectionHead: "" }));
-    }, [formData.departmentId, users]);
-
-
-    // 2. Fetch Initial Data માં પણ સુધારો
-    const fetchInitialData = async () => {
+    // 🎯 Aa j real fix che: /departments/:id/users API vaparo (role_code sathe aave che)
+    // ane sirf SECTION_HEAD role wala users j dropdown ma batavo
+    const fetchSectionHeadsForDepartment = async (departmentId: number) => {
         try {
-            const [deptRes, userRes] = await Promise.all([
-                fetch(`${API_URL}/departments`),
-                fetch(`${API_URL}/users`)
-            ]);
+            setHeadsLoading(true);
+            const userData = await departmentService.getUsersByDepartment(departmentId);
 
-            const deptData = await deptRes.json();
-            const userData = await userRes.json();
+            if (userData.success && Array.isArray(userData.data)) {
+                const sectionHeadUsers = userData.data.filter(
+                    (u: any) => u.role_code === SECTION_HEAD_ROLE_CODE
+                );
 
+                const mapped = sectionHeadUsers.map((u: any) => ({
+                    value: u.suid,
+                    label: u.name,
+                }));
+
+                setUserOptions(mapped);
+
+                if (sectionHeadUsers.length === 0) {
+                    toast.info("આ Department માં હાલ કોઈ Section Head role વાળો User નથી.");
+                }
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Failed to load department users");
+        } finally {
+            setHeadsLoading(false);
+        }
+    };
+
+    const fetchDepartments = async () => {
+        try {
+            const deptData = await departmentService.getAllDepartments();
             if (deptData.success && Array.isArray(deptData.data)) {
-                const mappedDepts = deptData.data.map((d: any) => {
-                    // 👑 જો બેકએન્ડમાંથી department_id, departmentId કે id જે પણ આવે, એને પ્રોપરલી પકડી લેશે
-                    const actualId = d.department_id !== undefined ? d.department_id : (d.departmentId !== undefined ? d.departmentId : d.id);
-                    const actualName = d.department_name || d.departmentName || d.name || "Unknown";
-
-                    return {
-                        value: actualId, // હવે આ ક્યારેય undefined નહીં થાય
-                        label: actualName
-                    };
-                });
+                const mappedDepts = deptData.data.map((d: any) => ({
+                    value: d.department_id,
+                    label: d.department_name,
+                }));
                 setDeptOptions(mappedDepts);
             }
-
-            if (userData.success) {
-                const fetchedUsers = Array.isArray(userData.data) ? userData.data : [];
-                setUsers(fetchedUsers);
-            }
-        } catch (error) {
-            toast.error("Failed to load dependency data");
+        } catch (error: any) {
+            toast.error(error.message || "Failed to load departments");
         }
     };
 
-    // Standard handler for text inputs
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            void fetchDepartments();
+        }, 0);
+
+        return () => window.clearTimeout(timer);
+    }, []);
+
+    // 🎯 Jyare department badlay, tyare tya na "Section Head" role wala users j fetch karo
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            if (formData.departmentId) {
+                void fetchSectionHeadsForDepartment(Number(formData.departmentId));
+            } else {
+                setUserOptions([]);
+            }
+            setFormData((prev) => ({ ...prev, sectionHead: "" }));
+        }, 0);
+
+        return () => window.clearTimeout(timer);
+    }, [formData.departmentId]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    // Custom handler specifically designed for Searchable Dropdowns
     const handleSelectChange = (name: string, value: string | number) => {
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value, // આ લાઇન બરાબર છે, પણ ખાતરી કરો કે ટાઇપ સેફ રહે
-        }));
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validation check for dropdowns
         if (!formData.departmentId) {
             toast.error("Please select a department");
             return;
         }
-        if (!formData.sectionHead) {
-            toast.error("Please assign a section head");
+        if (!formData.sectionName.trim()) {
+            toast.error("Please enter section name");
             return;
         }
 
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_URL}/sections/create`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    name: formData.sectionName,
-                    departmentId: Number(formData.departmentId),
-                    description: `Section Head SUID: ${formData.sectionHead}` // ડિસ્ક્રિપ્શનમાં હેડ આઈડી સેટ કરવા માટે
-                }),
+            // 🎯 FIX: sectionHead have ek alag field tarike jay che, description ma nahi
+            const result = await sectionService.createSection({
+                name: formData.sectionName,
+                departmentId: Number(formData.departmentId),
+                description: formData.description || undefined,
+                sectionHead: formData.sectionHead ? Number(formData.sectionHead) : null,
             });
-
-            const result = await response.json();
 
             if (result.success) {
                 toast.success("Section created successfully");
@@ -193,7 +175,9 @@ export default function CreateSection() {
                     sectionName: "",
                     sectionHead: "",
                     departmentId: "",
+                    description: "",
                 });
+                setUserOptions([]);
             }
         } catch (error: any) {
             toast.error(error.message || "Error creating section");
@@ -209,7 +193,6 @@ export default function CreateSection() {
                 : "bg-white border-neutral-200 text-neutral-900"
                 }`}
         >
-            {/* ===== Header ===== */}
             <div className="mb-8 pb-6 border-b flex flex-col items-center text-center gap-2 border-neutral-200 dark:border-gray-800">
                 <div
                     className={`w-16 h-16 text-white rounded-full shadow-lg ${theme
@@ -228,8 +211,6 @@ export default function CreateSection() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
-
-                {/* ===== Department Selection ===== */}
                 <div>
                     <SectionHeading icon={<HiOutlineOfficeBuilding size={15} />} title="Select Department" theme={theme} />
                     <SearchableDropdown
@@ -238,47 +219,68 @@ export default function CreateSection() {
                         searchPlaceholder="Search departments..."
                         options={deptOptions}
                         selectedValue={formData.departmentId}
-                        onSelect={(val) => {
-                            // 👑 આ કોન્સોલ લોગ ઉમેરો
-                            handleSelectChange("departmentId", val);
-                        }}
+                        onSelect={(val) => handleSelectChange("departmentId", val)}
                         required={true}
                     />
                 </div>
 
-                {/* ===== Section Identity ===== */}
                 <div>
                     <SectionHeading icon={<HiOutlineOfficeBuilding size={15} />} title="Section Identity" theme={theme} />
-                    <div>
-                        <label className="block text-sm font-medium mb-1.5">Section Name *</label>
-                        <Input
-                            type="text"
-                            name="sectionName"
-                            value={formData.sectionName}
-                            onChange={handleInputChange}
-                            icon={<HiOutlineOfficeBuilding className="text-lg" />}
-                            placeholder="Enter section name"
-                            required
-                        />
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium mb-1.5">Section Name *</label>
+                            <Input
+                                type="text"
+                                name="sectionName"
+                                value={formData.sectionName}
+                                onChange={handleInputChange}
+                                icon={<HiOutlineOfficeBuilding className="text-lg" />}
+                                placeholder="Enter section name"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1.5">Description</label>
+                            <textarea
+                                name="description"
+                                value={formData.description}
+                                onChange={handleInputChange}
+                                placeholder="Optional description about this section"
+                                rows={3}
+                                className={`w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition-colors ${theme
+                                    ? "bg-gray-800/60 border-gray-700 text-white placeholder-gray-500 focus:border-blue-500"
+                                    : "bg-white border-gray-200/80 text-gray-800 placeholder-gray-400 focus:border-red-600"
+                                    }`}
+                            />
+                        </div>
                     </div>
                 </div>
 
-                {/* ===== Section Head (User) Selection ===== */}
                 <div>
-                    <SectionHeading icon={<HiOutlineUser size={15} />} title="Section Head Assignment" theme={theme} />
+                    <SectionHeading icon={<HiOutlineUser size={15} />} title="Section Head Assignment (Optional)" theme={theme} />
                     <SearchableDropdown
                         label="Assign Section Head"
-                        placeholder={formData.departmentId ? "Select a user as head" : "Please select a department first"}
+                        placeholder={
+                            !formData.departmentId
+                                ? "Please select a department first"
+                                : headsLoading
+                                    ? "Loading users..."
+                                    : userOptions.length === 0
+                                        ? "No Section Head available in this department"
+                                        : "Select a user as head (optional)"
+                        }
                         searchPlaceholder="Search users..."
                         options={userOptions}
                         selectedValue={formData.sectionHead}
                         onSelect={(val) => handleSelectChange("sectionHead", val)}
-                        disabled={!formData.departmentId}
-                        required={true}
+                        disabled={!formData.departmentId || headsLoading || userOptions.length === 0}
+                        required={false}
                     />
+                    <p className={`text-xs mt-1.5 ${theme ? "text-gray-500" : "text-neutral-400"}`}>
+                        Only users with "Section Head" role from the selected department are shown here.
+                    </p>
                 </div>
 
-                {/* ===== Submit ===== */}
                 <div className="flex justify-end items-center gap-3 pt-6 border-t border-neutral-200 dark:border-gray-800">
                     <p className={`text-xs mr-auto hidden sm:block ${theme ? "text-gray-500" : "text-neutral-400"}`}>
                         Fields marked * are required.

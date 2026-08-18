@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { HiOutlineMenuAlt2, HiOutlineBell } from "react-icons/hi";
 import { useTheme } from "../components/theme/ThemeContext";
 import ThemeToggle from "../components/theme/ThemeToggle";
 import NotificationBox from "../components/Notification/NotificationBox";
-import EventCalendarPopup, { eventsData } from "../components/Event-Calendar/Event-Calendar";
+import EventCalendarPopup from "../components/Event-Calendar/Event-Calendar";
+import { eventsData } from "../components/Event-Calendar/event-constants";
 import ProfilePopup, { type ProfileUser } from "../components/Profile-Popup/Profile-Popup";
+import { CgAlbum } from "react-icons/cg";
+import Application from "../components/applocation/Application";
+import type { AuthUser } from "../Types/Role-create";
 
 interface HeaderProps {
     toggleSidebar: () => void;
@@ -14,44 +18,62 @@ interface HeaderProps {
 export default function Header({ toggleSidebar }: HeaderProps) {
     const { theme } = useTheme();
     const navigate = useNavigate();
-    const adminData = JSON.parse(localStorage.getItem("adminData") || '{"username": "Admin"}');
 
+    // 🎯 FIX: "adminData" nahi, "user" key vaparo — aakhi app ma e j key vapari che
+    const [user, setUser] = useState<AuthUser | null>(null);
+
+    useEffect(() => {
+        const data = localStorage.getItem("user");
+        if (data) {
+            try {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                setUser(JSON.parse(data));
+            } catch (e) {
+                console.error("Error parsing user data:", e);
+            }
+        }
+    }, []);
+
+    const [applicationData, setApplicationData] = useState(false);
     const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
     const [isEventCalendarOpen, setIsEventCalendarOpen] = useState<boolean>(false);
 
+    // 🎯 FIX: sahi field names — AuthUser type mujab (id, username, roleName)
     const profileUser: ProfileUser = {
-        suid: adminData.suid ?? adminData.id ?? "-",
-        fullName: adminData.fullName ?? adminData.username ?? "Admin",
-        username: adminData.username ?? "-",
-        joinedDate: adminData.joinedDate ?? "-",
-        birthDate: adminData.birthDate ?? "-",
-        roleLabel: adminData.role ?? adminData.roleLabel ?? "SUPER_ADMIN",
-        avatarUrl: adminData.avatarUrl,
+        suid: user?.id ? String(user.id) : "-",
+        fullName: user?.username ?? "Admin",
+        username: user?.username ?? "-",
+        joinedDate: "-", // ⚠️ TODO: backend login response ma joiningDate nathi aavtu, add karvu padse
+        birthDate: "-",  // ⚠️ TODO: backend login response ma bod nathi aavtu, add karvu padse
+        roleLabel: user?.roleName ?? user?.roleCode ?? "USER",
     };
 
     const handleLogout = () => {
-        localStorage.removeItem("adminData");
+        // 🎯 FIX: "user" key pan remove karo — nahi to ProtectedRoute hajuye login mani lese
+        localStorage.removeItem("user");
         localStorage.removeItem("token");
         navigate("/login");
     };
 
-    // આજના દિવસ અને મહિનાની માહિતી મેળવવા
+
     const currentDate = new Date();
     const dayNumber = currentDate.getDate().toString().padStart(2, '0');
     const monthShort = currentDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
 
-    // આજની તારીખને 'YYYY-MM-DD' ફોર્મેટમાં ફેરવીને ઇવેન્ટ ડેટા ચેક કરવા
     const yearStr = currentDate.getFullYear();
     const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0');
     const dateStr = String(currentDate.getDate()).padStart(2, '0');
     const todayStr = `${yearStr}-${monthStr}-${dateStr}`;
 
-    // ઇવેન્ટ કે તિથિ છે કે નહિ તે ચેક કરો
     const todayEvent = eventsData ? eventsData[todayStr] : null;
 
     return (
         <header className={`h-18 border-b flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-sm transition-colors duration-300 ${theme ? "bg-[#0f172a]/95 backdrop-blur-xl border-slate-800 text-white" : "bg-white border-slate-200 text-slate-800"
             }`}>
+
+            {applicationData && (
+                <Application onClose={() => setApplicationData(false)} />
+            )}
 
             <div className="flex items-center gap-4">
                 <button
@@ -69,25 +91,20 @@ export default function Header({ toggleSidebar }: HeaderProps) {
             </div>
 
             <div className="flex items-center gap-3 sm:gap-5 h-full">
-
-                {/* --- Minimal Luxury Event Calendar Button --- */}
                 <div className="relative flex items-center">
                     <button
                         onClick={() => { setIsEventCalendarOpen(!isEventCalendarOpen); setIsNotifOpen(false); }}
                         className={`group relative flex items-center justify-center h-9.5 px-3.5 rounded-xl border transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.03] ${theme
-                                ? "bg-slate-800/90 border-slate-700/80 hover:border-slate-500 hover:bg-slate-800"
-                                : "bg-slate-50 border-slate-200 hover:border-slate-300 hover:bg-white"
+                            ? "bg-slate-800/90 border-slate-700/80 hover:border-slate-500 hover:bg-slate-800"
+                            : "bg-slate-50 border-slate-200 hover:border-slate-300 hover:bg-white"
                             }`}
                     >
-                        {/* Date | Month Layout */}
                         <div className="flex items-center">
-                            {/* અહીં તારીખના રંગમાં ફેરફાર કર્યો છે */}
                             <span className={`text-[17px] font-black leading-none tracking-tight transition-colors ${theme ? "text-blue-500" : "text-red-500"
                                 }`}>
                                 {dayNumber}
                             </span>
 
-                            {/* Vertical Divider ( | ) */}
                             <span className={`text-[12px] font-light mx-2 ${theme ? "text-slate-600 group-hover:text-slate-500" : "text-slate-300 group-hover:text-slate-400"
                                 }`}>
                                 |
@@ -99,7 +116,6 @@ export default function Header({ toggleSidebar }: HeaderProps) {
                             </span>
                         </div>
 
-                        {/* ડાયનેમિક ડોટ: ઇવેન્ટ (Blue) અથવા તિથિ (Green) */}
                         {todayEvent && (
                             <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 animate-pulse ${theme ? "border-slate-800" : "border-white"
                                 } ${todayEvent.category === 'event'
@@ -109,20 +125,28 @@ export default function Header({ toggleSidebar }: HeaderProps) {
                         )}
                     </button>
 
-                    {/* Calendar Popup Component */}
                     <EventCalendarPopup
                         isOpen={isEventCalendarOpen}
                         onClose={() => setIsEventCalendarOpen(false)}
                     />
                 </div>
 
-                {/* --- Notification Bell --- */}
                 <div className="relative flex items-center">
                     <button
+                        onClick={() => setApplicationData(prev => !prev)}
+                        className={`p-2.5 duration-300 cursor-pointer border-r rounded-xl transition-colors relative shadow-sm ${theme
+                            ? "bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-blue-200"
+                            : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-white hover:text-red-500"
+                            }`}
+                        title="Application"
+                    >
+                        <CgAlbum className="text-[20px]" />
+                    </button>
+                    <button
                         onClick={() => { setIsNotifOpen(!isNotifOpen); setIsEventCalendarOpen(false); }}
-                        className={`p-2.5 duration-300 cursor-pointer rounded-xl border transition-colors relative shadow-sm ${theme
-                                ? "bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-blue-200"
-                                : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-white hover:text-red-500"
+                        className={`p-2.5 duration-300 cursor-pointer rounded-xl border-l transition-colors relative shadow-sm ${theme
+                            ? "bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-blue-200"
+                            : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-white hover:text-red-500"
                             }`}
                     >
                         <HiOutlineBell className="text-[20px]" />

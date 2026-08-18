@@ -1,8 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import Table from "../../../components/common/Table";
 import { useTheme } from "../../../components/theme/ThemeContext";
-import DataCruding from "../../../components/common/DataCruding";
 import { HiOutlineUsers, HiSearch, HiFilter, HiChevronDown } from "react-icons/hi";
+import userDelete from "../../../action/User/Delete";
+import UserActionMenu from "../../../components/user-actions/UserActionMenu";
+import UserDetailsModal from "../../../components/user-actions/UserDetailsModal";
+import EditUserModal from "../../../components/user-actions/EditUserModal";
+import { toast } from "sonner";
 
 // 🟢 ૧. બેકએન્ડ સ્ટ્રક્ચર મુજબ પરમિશન ઇન્ટરફેસ
 interface PermissionActions {
@@ -24,9 +29,8 @@ interface UserData {
     requestDate?: string;  
     joiningDate?: string;  
     status: "APPROVED" | "PENDING" | "REJECTED";
-    // 🟢 નવા ડાયનેમિક ફિલ્ડ્સ
     role: string; 
-    permissions: ModulePermissions; // બેકએન્ડ તરફથી આવતો JSON ઓબ્જેક્ટ
+    permissions: ModulePermissions;
 }
 
 const filterOptions = [
@@ -50,8 +54,9 @@ export default function UserList() {
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState("all");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+    const [activeModal, setActiveModal] = useState<"view" | "edit" | null>(null);
 
-    // 🔄 API માંથી ડેટા ફેચ કરવાનો લોજિક (રીપેર કરેલ લોડિંગ સ્ટેટ)
     const fetchUsers = async () => {
         try {
             setLoading(true); 
@@ -77,25 +82,42 @@ export default function UserList() {
             console.error("Fetch Error:", err);
             setError(err.message || "સર્વર કનેક્શન ફેલ થયું!");
         } finally {
-            setLoading(false); // 🟢 લોડિંગ બંધ કરવાનું અહીં સેટ કર્યું
+            setLoading(false);
         }
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchUsers();
     }, []); 
 
-    const handleDeleteUser = async (suid: number) => {
-        if (!window.confirm("શું તમે આ યુઝરને ખરેખર ડિલીટ કરવા માંગો છો?")) return;
+    const handleViewUser = (user: UserData) => {
+        setSelectedUser(user);
+        setActiveModal("view");
+    };
+
+    const handleEditUser = (user: UserData) => {
+        setSelectedUser(user);
+        setActiveModal("edit");
+    };
+
+    const handleDeleteUser = async (user: UserData) => {
         try {
-            setUsers((prevUsers) => prevUsers.filter((user) => user.suid !== suid));
+            await userDelete(user.suid);
+            setUsers((prevUsers) => prevUsers.filter((item) => item.suid !== user.suid));
+            setSelectedUser(null);
+            setActiveModal(null);
         } catch (err) {
-            alert("યુઝર ડિલીટ કરવામાં સમસ્યા આવી.");
+            toast.error("Delete Error:" + (err instanceof Error ? err.message : "Unknown error"));
         }
     };
 
-    const handleEditUser = (suid: number) => {
-        console.log("Edit કરાયેલ SUID:", suid);
+    const handleSaveUser = async (updatedUser: UserData) => {
+        setUsers((prevUsers) =>
+            prevUsers.map((user) => (user.suid === updatedUser.suid ? { ...user, ...updatedUser } : user))
+        );
+        setActiveModal(null);
+        setSelectedUser(null);
     };
 
     const getSearchInputConfig = () => {
@@ -159,7 +181,6 @@ export default function UserList() {
             : "bg-neutral-50 border-neutral-200 text-neutral-600";
     };
 
-    // 🟢 ૨. રોલના કલર સેટ કરવાનું ફંક્શન
     const getRoleStyle = (role: string) => {
         const cleanRole = role.toUpperCase();
         if (cleanRole.includes("ADMIN")) {
@@ -198,47 +219,6 @@ export default function UserList() {
                 </span>
             ),
         },
-        // 🟢 ૩. નવો પરમિશન કોલમ (દરેક મોડ્યુલની True એક્શન્સ નાના બેજમાં બતાવશે)
-        {
-            header: "Permissions",
-            className: "text-left max-w-xs",
-            accessor: (user: UserData) => {
-                if (!user.permissions || Object.keys(user.permissions).length === 0) {
-                    return <span className="text-xs text-gray-400 italic">No custom permissions</span>;
-                }
-
-                return (
-                    <div className="flex flex-col gap-1">
-                        {Object.entries(user.permissions).map(([moduleName, actions]) => {
-                            // ફક્ત એ જ એક્શન્સ ફિલ્ટર કરો જે True હોય
-                            const activeActions = Object.entries(actions)
-                                .filter(([_, allowed]) => allowed)
-                                .map(([actionName]) => actionName);
-
-                            if (activeActions.length === 0) return null;
-
-                            return (
-                                <div key={moduleName} className="flex items-center gap-1.5 text-xs">
-                                    <span className={`font-semibold shrink-0 ${theme ? "text-gray-300" : "text-neutral-700"}`}>{moduleName}:</span>
-                                    <div className="flex flex-wrap gap-0.5">
-                                        {activeActions.map((act) => (
-                                            <span 
-                                                key={act} 
-                                                className={`px-1 py-0.5 text-[10px] font-bold rounded uppercase scale-90 ${
-                                                    theme ? "bg-gray-800 border border-gray-700 text-blue-400" : "bg-neutral-100 border border-neutral-200 text-blue-600"
-                                                }`}
-                                            >
-                                                {act}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                );
-            }
-        },
         {
             header: "Performance",
             accessor: (user: UserData) => (
@@ -273,9 +253,10 @@ export default function UserList() {
             header: "Actions",
             className: "w-16 text-center",
             accessor: (user: UserData) => (
-                <DataCruding
-                    onEdit={() => handleEditUser(user.suid)}
-                    onDelete={() => handleDeleteUser(user.suid)}
+                <UserActionMenu
+                    onView={() => handleViewUser(user)}
+                    onEdit={() => handleEditUser(user)}
+                    onDelete={() => void handleDeleteUser(user)}
                 />
             ),
         },
@@ -386,6 +367,27 @@ export default function UserList() {
                             ? `No users found matching "${searchQuery}"`
                             : "No users found in the system!"
                     }
+                />
+            )}
+
+            {activeModal === "view" && (
+                <UserDetailsModal
+                    user={selectedUser}
+                    onClose={() => {
+                        setActiveModal(null);
+                        setSelectedUser(null);
+                    }}
+                />
+            )}
+
+            {activeModal === "edit" && (
+                <EditUserModal
+                    user={selectedUser}
+                    onClose={() => {
+                        setActiveModal(null);
+                        setSelectedUser(null);
+                    }}
+                    onSave={handleSaveUser}
                 />
             )}
         </div>

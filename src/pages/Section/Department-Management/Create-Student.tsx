@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { useTheme } from '../../../components/theme/ThemeContext';
-import DatePicker from '../../../components/common/Calendar';
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { useTheme } from "../../../components/theme/ThemeContext";
 import {
     Camera,
     User,
@@ -10,43 +10,100 @@ import {
     BookOpen,
     ImagePlus,
     Eye,
-    EyeOff
-} from 'lucide-react';
+    EyeOff,
+    Layers,
+    ShieldCheck,
+} from "lucide-react";
+import { toast } from "sonner";
+import Input from "../../../components/common/Input";
+import PremiumDateField from "../../../components/Students/PremiumDateField";
+import SearchableDropdown from "../../../components/common/SearchableDropdown";
+import type { StudentFormData } from "../../../Types/Student";
+import { sectionService } from "../../../services/sectionService";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+// 🎯 FIX: Aa form ma have fakt 2 j role select thai shake chhe —
+// Section Head (SECHEAD101) ane Student (STUDENT). Role code database
+// na "roles" table na role_code sathe exact match hovo joie.
+const ROLE_OPTIONS = [
+    { value: "STUDENT", label: "Student" },
+    { value: "SECHEAD101", label: "Section Head" },
+];
 
 const CreateStudent = () => {
     const { theme } = useTheme();
+    const { deptId, sectionId } = useParams<{ deptId: string; sectionId: string }>();
 
-    // State for form fields
-    const [formData, setFormData] = useState({
-        suid: '',
-        fullName: '',
-        birthdate: new Date().toISOString().split('T')[0],
-        joiningDate: new Date().toISOString().split('T')[0],
-        username: '',
-        password: '',
+    const [formData, setFormData] = useState<StudentFormData>({
+        suid: "",
+        fullName: "",
+        birthdate: new Date().toISOString().split("T")[0],
+        joiningDate: new Date().toISOString().split("T")[0],
+        username: "",
+        password: "",
     });
 
-    const [profileImage, setProfileImage] = useState<string | null>(null);
+    // 🎯 FIX: Role have dropdown thi select thay chhe, hardcoded nathi.
+    // Default "STUDENT" rakhyu chhe.
+    const [roleCode, setRoleCode] = useState<string>("STUDENT");
+
+    const [sectionName, setSectionName] = useState<string>("");
+    const [departmentName, setDepartmentName] = useState<string>("");
+    const [sectionLoading, setSectionLoading] = useState(true);
+
+    const [, setProfileImageFile] = useState<File | null>(null);
+    const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        const fetchSectionDetail = async () => {
+            if (!sectionId) {
+                setSectionLoading(false);
+                return;
+            }
+            try {
+                setSectionLoading(true);
+                const result = await sectionService.getSectionById(Number(sectionId));
+                if (result.success && result.data) {
+                    setSectionName(result.data.name);
+                    setDepartmentName(result.data.department_name || "");
+                }
+            } catch {
+                toast.error("Failed to load section details.");
+            } finally {
+                setSectionLoading(false);
+            }
+        };
+        fetchSectionDetail();
+    }, [sectionId]);
+
+    useEffect(() => {
+        return () => {
+            if (profileImagePreview) URL.revokeObjectURL(profileImagePreview);
+        };
+    }, [profileImagePreview]);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     const handleDateChange = (fieldName: string, dateStr: string) => {
-        setFormData(prev => ({ ...prev, [fieldName]: dateStr }));
+        setFormData((prev) => ({ ...prev, [fieldName]: dateStr }));
+    };
+
+    const setImage = (file: File) => {
+        if (profileImagePreview) URL.revokeObjectURL(profileImagePreview);
+        setProfileImageFile(file);
+        setProfileImagePreview(URL.createObjectURL(file));
     };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const imageUrl = URL.createObjectURL(file);
-            setProfileImage(imageUrl);
-        }
+        if (file) setImage(file);
     };
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -63,17 +120,84 @@ const CreateStudent = () => {
         e.preventDefault();
         setIsDragging(false);
         const file = e.dataTransfer.files?.[0];
-        if (file && file.type.startsWith('image/')) {
-            const imageUrl = URL.createObjectURL(file);
-            setProfileImage(imageUrl);
-        }
+        if (file && file.type.startsWith("image/")) setImage(file);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
-        console.log("Student Data Submitted: ", formData);
-        setTimeout(() => setLoading(false), 1000); // Mock API call
+
+        if (!deptId || !sectionId) {
+            toast.error("Department/Section missing. Open this page from a section link.");
+            return;
+        }
+        if (
+            !formData.suid ||
+            !formData.fullName ||
+            !formData.username ||
+            !formData.password
+        ) {
+            toast.error("Please fill all required fields.");
+            return;
+        }
+        if (!/^\d+$/.test(formData.suid)) {
+            toast.error("SUID must be a valid number.");
+            return;
+        }
+        if (!roleCode) {
+            toast.error("Please select a role.");
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            const payload = {
+                suid: Number(formData.suid),
+                avatar: "", // ⚠️ TODO: profileImageFile ne base64/Cloudinary upload karvani baki che
+                name: formData.fullName,
+                username: formData.username,
+                password: formData.password,
+                bod: formData.birthdate,
+                departmentId: Number(deptId),
+                sectionId: Number(sectionId),
+                standardId: roleCode === "STUDENT" ? 1 : null, // ⚠️ TODO: Standard/Class dropdown add karvani baki che
+                roleCode: roleCode, // 🎯 FIX: have dropdown thi selected value vaparay chhe
+                joiningDate: formData.joiningDate,
+            };
+
+            const response = await fetch(`${API_URL}/users/register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            const result = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                throw new Error(result?.message || "Failed to create profile.");
+            }
+
+            toast.success(
+                roleCode === "SECHEAD101"
+                    ? "Section Head created successfully. They are now the head of this section."
+                    : "Student profile created successfully."
+            );
+            setFormData({
+                suid: "",
+                fullName: "",
+                birthdate: new Date().toISOString().split("T")[0],
+                joiningDate: new Date().toISOString().split("T")[0],
+                username: "",
+                password: "",
+            });
+            setRoleCode("STUDENT");
+            setProfileImageFile(null);
+            setProfileImagePreview(null);
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Something went wrong.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const inputWrapperClasses = "relative group transition-all duration-300";
@@ -88,7 +212,6 @@ const CreateStudent = () => {
         }`;
 
     return (
-        // 🎯 Main Premium Card Wrapper (max-w-7xl થી Create User જેવું જ અલાઇનમેન્ટ રહેશે)
         <div className={`group/maincard max-w-7xl mx-auto p-6 sm:p-8 rounded-3xl mt-6 mb-8 border transition-all duration-700 relative overflow-hidden font-sans backdrop-blur-xl ${theme
             ? "bg-[#111827]/90 border-gray-800 shadow-[0_8px_30px_rgb(0,0,0,0.5)] text-gray-200"
             : "bg-white/90 border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] text-slate-800"
@@ -112,17 +235,23 @@ const CreateStudent = () => {
                     ? "from-white via-blue-100 to-blue-300"
                     : "from-slate-900 via-slate-800 to-red-600"
                     }`}>
-                    Create Student Profile
+                    Create Section Member
                 </h1>
                 <p className={`text-sm sm:text-base font-medium tracking-wide max-w-md transition-colors duration-300 ${theme ? "text-gray-400" : "text-slate-500"
                     }`}>
-                    Provide the required details to enroll a new student into the system.
+                    Provide the required details to enroll a new student or assign a section head.
                 </p>
+
+                {!sectionLoading && sectionId && (
+                    <span className={`inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-full text-xs font-bold ${theme ? "bg-blue-500/10 text-blue-300" : "bg-red-500/10 text-red-600"}`}>
+                        <Layers size={13} />
+                        {departmentName || `Dept #${deptId}`} → {sectionName || `Section #${sectionId}`}
+                    </span>
+                )}
             </div>
 
             <form onSubmit={handleSubmit} className="relative z-10 space-y-10">
 
-                {/* ===== 2. Premium Image Upload ===== */}
                 <div className="flex flex-col items-center justify-center mb-6">
                     <div
                         onDragOver={handleDragOver}
@@ -130,15 +259,15 @@ const CreateStudent = () => {
                         onDrop={handleDrop}
                         className={`relative group w-40 h-40 rounded-4xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all duration-500 ease-out transform hover:-translate-y-1.5 hover:scale-[1.02] cursor-pointer ${isDragging
                             ? theme
-                                ? 'border-blue-500 bg-blue-500/10 scale-105 shadow-[0_0_35px_rgba(59,130,246,0.3)]'
-                                : 'border-red-500 bg-red-500/10 scale-105 shadow-[0_0_35px_rgba(239,68,68,0.2)]'
+                                ? "border-blue-500 bg-blue-500/10 scale-105 shadow-[0_0_35px_rgba(59,130,246,0.3)]"
+                                : "border-red-500 bg-red-500/10 scale-105 shadow-[0_0_35px_rgba(239,68,68,0.2)]"
                             : theme
-                                ? 'border-gray-600 bg-[#1f2937]/50 hover:border-blue-400 hover:bg-blue-900/20 shadow-[0_8px_25px_rgba(0,0,0,0.3)] hover:shadow-[0_15px_40px_rgba(59,130,246,0.25)]'
-                                : 'border-slate-300 bg-slate-50 hover:border-red-400 hover:bg-red-50 shadow-[0_8px_25px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(239,68,68,0.15)]'
+                                ? "border-gray-600 bg-[#1f2937]/50 hover:border-blue-400 hover:bg-blue-900/20 shadow-[0_8px_25px_rgba(0,0,0,0.3)] hover:shadow-[0_15px_40px_rgba(59,130,246,0.25)]"
+                                : "border-slate-300 bg-slate-50 hover:border-red-400 hover:bg-red-50 shadow-[0_8px_25px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(239,68,68,0.15)]"
                             }`}
                     >
-                        {profileImage ? (
-                            <img src={profileImage} alt="Profile" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                        {profileImagePreview ? (
+                            <img src={profileImagePreview} alt="Profile" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                         ) : (
                             <div className={`flex flex-col items-center justify-center transition-all duration-500 transform group-hover:scale-105 ${theme ? "text-gray-500 group-hover:text-blue-400" : "text-slate-400 group-hover:text-red-500"
                                 }`}>
@@ -161,14 +290,39 @@ const CreateStudent = () => {
                     </div>
                     <span className={`text-sm mt-4 font-bold tracking-widest uppercase transition-colors duration-300 ${theme ? "text-gray-500" : "text-slate-400"
                         }`}>
-                        {isDragging ? 'Drop it like it\'s hot! ' : 'Profile Photo'}
+                        {isDragging ? "Drop it like it's hot!" : "Profile Photo"}
                     </span>
                 </div>
 
-                {/* ===== 3. Form Sections (Perfectly Aligned in Grid) ===== */}
                 <div className="space-y-8">
 
-                    {/* --- IDENTITY SECTION --- */}
+                    {/* 🎯 NAVU: Role selection section */}
+                    <div className="relative">
+                        <h2 className={`text-sm font-black uppercase tracking-[0.2em] mb-5 flex items-center gap-2.5 transition-colors ${theme ? "text-gray-400" : "text-slate-500"
+                            }`}>
+                            <span className={`p-1.5 rounded-lg transition-colors duration-300 ${theme ? "bg-blue-500/10 text-blue-400" : "bg-red-500/10 text-red-500"}`}>
+                                <ShieldCheck size={16} />
+                            </span>
+                            Role Assignment
+                        </h2>
+                        <div className="max-w-md">
+                            <SearchableDropdown
+                                label="Role"
+                                placeholder="Select a role"
+                                searchPlaceholder="Search role..."
+                                options={ROLE_OPTIONS}
+                                selectedValue={roleCode}
+                                onSelect={(val) => setRoleCode(String(val))}
+                                required
+                            />
+                            {roleCode === "SECHEAD101" && (
+                                <p className={`text-xs mt-2 font-medium ${theme ? "text-blue-300" : "text-red-600"}`}>
+                                    ⚡ This person will automatically become the Head of "{sectionName || `Section #${sectionId}`}".
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="relative">
                         <h2 className={`text-sm font-black uppercase tracking-[0.2em] mb-5 flex items-center gap-2.5 transition-colors ${theme ? "text-gray-400" : "text-slate-500"
                             }`}>
@@ -182,58 +336,60 @@ const CreateStudent = () => {
                                 <label className={`text-sm font-semibold tracking-wide transition-colors ${theme ? "text-gray-300" : "text-slate-700"}`}>
                                     Student ID (SUID) <span className="text-red-500">*</span>
                                 </label>
-                                <div className={inputWrapperClasses}>
-                                    <Hash size={20} className={iconClasses} />
-                                    <input
-                                        type="text" name="suid" value={formData.suid} onChange={handleInputChange} placeholder="Enter SUID" required
-                                        className={inputClasses}
-                                    />
-                                </div>
+                                <Input
+                                    icon={<Hash />}
+                                    type="text"
+                                    name="suid"
+                                    value={formData.suid}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter SUID"
+                                    required
+                                />
                             </div>
 
                             <div className="flex flex-col gap-2">
                                 <label className={`text-sm font-semibold tracking-wide transition-colors ${theme ? "text-gray-300" : "text-slate-700"}`}>
                                     Full Name <span className="text-red-500">*</span>
                                 </label>
-                                <div className={inputWrapperClasses}>
-                                    <User size={20} className={iconClasses} />
-                                    <input
-                                        type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} placeholder="Enter full name" required
-                                        className={inputClasses}
-                                    />
-                                </div>
+                                <Input
+                                    icon={<User size={20} />}
+                                    type="text"
+                                    name="fullName"
+                                    value={formData.fullName}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter full name"
+                                    required
+                                />
                             </div>
                         </div>
                     </div>
-                    {/* --- IMPORTANT DATES --- */}
-                    <div className="relative z-50"> {/* 👈 અહિયાં z-50 એડ કરવામાં આવ્યું છે જેથી કેલેન્ડર પાછળ ના જાય */}
-                        <h2 className={`text-sm font-black uppercase tracking-[0.2em] mb-5 flex items-center gap-2.5 transition-colors ${theme ? "text-gray-400" : "text-slate-500"
-                            }`}>
+
+                    <div className="relative z-50">
+                        <h2 className={`text-sm font-black uppercase tracking-[0.2em] mb-5 flex items-center gap-2.5 transition-colors ${theme ? "text-gray-400" : "text-slate-500"}`}>
                             <span className={`p-1.5 rounded-lg transition-colors duration-300 ${theme ? "bg-blue-500/10 text-blue-400" : "bg-red-500/10 text-red-500"}`}>
                                 <Calendar size={16} />
                             </span>
                             Important Dates
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 group/dates">
-                            <div className="transition-all duration-300 hover:-translate-y-1">
-                                <DatePicker
-                                    label="Birthdate (BOD)"
-                                    selectedValue={formData.birthdate}
-                                    onChange={(dateStr) => handleDateChange('birthdate', dateStr)}
-                                    required
-                                />
-                            </div>
-                            <div className="transition-all duration-300 hover:-translate-y-1">
-                                <DatePicker
-                                    label="Joining Date"
-                                    selectedValue={formData.joiningDate}
-                                    onChange={(dateStr) => handleDateChange('joiningDate', dateStr)}
-                                    required
-                                />
-                            </div>
+                            <PremiumDateField
+                                label="Birthdate (BOD)"
+                                value={formData.birthdate}
+                                onChange={(dateStr) => handleDateChange("birthdate", dateStr)}
+                                theme={theme}
+                                required
+                            />
+
+                            <PremiumDateField
+                                label="Joining Date"
+                                value={formData.joiningDate}
+                                onChange={(dateStr) => handleDateChange("joiningDate", dateStr)}
+                                theme={theme}
+                                required
+                            />
                         </div>
                     </div>
-                    {/* --- CREDENTIALS SECTION --- */}
+
                     <div className="relative">
                         <h2 className={`text-sm font-black uppercase tracking-[0.2em] mb-5 flex items-center gap-2.5 transition-colors ${theme ? "text-gray-400" : "text-slate-500"
                             }`}>
@@ -250,7 +406,12 @@ const CreateStudent = () => {
                                 <div className={inputWrapperClasses}>
                                     <User size={20} className={iconClasses} />
                                     <input
-                                        type="text" name="username" value={formData.username} onChange={handleInputChange} placeholder="Ex :  Username-123" required
+                                        type="text"
+                                        name="username"
+                                        value={formData.username}
+                                        onChange={handleInputChange}
+                                        placeholder="Ex :  Username-123"
+                                        required
                                         className={inputClasses}
                                     />
                                 </div>
@@ -271,7 +432,6 @@ const CreateStudent = () => {
                                         required
                                         className={`${inputClasses} pr-12`}
                                     />
-                                    {/* Password Toggle Button */}
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
@@ -284,8 +444,6 @@ const CreateStudent = () => {
                             </div>
                         </div>
                     </div>
-
-
 
                 </div>
 
@@ -304,8 +462,7 @@ const CreateStudent = () => {
                             : "bg-linear-to-r from-red-600 via-rose-600 to-red-700 shadow-[0_8px_15px_-5px_rgba(220,38,38,0.2)] hover:shadow-[0_15px_30px_-10px_rgba(220,38,38,0.4)] border border-red-500/30 hover:border-red-400"
                             }`}
                     >
-                        <span className="absolute inset-0 w-full h-full bg-linear-to-r from-transparent via-white/20 to-transparent translate-x-[-150%] skew-x-[-30deg] group-hover/btn:translate-x-[150%] transition-transform duration-700 ease-out pointer-events-none"></span>
-
+                        <span className="absolute inset-0 w-full h-full bg-linear-to-r from-transparent via-white/20 to-transparent translate-x-[-150%] skew-x-[-30deg] group-hover/btn:translate-x-[150%] transition-transform duration-700 ease-in-out"></span>
                         <span className="relative flex items-center justify-center gap-2">
                             {loading ? (
                                 <>
@@ -313,7 +470,7 @@ const CreateStudent = () => {
                                     Processing...
                                 </>
                             ) : (
-                                'Create Profile'
+                                "Create Profile"
                             )}
                         </span>
                     </button>

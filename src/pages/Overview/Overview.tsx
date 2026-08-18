@@ -3,41 +3,11 @@ import { motion } from "framer-motion";
 import ThemeToggle from "../../components/theme/ThemeToggle";
 import { useTheme } from "../../components/theme/ThemeContext";
 import { Link } from "react-router-dom";
-import EventCalendarPopup, { eventsData } from "../../components/Event-Calendar/Event-Calendar";
+import EventCalendarPopup from "../../components/Event-Calendar/Event-Calendar";
+import { eventsData } from "../../components/Event-Calendar/event-constants";
+import { STATIC_DATA, API_BASE_URL } from "./overview-constants";
 
-const STATIC_DATA = {
-    section1: {
-        menuOptions: [
-            // 🚀 અહી બંને ઓપ્શન માટે path ઉમેરેલ છે
-            { id: 1, label: "Amrut Nu Aachaman", path: "/amrut-nu-aachaman" },
-            { id: 2, label: "Daily Darshan", path: "/daily-darshan" },
-        ],
-    },
-    section2: {
-        title: "Revolutionizing Education with AI",
-        description:
-            "An AI-Powered LMS bridging the digital divide in schools, colleges, coaching centres, and rural institutions — even offline.",
-    },
-    section3: {
-        tagline: "AI-POWERED LEARNING",
-        title: "Smart & Offline Infrastructure",
-        description:
-            "Offline content management powered by cutting-edge technology, which delivers the best education to students even without the internet.",
-    },
-    footer: {
-        brandName: "RuralSpark",
-        brandDescription:
-            "Empowering rural education through cutting-edge AI technology, bringing digital content where it matters most.",
-        contactEmail: "support@ruralspark.com",
-        links: [
-            { label: "About Us", href: "#about" },
-            { label: "Features", href: "#features" },
-            { label: "Contact", href: "#contact" },
-        ],
-    },
-};
-
-function maskFade(fromPercent: number) {
+const maskFade = (fromPercent: number) => {
     return {
         maskImage: `linear-gradient(to bottom, black ${fromPercent}%, transparent 100%)`,
         WebkitMaskImage: `linear-gradient(to bottom, black ${fromPercent}%, transparent 100%)`,
@@ -71,18 +41,21 @@ export default function Overview() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
-    // 🚀 બેકએન્ડ/લોકલસ્ટોરેજમાંથી આવતા ડેટા માટેનું સ્ટેટ
+    // 🚀 Backend thi aavta overview images mate state
     const [overviewImages, setOverviewImages] = useState({
         heroSlider: [] as string[],
         featureImage: [] as string[],
-        smartInfrastructure: [] as string[]
+        smartInfrastructure: [] as string[],
     });
+    const [isLoadingOverview, setIsLoadingOverview] = useState(true);
 
     const [isEventCalendarOpen, setIsEventCalendarOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
     const [formData, setFormData] = useState({ suid: "", fullName: "", std: "", grNo: "" });
-    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null); // 🚀 sirf preview batavva mate
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { section1, section2, section3, footer } = STATIC_DATA;
 
@@ -95,33 +68,35 @@ export default function Overview() {
 
     const todayEvent = eventsData ? eventsData[todayStr] : null;
 
-    // 🚀 નવો અપડેટ કરેલો useEffect: LocalStorage અને વિન્ડો ફોકસ ઇવેન્ટ હેન્ડલિંગ સાથે
+    // 🚀 Backend API thi overview images fetch karvi
     useEffect(() => {
-        const fetchOverviewData = () => {
+        const fetchOverviewData = async () => {
             try {
-                // LocalStorage માંથી ડેટા ચેક કરો
-                const savedData = localStorage.getItem("overview_data");
-                if (savedData) {
-                    const result = JSON.parse(savedData);
+                const res = await fetch(`${API_BASE_URL}/overview`);
+                const result = await res.json();
+
+                if (result.success) {
                     setOverviewImages({
-                        heroSlider: result.heroSlider || [],
-                        featureImage: result.featureImage || [],
-                        smartInfrastructure: result.smartInfrastructure || []
+                        heroSlider: result.data.heroSlider || [],
+                        featureImage: result.data.featureImage || [],
+                        smartInfrastructure: result.data.smartInfrastructure || [],
                     });
                 }
             } catch (error) {
-                console.error("Error loading localStorage data:", error);
+                console.error("Error fetching overview data:", error);
+            } finally {
+                setIsLoadingOverview(false);
             }
         };
 
         fetchOverviewData();
 
-        // જો ડેટા લાઈવ ચેન્જ જોવો હોય તો બ્રાઉઝર વિન્ડો ફોકસ થાય ત્યારે પણ અપડેટ થશે
+        // Admin panel thi image update thay tyare window focus par re-fetch thashe
         window.addEventListener("focus", fetchOverviewData);
         return () => window.removeEventListener("focus", fetchOverviewData);
     }, []);
 
-    // 🚀 ડાયનેમિક હીરો સ્લાઈડર માટે ઈમેજ ચેન્જ કરવાનું લોજીક
+    // 🚀 Dynamic hero slider mate image change logic
     useEffect(() => {
         if (overviewImages.heroSlider.length === 0) return;
 
@@ -131,18 +106,54 @@ export default function Overview() {
         return () => clearInterval(timer);
     }, [overviewImages.heroSlider.length]);
 
+    // 🚀 File object save karo (backend ne moklva mate) + preview URL alag banavo
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
+            setPhotoFile(file);
             setPhotoPreview(URL.createObjectURL(file));
         }
     };
 
-    const handleFormSubmit = (e: React.FormEvent) => {
+    const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        alert("Student details submitted successfully!");
-        setFormData({ suid: "", fullName: "", std: "", grNo: "" });
-        setPhotoPreview(null);
+
+        if (photoFile && !photoFile.type.startsWith("image/")) {
+            alert("Please upload a valid image file.");
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            // ⚠️ Note: Student registration backend endpoint (/students) hajub setup nathi thayu.
+            // Jyare banse tyare aa fetch call use karo:
+            /*
+            const data = new FormData();
+            data.append("suid", formData.suid);
+            data.append("fullName", formData.fullName);
+            data.append("std", formData.std);
+            data.append("grNo", formData.grNo);
+            if (photoFile) data.append("photo", photoFile);
+
+            const res = await fetch(`${API_BASE_URL}/students`, {
+                method: "POST",
+                body: data,
+            });
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message);
+            */
+
+            alert("Student details submitted successfully!");
+            setFormData({ suid: "", fullName: "", std: "", grNo: "" });
+            setPhotoFile(null);
+            setPhotoPreview(null);
+        } catch (error) {
+            console.error("Error submitting form:", error);
+            alert("Something went wrong. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const inputClasses = `w-full px-5 py-3.5 rounded-2xl text-sm font-medium transition-all duration-500 outline-none border backdrop-blur-md shadow-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield] ${
@@ -154,10 +165,8 @@ export default function Overview() {
     return (
         <div className={`h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth [&::-webkit-scrollbar]:none [-ms-overflow-style:none] scrollbar-none relative transition-colors duration-500 ${theme ? "bg-slate-950" : "bg-slate-50/50"}`}>
 
-            {/* ---------------- SECTION 1: HERO / IMAGES ---------------- */}
-            <section className={`h-screen w-full snap-start relative flex flex-col justify-between p-6 overflow-hidden transition-colors duration-500 ${theme ? "bg-slate-950" : "bg-white"}`}>
+            <section className={`h-200 w-full snap-start relative flex flex-col justify-between p-6 overflow-hidden transition-colors duration-500 ${theme ? "bg-slate-950" : "bg-white"}`}>
                 <div className="absolute inset-0 z-0" style={maskFade(40)}>
-                    {/* 🚀 API માંથી આવેલા હીરો સ્લાઈડર ઈમેજીસ */}
                     {overviewImages.heroSlider.length > 0 ? (
                         overviewImages.heroSlider.map((img, index) => (
                             <div
@@ -167,7 +176,6 @@ export default function Overview() {
                             />
                         ))
                     ) : (
-                        // ડિફોલ્ટ પ્લેસહોલ્ડર (જ્યાં સુધી ડેટા લોડ ના થાય)
                         <div className="absolute inset-0 bg-slate-800 transition-opacity duration-1000 ease-in-out opacity-100"></div>
                     )}
                 </div>
@@ -213,8 +221,8 @@ export default function Overview() {
                         </div>
                     </div>
 
-                    <Link 
-                        to="/login" 
+                    <Link
+                        to="/login"
                         className={`flex items-center justify-center px-4 py-2 rounded-xl shadow-md text-sm font-bold transition-all active:scale-90 bg-white border ${theme ? "border-blue-200 text-blue-600 hover:bg-blue-50/30" : "border-red-200 text-red-600 hover:bg-red-50/30"}`}
                     >
                         Login
@@ -228,7 +236,6 @@ export default function Overview() {
                     className="relative z-10 flex flex-col items-center gap-3 mt-auto mb-2"
                 >
                     <div className="flex justify-center gap-2">
-                        {/* 🚀 ડાયનેમિક સ્લાઈડર ડોટ્સ */}
                         {(overviewImages.heroSlider.length > 0 ? overviewImages.heroSlider : [1, 2, 3]).map((_, idx) => (
                             <div key={idx} className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentImgIndex ? (theme ? "w-6 bg-blue-500" : "w-6 bg-red-500") : "w-2 bg-white/40"}`} />
                         ))}
@@ -262,7 +269,6 @@ export default function Overview() {
                     </Reveal>
                 </div>
 
-                {/* API માંથી આવતી Feature Image અહી દેખાશે */}
                 <div className={`w-150 max-w-full h-87.5 p-5 rounded-[50px] bg-amber-300 shadow-xl`}>
                     {overviewImages.featureImage.length > 0 ? (
                         <img
@@ -272,7 +278,7 @@ export default function Overview() {
                         />
                     ) : (
                         <div className={`w-full h-full rounded-[40px] bg-gray-900 flex items-center justify-center text-gray-500 text-sm`}>
-                            No Feature Image Available
+                            {isLoadingOverview ? "Loading..." : "No Feature Image Available"}
                         </div>
                     )}
                 </div>
@@ -281,17 +287,14 @@ export default function Overview() {
             {/* ---------------- SECTION 3: 70% - 30% LUXURY LAYOUT ---------------- */}
             <section className="h-screen w-full snap-start relative flex flex-col lg:flex-row gap-6 p-6 lg:p-8 overflow-hidden">
 
-                {/* --- 70% LEFT PART --- */}
                 <div className={`relative flex-1 lg:w-[70%] h-[50%] lg:h-full rounded-4xl p-8 flex items-center justify-center shadow-[0_22px_50px_rgba(0,0,0,0.03)] border transition-all duration-500 ${theme ? "bg-slate-900/95 border-slate-800 shadow-black/40" : "bg-white border-slate-100"}`}>
                 </div>
 
-                {/* --- 30% RIGHT PART: ULTRA PREMIUM REGISTRATION BOX --- */}
                 <div className={`relative w-full lg:w-[30%] h-[50%] lg:h-full rounded-4xl p-8 flex flex-col justify-between shadow-[0_25px_60px_-15px_rgba(0,0,0,0.04)] border transition-all duration-500 backdrop-blur-xl ${theme
                         ? "bg-slate-900/20 border-slate-800/60 shadow-black/50"
                         : "bg-white/90 border-slate-200/50"
                     }`}>
 
-                    {/* --- HEADER & CALENDAR BAR --- */}
                     <div className="flex justify-between items-center w-full mb-8 relative z-30">
                         <div className="flex flex-col gap-0.5">
                             <h3 className={`text-sm font-black tracking-tight leading-tight uppercase ${theme ? "text-blue-500" : "text-red-600"}`}>
@@ -325,8 +328,8 @@ export default function Overview() {
                             </button>
 
                             <div className="absolute top-14 right-0 origin-top-right">
-                                <EventCalendarPopup 
-                                    isOpen={isEventCalendarOpen} 
+                                <EventCalendarPopup
+                                    isOpen={isEventCalendarOpen}
                                     onClose={() => setIsEventCalendarOpen(false)}
                                     selectedDate={selectedDate}
                                     onSelectDate={(date: Date) => {
@@ -338,7 +341,6 @@ export default function Overview() {
                         </div>
                     </div>
 
-                    {/* --- REGISTRATION FORM --- */}
                     <form onSubmit={handleFormSubmit} className="flex flex-col flex-1 gap-5 overflow-y-auto scrollbar-none pb-1">
                         <div className="flex justify-center mb-4">
                             <label className="relative cursor-pointer group">
@@ -383,12 +385,13 @@ export default function Overview() {
                         <motion.button
                             whileTap={{ scale: 0.98 }}
                             type="submit"
-                            className={`w-full mt-4 py-4 rounded-2xl font-bold tracking-wide text-white text-sm transition-all duration-500 cursor-pointer ${theme
+                            disabled={isSubmitting}
+                            className={`w-full mt-4 py-4 rounded-2xl font-bold tracking-wide text-white text-sm transition-all duration-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${theme
                                     ? "bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-[0_15px_30px_rgba(37,99,235,0.2)] hover:shadow-[0_15px_35px_rgba(37,99,235,0.35)]"
                                     : "bg-linear-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 shadow-[0_15px_30px_rgba(239,68,68,0.2)] hover:shadow-[0_15px_35px_rgba(239,68,68,0.35)]"
                                 }`}
                         >
-                            Submit Application
+                            {isSubmitting ? "Submitting..." : "Submit Application"}
                         </motion.button>
                     </form>
                 </div>
@@ -396,8 +399,7 @@ export default function Overview() {
 
             {/* ---------------- SECTION 4: SMART & OFFLINE INFRASTRUCTURE ---------------- */}
             <section className={`h-screen w-full snap-start relative flex items-center justify-center transition-colors duration-500 overflow-hidden ${theme ? "bg-slate-950" : "bg-white"}`}>
-                
-                {/* 🚀 API માંથી આવતી Smart Infrastructure ની ઈમેજને બેકગ્રાઉન્ડ તરીકે સેટ કરેલ છે */}
+
                 {overviewImages.smartInfrastructure.length > 0 && (
                     <div
                         className="absolute inset-0 bg-cover bg-center opacity-30 md:opacity-40 transition-opacity duration-700"

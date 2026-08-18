@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "../../../components/theme/ThemeContext";
@@ -17,7 +18,7 @@ import {
 import type { UserCreate } from "../../../Types/User-create";
 import { FaUserCircle } from "react-icons/fa";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 interface RoleOption {
     role_id: number;
@@ -77,7 +78,7 @@ export default function CreateUserForm() {
 
     const isUserRole = incomingData?.requestedRole === "USER";
 
-    const [formData, setFormData] = useState<UserCreate>({
+    const [formData, setFormData] = useState<UserCreate>(() => ({
         suid: Math.floor(100000 + Math.random() * 900000),
         avatar: "",
         name: incomingData?.applicantName || "",
@@ -87,14 +88,14 @@ export default function CreateUserForm() {
         bod: new Date().toISOString().split("T")[0],
         roleCode: "",
         // 🎯 અહિયાં 0 ની જગ્યાએ default null રાખ્યું છે
-        departmentId: incomingData?.departmentId || (null as any), 
+        departmentId: incomingData?.departmentId || (null as any),
         sectionId: 0,
         standardId: 0,
         joiningDate: new Date().toISOString().split("T")[0],
         status: isUserRole ? "PENDING" : "APPROVED",
-    });
+    }));
 
-    const isHeadRole = formData.roleCode === "HEAD100"; 
+    const isHeadRole = formData.roleCode === "HEAD100";
     const isFromPipeline = !!incomingData;
 
     useEffect(() => {
@@ -136,9 +137,16 @@ export default function CreateUserForm() {
                         }
                     }
                 }
-
                 if (deptsRes.ok && deptsResult.success) {
-                    setDepartments(deptsResult.data);
+                    // 🎯 FIX: snake_case ne camelCase ma convert karo
+                    const mappedDepts = deptsResult.data.map((d: any) => ({
+                        departmentId: d.department_id,
+                        departmentName: d.department_name,
+                        description: d.description,
+                        departmentHeadId: d.department_head_id,
+                        departmentHeadName: d.department_head_name,
+                    }));
+                    setDepartments(mappedDepts);
                 } else {
                     console.error(deptsResult.message);
                 }
@@ -176,22 +184,17 @@ export default function CreateUserForm() {
         setErrorMessage("");
 
         try {
-            const backendBaseUrl = window.location.hostname === "localhost"
-                ? "http://localhost:5000"
-                : "https://તમારા-બેકએન્ડની-vercel-લિંક.vercel.app";
-
-            // 🎯 રોલ HEAD100 હોય તો જ ડિપાર્ટમેન્ટ આઈડી જશે, નહિતર null જશે
             const finalPayload = {
                 ...formData,
                 departmentId: formData.roleCode === "HEAD100" ? formData.departmentId : null
             };
 
-            const response = await fetch(`${backendBaseUrl}/users/register`, {
+            const response = await fetch(`${API_URL}/users/register`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(finalPayload), // અહિયાં નવો પેલોડ મોકલ્યો
+                body: JSON.stringify(finalPayload),
             });
 
             const result = await response.json();
@@ -212,8 +215,8 @@ export default function CreateUserForm() {
                 navigate("/dashboard/users/list");
             }
 
-        } catch (error: any) {
-            setErrorMessage(error.message || "કંઈક ખોટું થયું છે, ફરી પ્રયાસ કરો.");
+        } catch (error) {
+            setErrorMessage((error as any).message || "કંઈક ખોટું થયું છે, ફરી પ્રયાસ કરો.");
         } finally {
             setLoading(false);
         }
@@ -343,7 +346,7 @@ export default function CreateUserForm() {
                 <div>
                     <SectionHeading icon={<HiOutlineShieldCheck className="text-sm" />} title="Role & Department" theme={theme} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        
+
                         {/* 🌟 1. Role Dropdown */}
                         <SearchableDropdown
                             label="Select Role *"

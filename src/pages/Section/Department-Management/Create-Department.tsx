@@ -11,6 +11,7 @@ import {
 import { FaBuilding } from "react-icons/fa";
 import { toast } from "sonner";
 
+// તમારી બેકએન્ડ API ની URL
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 function SectionHeading({
@@ -41,7 +42,6 @@ function SectionHeading({
     );
 }
 
-// 👑 Interface માંથી departmentHeadId કાઢી નાખ્યું છે
 export interface DepartmentCreate {
     departmentName: string;
     description: string;
@@ -51,7 +51,6 @@ export default function CreateDepartment() {
     const { theme } = useTheme();
     const [loading, setLoading] = useState<boolean>(false);
     
-    // 👑 સ્ટેટમાંથી પણ departmentHeadId રીમુવ કર્યું
     const [formData, setFormData] = useState<DepartmentCreate>({
         departmentName: "",
         description: "",
@@ -70,6 +69,7 @@ export default function CreateDepartment() {
         setLoading(true);
 
         try {
+            // બેકએન્ડ API કોલ
             const response = await fetch(`${API_URL}/departments/create`, {
                 method: "POST",
                 headers: {
@@ -83,15 +83,18 @@ export default function CreateDepartment() {
             console.log("Backend Department Response:", result);
 
             if (result.success) {
-                toast.success("Department create succesfully")
+                toast.success("Department created successfully!");
 
+                // ફોર્મ ક્લિયર કરવું
                 setFormData({
                     departmentName: "",
                     description: "",
                 });
+            } else {
+                toast.error(result.message || "Failed to create department");
             }
-        } catch (error: any) {
-            toast.error(error)
+        } catch {
+            toast.error("Something went wrong with the server.");
         } finally {
             setLoading(false);
         }
@@ -153,7 +156,7 @@ export default function CreateDepartment() {
                     />
                 </div>
 
-                {/* ===== Submit ===== */}
+                {/* ===== Submit Button ===== */}
                 <div className="flex justify-end items-center gap-3 pt-6 border-t border-neutral-200 dark:border-gray-800">
                     <p className={`text-xs mr-auto hidden sm:block ${theme ? "text-gray-500" : "text-neutral-400"}`}>
                         Fields marked * are required.

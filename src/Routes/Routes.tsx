@@ -37,8 +37,6 @@ import AdminAmrutNuAachaman from "../pages/Section/Overview-Management/Amrut-Nu-
 import AdminDailyDarshan from "../pages/Section/Overview-Management/Daily-Darshan";
 import Permission from "../pages/Section/Permissions-Managemant/Permission";
 
-// Event Calendar Page (If you create a full page to manage events later)
-// import EventCalendarPage from "../pages/Section/Event-Calendar/EventCalendarPage"; 
 
 interface ProtectedRouteProps {
     module?: string;
@@ -58,7 +56,25 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ module, action = "view"
         return <Outlet />;
     }
 
-    const hasPermission = user.permissions?.[module || ""]?.[action];
+    // 🎯 FIX: SUPER_ADMIN bypass અને permissions string parsing
+    let hasPermission = false;
+    
+    if (user.roleCode === "SUPER_ADMIN") {
+        hasPermission = true; // સુપર એડમિન ને બધો એક્સેસ છે
+    } else {
+        let parsedPermissions = user.permissions;
+        
+        // જો backend માંથી permissions string બની ને આવ્યું હોય તો parse કરો
+        if (typeof parsedPermissions === "string") {
+            try {
+                parsedPermissions = JSON.parse(parsedPermissions);
+            } catch (e) {
+                parsedPermissions = {};
+            }
+        }
+        
+        hasPermission = !!parsedPermissions?.[module || ""]?.[action];
+    }
 
     if (!hasPermission) {
         return <Navigate to="/dashboard/unauthorized" replace />;
@@ -102,8 +118,13 @@ export default function Routers() {
                 </Route>
                 <Route element={<ProtectedRoute module="Department" action="view" />}>
                     <Route path="departments/list" element={<DepartmentList />} />
-                    <Route path="departments/:deptId/create-student" element={<CreateStudent />} />
-                    <Route path="departments/:deptId/student-list" element={<StudentListPage />} />
+                </Route>
+
+                <Route element={<ProtectedRoute module="Student" action="create" />}>
+                    <Route path="departments/:deptId/sections/:sectionId/create-student" element={<CreateStudent />} />
+                </Route>
+                <Route element={<ProtectedRoute module="Student" action="view" />}>
+                    <Route path="departments/:deptId/sections/:sectionId/student-list" element={<StudentListPage />} />
                 </Route>
 
                 <Route element={<ProtectedRoute module="Section" action="create" />}>
@@ -115,26 +136,25 @@ export default function Routers() {
 
                 <Route path="permissions/messages" element={<Permission />} />
 
-                <Route element={<ProtectedRoute module="Roles & Permissions" action="create" />}>
+                <Route element={<ProtectedRoute module="RolesPermissions" action="create" />}>
                     <Route path="permissions/role" element={<CreateRole />} />
                 </Route>
-                <Route element={<ProtectedRoute module="Roles & Permissions" action="view" />}>
+                <Route element={<ProtectedRoute module="RolesPermissions" action="view" />}>
                     <Route path="permissions/lesson" element={<RoleList />} />
                 </Route>
 
                 <Route element={<ProtectedRoute requireLoginOnly />}>
                     <Route path="profile" element={<Profile />} />
                     <Route path="settings/profile" element={<ProfileSetting />} />
-
-                    {/* Event Calendar Route (Full Page) */}
-                    {/* <Route path="event-calendar" element={<EventCalendarPage />} /> */}
                 </Route>
 
-                <Route element={<ProtectedRoute module="overview-management" action="view" />}>
+                <Route element={<ProtectedRoute module="OverviewEdit" action="view" />}>
                     <Route path="overview-management" element={<OverviewManagement />} />
                 </Route>
-                <Route element={<ProtectedRoute module="overview-management" action="create" />}>
+                <Route element={<ProtectedRoute module="AmrutNuAachaman" action="view" />}>
                     <Route path="overview-management/amrut-nu-aachaman" element={<AdminAmrutNuAachaman />} />
+                </Route>
+                <Route element={<ProtectedRoute module="DailyDarshan" action="view" />}>
                     <Route path="overview-management/daily-darshan" element={<AdminDailyDarshan />} />
                 </Route>
 

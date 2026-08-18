@@ -10,19 +10,18 @@ import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-
-
 export default function Login() {
     const { theme } = useTheme();
     const navigate = useNavigate();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
-    
-    console.log("API_URL =", API_URL);
+    const [loading, setLoading] = useState(false);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+        setLoading(true);
 
         try {
             const response = await fetch(`${API_URL}/users/login`, {
@@ -35,56 +34,40 @@ export default function Login() {
 
             const result = await response.json();
 
+            // 🎯 FIX: Backend "data" key ma user pathave chhe, "user" nahi
+            if (result.success && result.data) {
+                const userData = result.data;
 
-            console.log("Backend Login Response:", result);
-
-            if (result.success) {
-
-                if (!result.user) {
-                    toast.error("natwork error");
-                    return;
-                }
-
-                toast.success("Login Succesfully")
-
-                const isSuperAdmin =
-                    result.user?.roleCode === "SUPER_ADMIN";
-
-                // જો બેકએન્ડમાંથી કોઈ કારણસર પરમિશન ન આવે તો જ આ ફોલબેક કામ કરશે
-                const defaultPermissions = isSuperAdmin
-                    ? {
-                        "Users": { create: true, edit: true, view: true, delete: true },
-                        "Department": { create: true, edit: true, view: true, delete: true },
-                        "Roles & Permissions": { create: true, edit: true, view: true, delete: true },
-                        "overview-management": { create: true, edit: true, view: true, delete: true }
-                    }
-                    : {
-                        "Users": { create: false, edit: false, view: true, delete: false },
-                        "Department": { create: false, edit: false, view: true, delete: false },
-                        "Roles & Permissions": { create: false, edit: false, view: false, delete: false }
-                    };
-
-                // 🎯 ડાયનેમિક અને સેફ ડેટા સ્ટ્રક્ચર (ટોકન અહીંથી સંપૂર્ણપણે રિમૂવ કરી દીધું છે)
+                // 🎯 FIX: Koi pan static/hardcoded fallback nathi.
+                // Je pan backend "data" ma aapyu (roleCode, departmentId, permissions...) e j vaparo.
                 const loggedInUserData = {
-                    id: result.user?.suid || result.user?.id || 0,
-                    username: result.user?.name || result.user?.username || username,
-                    roleName: result.user?.roleName || (isSuperAdmin ? "Super Admin" : "Teacher"),
-                    roleCode: result.user?.roleCode || (isSuperAdmin ? "SUPER_ADMIN" : "HEAD100"),
-                    departmentId: result.user?.departmentId || (isSuperAdmin ? 4 : 10),
-                    permissions: result.user?.permissions || defaultPermissions
+                    id: userData.suid,
+                    username: userData.username,
+                    name: userData.name,
+                    roleName: userData.roleName,
+                    roleCode: userData.roleCode,
+                    departmentId: userData.departmentId,
+                    permissions: userData.permissions,
                 };
 
                 localStorage.setItem("user", JSON.stringify(loggedInUserData));
 
-                navigate("/dashboard");
+                // 🎯 FIX: Token have properly store thay chhe (API calls mate joie)
+                if (result.token) {
+                    localStorage.setItem("token", result.token);
+                }
 
+                toast.success("Login Successfully");
+                navigate("/dashboard");
             } else {
-                toast.error("Invalid Username or Password.")
+                toast.error(result.message || "Invalid Username or Password.");
             }
 
         } catch (err) {
             console.error("Login Connection Error:", err);
             setError("સર્વર કનેક્શન ફેલ થયું અથવા કોડમાં કોઈ ભૂલ આવી છે!");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -179,12 +162,13 @@ export default function Login() {
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            className={`w-full mt-2 py-3.5 rounded-2xl font-bold text-sm transition-all transform active:scale-[0.98] cursor-pointer shadow-md ${theme
+                            disabled={loading}
+                            className={`w-full mt-2 py-3.5 rounded-2xl font-bold text-sm transition-all transform active:scale-[0.98] cursor-pointer shadow-md disabled:opacity-60 disabled:cursor-not-allowed ${theme
                                 ? "bg-blue-500 hover:bg-blue-600 text-white shadow-blue-500/10"
                                 : "bg-red-600 hover:bg-red-700 text-white shadow-red-600/20"
                                 }`}
                         >
-                            Log In to System
+                            {loading ? "Logging in..." : "Log In to System"}
                         </button>
                     </form>
                 </div>

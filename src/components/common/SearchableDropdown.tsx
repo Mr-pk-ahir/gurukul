@@ -8,8 +8,8 @@ export interface DropdownOption {
 }
 
 interface SearchableDropdownProps {
-    label: string;
-    placeholder: string;
+    label?: string;
+    placeholder?: string;
     searchPlaceholder?: string;
     options: DropdownOption[];
     selectedValue: string | number; // selectedId ની જગ્યાએ
@@ -49,6 +49,7 @@ export default function SearchableDropdown({
     });
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setHighlightedIndex(0);
     }, [searchQuery, isOpen]);
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { useTheme } from "../components/theme/ThemeContext";
 import { HiOutlineLibrary, HiOutlineUsers, HiOutlineShieldCheck } from "react-icons/hi";

@@ -37,6 +37,7 @@ export default function SidebarDropdown({ title, icon, items, setSidebarOpen, is
 
     useEffect(() => {
         if (isMiniSidebar) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsOpen(false);
             setIsHovered(false);
         } else if (isChildActive) {

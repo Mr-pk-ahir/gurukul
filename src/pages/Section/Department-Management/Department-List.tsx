@@ -1,11 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import Table from "../../../components/common/Table";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import DataCruding from "../../../components/common/DataCruding";
 import { FaBuildingColumns } from "react-icons/fa6";
 import { HiSearch, HiFilter, HiChevronDown } from "react-icons/hi";
+import { toast } from "sonner"; // 👑 Alert ની જગ્યાએ Toast ઉમેર્યું
 
-interface DepartmentData {
+export interface DepartmentData {
     departmentId: number;
     departmentName: string;
     departmentHeadId: number | null;
@@ -35,17 +37,27 @@ export default function DepartmentList() {
             setLoading(true);
             const response = await fetch(`${API_URL}/departments`);
             const result = await response.json();
+
             if (result.success) {
-                setDepartments(result.data);
+                // 👑 Backend ના snake_case ડેટાને Frontend ના camelCase માં મેપ કર્યો
+                const mappedData: DepartmentData[] = result.data.map((item: any) => ({
+                    departmentId: item.department_id,
+                    departmentName: item.department_name,
+                    departmentHeadId: item.department_head_id,
+                    departmentHeadName: item.department_head_name || null,
+                    description: item.description || "",
+                }));
+                setDepartments(mappedData);
             }
-        } catch (error) {
-            console.error(error);
+        } catch {
+            toast.error("Failed to fetch departments.");
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchDepartments();
     }, []);
 
@@ -80,13 +92,14 @@ export default function DepartmentList() {
                     dept.departmentName.toLowerCase().includes(query) ||
                     dept.departmentId.toString().includes(query) ||
                     dept.description?.toLowerCase().includes(query) ||
-                    dept.departmentHeadName?.toLowerCase().includes(query)
+                    (dept.departmentHeadName && dept.departmentHeadName.toLowerCase().includes(query))
                 );
         }
     });
 
     const handleEditDepartment = (id: number) => {
-        console.log(id);
+        // Edit માટેનું લોજિક અહી ઉમેરવું (જેમ કે રાઉટિંગ અથવા મોડલ ઓપન કરવું)
+        console.log("Edit ID:", id);
     };
 
     const handleDeleteDepartment = async (id: number) => {
@@ -96,13 +109,15 @@ export default function DepartmentList() {
                     method: "DELETE",
                 });
                 const result = await response.json();
+
                 if (result.success) {
                     setDepartments((prev) => prev.filter((dept) => dept.departmentId !== id));
+                    toast.success("Department deleted successfully");
                 } else {
-                    alert(result.message);
+                    toast.error(result.message || "Failed to delete department");
                 }
-            } catch (error) {
-                console.error(error);
+            } catch {
+                toast.error("Something went wrong while deleting.");
             }
         }
     };
@@ -145,7 +160,7 @@ export default function DepartmentList() {
             accessor: (dept: DepartmentData) => (
                 <DataCruding
                     onEdit={() => handleEditDepartment(dept.departmentId)}
-                    onDelete={() => handleDeleteDepartment(dept.departmentId)}
+                    onDelete={() => void handleDeleteDepartment(dept.departmentId)}
                 />
             ),
         },
@@ -176,8 +191,8 @@ export default function DepartmentList() {
                         <button
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
                             className={`flex items-center justify-between pl-9 pr-3 py-2.5 w-40 sm:w-44 rounded-xl border text-sm font-medium outline-none transition-all duration-300 ${theme
-                                    ? "bg-gray-800/60 border-gray-700 text-gray-200 focus:ring-2 focus:ring-blue-500/50 hover:border-gray-600 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.3)]"
-                                    : "bg-white border-gray-200/80 text-gray-700 focus:ring-2 focus:ring-[#9b001c]/20 hover:border-gray-300 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]"
+                                ? "bg-gray-800/60 border-gray-700 text-gray-200 focus:ring-2 focus:ring-blue-500/50 hover:border-gray-600 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.3)]"
+                                : "bg-white border-gray-200/80 text-gray-700 focus:ring-2 focus:ring-[#9b001c]/20 hover:border-gray-300 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]"
                                 }`}
                         >
                             <div className={`absolute left-3 flex items-center pointer-events-none transition-colors ${theme ? "text-gray-400 group-hover:text-blue-400" : "text-gray-500 group-hover:text-[#9b001c]"}`}>
@@ -195,8 +210,8 @@ export default function DepartmentList() {
 
                         {isFilterOpen && (
                             <div className={`absolute right-0 z-20 mt-2 w-48 rounded-xl border py-1.5 shadow-xl backdrop-blur-md transform transition-all duration-200 origin-top-right ${theme
-                                    ? "bg-gray-800/95 border-gray-700 text-gray-200 shadow-black/40"
-                                    : "bg-white/95 border-gray-100 text-gray-700 shadow-gray-200/50"
+                                ? "bg-gray-800/95 border-gray-700 text-gray-200 shadow-black/40"
+                                : "bg-white/95 border-gray-100 text-gray-700 shadow-gray-200/50"
                                 }`}
                             >
                                 {filterOptions.map((option) => (
@@ -208,8 +223,8 @@ export default function DepartmentList() {
                                             setIsFilterOpen(false);
                                         }}
                                         className={`px-4 py-2 text-sm cursor-pointer transition-colors flex items-center justify-between ${filterType === option.value
-                                                ? theme ? "bg-blue-500/10 text-blue-400 font-bold" : "bg-[#9b001c]/5 text-[#9b001c] font-bold"
-                                                : theme ? "hover:bg-gray-700/50" : "hover:bg-gray-50"
+                                            ? theme ? "bg-blue-500/10 text-blue-400 font-bold" : "bg-[#9b001c]/5 text-[#9b001c] font-bold"
+                                            : theme ? "hover:bg-gray-700/50" : "hover:bg-gray-50"
                                             }`}
                                     >
                                         {option.label}
@@ -232,8 +247,8 @@ export default function DepartmentList() {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className={`pl-10 pr-4 py-2.5 w-full sm:w-48 lg:w-64 xl:w-72 rounded-xl border text-sm outline-none transition-all duration-300 ease-in-out focus:w-full sm:focus:w-56 lg:focus:w-72 xl:focus:w-80 ${theme
-                                    ? "bg-gray-800/60 border-gray-700 text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-600 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.3)]"
-                                    : "bg-white border-gray-200/80 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-[#9b001c]/20 focus:border-[#9b001c] hover:border-gray-300 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]"
+                                ? "bg-gray-800/60 border-gray-700 text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-600 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.3)]"
+                                : "bg-white border-gray-200/80 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-[#9b001c]/20 focus:border-[#9b001c] hover:border-gray-300 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]"
                                 } [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                         />
                     </div>

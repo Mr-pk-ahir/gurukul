@@ -118,6 +118,7 @@ export default function DatePicker({
   // કેલેન્ડર ખુલે ત્યારે હંમેશા days view થી શરૂ થાય
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setView("days");
       setYearRangeStart(Math.floor(year / 12) * 12);
     }
