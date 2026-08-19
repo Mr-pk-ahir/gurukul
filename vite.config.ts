@@ -6,6 +6,6 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
-    chunkSizeWarningLimit: 1200, // kB ma - have 1200kB sudhi warning nahi aave
+    chunkSizeWarningLimit: 5200, // kB ma - have 1200kB sudhi warning nahi aave
   },
 })
