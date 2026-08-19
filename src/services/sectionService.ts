@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   const axiosError = error as AxiosError<{ message?: string }>;
@@ -16,7 +17,7 @@ export const sectionService = {
     sectionHead?: number | string | null;
   }) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/sections/create`, data);
+      const response = await axios.post(`${API_URL}/sections/create`, data);
       return response.data;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to create section'), { cause: error });
@@ -33,7 +34,7 @@ export const sectionService = {
     }
   ) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/sections/update/${sectionId}`, data);
+      const response = await axios.put(`${API_URL}/sections/update/${sectionId}`, data);
       return response.data;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to update section'), { cause: error });
@@ -43,7 +44,7 @@ export const sectionService = {
   // 3. બધા સેક્શન લાવવા માટે (List page માટે)
   getAllSections: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/sections`);
+      const response = await axios.get(`${API_URL}/sections`);
       return response.data;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to fetch sections'), { cause: error });
@@ -53,7 +54,7 @@ export const sectionService = {
   // 4. એક Section ID પ્રમાણે લાવવા માટે
   getSectionById: async (sectionId: number) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/sections/${sectionId}`);
+      const response = await axios.get(`${API_URL}/sections/${sectionId}`);
       return response.data;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to fetch section'), { cause: error });
@@ -63,7 +64,7 @@ export const sectionService = {
   // 5. Department પ્રમાણે Sections લાવવા માટે (User-Create dropdown માટે પણ વાપરી શકાય)
   getSectionsByDepartment: async (departmentId: number) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/sections/department/${departmentId}`);
+      const response = await axios.get(`${API_URL}/sections/department/${departmentId}`);
       return response.data;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to fetch sections for department'), { cause: error });
@@ -73,7 +74,7 @@ export const sectionService = {
   // 6. Section ડિલીટ કરવા માટે
   deleteSection: async (sectionId: number) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/sections/${sectionId}`);
+      const response = await axios.delete(`${API_URL}/sections/${sectionId}`);
       return response.data;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to delete section'), { cause: error });

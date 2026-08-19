@@ -4,7 +4,7 @@ import { useTheme } from '../../components/theme/ThemeContext';
 import DatePicker from '../../components/common/Calendar';
 
 // બેકએન્ડનું યુઆરએલ (તમારા સર્વર પોર્ટ મુજબ સેટ કરો)
-const BACKEND_URL = 'http://localhost:5000'; 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // બેકએન્ડ ડેટા મુજબનું ઇન્ટરફેસ
 interface AmrutItem {
@@ -30,7 +30,7 @@ export default function AmrutNuAachaman() {
   const fetchRecords = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${BACKEND_URL}/amrut-aachaman`);
+      const response = await fetch(`${API_URL}/amrut-aachaman`);
       const result = await response.json();
 
       if (result.success) {
@@ -165,7 +165,7 @@ export default function AmrutNuAachaman() {
                   {/* ઈમેજ પાથ બેકએન્ડ URL સાથે જોડ્યો */}
                   <div className={`relative overflow-hidden h-52 border-b ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
                     <img
-                      src={`${BACKEND_URL}${item.image}`}
+                      src={`${API_URL}${item.image}`}
                       alt="Amrut Aachaman"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                       loading="lazy"
@@ -252,7 +252,7 @@ export default function AmrutNuAachaman() {
 
             <div className={`w-full md:w-1/2 h-64 md:h-auto min-h-80 relative ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
               <img 
-                src={`${BACKEND_URL}${activeItem.image}`} 
+                src={`${API_URL}${activeItem.image}`} 
                 alt="Amrut Aachaman" 
                 className="w-full h-full object-cover"
               />
