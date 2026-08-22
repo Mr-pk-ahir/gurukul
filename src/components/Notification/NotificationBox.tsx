@@ -101,15 +101,15 @@ const NotificationBox: React.FC<NotificationBoxProps> = ({ isOpen, onClose }) =>
 
             {/* Overlay */}
             <div
-                className={`fixed inset-0 z-[99999] flex justify-center items-start pt-[85px] animate-lux-fade ${isDark ? 'bg-slate-900/70' : 'bg-red-100/65'
+                className={`fixed inset-0 z-99999 flex justify-center items-start pt-21.25 animate-lux-fade ${isDark ? 'bg-slate-900/70' : 'bg-red-100/65'
                     }`}
                 onClick={onClose}
             >
                 {/* Main Box */}
                 <div
-                    className={`w-[800px] rounded-[20px] p-6 animate-lux-scale backdrop-blur-xl border ${isDark
-                        ? 'bg-gradient-to-br from-slate-800/[0.98] to-slate-900/[0.99] border-slate-500/50 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.9),0_0_20px_rgba(0,0,0,0.3)]'
-                        : 'bg-gradient-to-br from-white/[0.98] to-slate-50/[0.95] border-red-300/60 shadow-[0_25px_50px_-12px_rgba(220,38,38,0.15),0_0_15px_rgba(255,255,255,0.8),inset_0_0_0_1px_rgba(255,255,255,1)]'
+                    className={`w-200 rounded-[20px] p-6 animate-lux-scale backdrop-blur-xl border ${isDark
+                        ? 'bg-linear-to-br from-slate-800/98 to-slate-900/99 border-slate-500/50 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.9),0_0_20px_rgba(0,0,0,0.3)]'
+                        : 'bg-linear-to-br from-white/98 to-slate-50/95 border-red-300/60 shadow-[0_25px_50px_-12px_rgba(220,38,38,0.15),0_0_15px_rgba(255,255,255,0.8),inset_0_0_0_1px_rgba(255,255,255,1)]'
                         }`}
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -140,13 +140,13 @@ const NotificationBox: React.FC<NotificationBoxProps> = ({ isOpen, onClose }) =>
                         {notifications.map((notif) => (
                             <div
                                 key={notif.id}
-                                className={`flex items-start gap-4 p-[14px] rounded-[16px] border border-transparent transition-all duration-300 cursor-pointer ${isDark
+                                className={`flex items-start gap-4 p-3.5 rounded-2xl border border-transparent transition-all duration-300 cursor-pointer ${isDark
                                     ? 'bg-slate-700/30 hover:bg-slate-600/50 hover:border-slate-400/30 hover:-translate-y-0.5'
                                     : 'bg-white/60 hover:bg-white hover:border-red-500/15 hover:-translate-y-0.5'
                                     }`}
                             >
                                 {/* Icon */}
-                                <div className={`flex items-center justify-center w-[44px] h-[44px] rounded-[12px] shrink-0 ${notif.type === 'welcome'
+                                <div className={`flex items-center justify-center w-11 h-11 rounded-xl shrink-0 ${notif.type === 'welcome'
                                     ? (isDark ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-50 text-emerald-500')
                                     : (isDark ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-50 text-amber-500')
                                     }`}>

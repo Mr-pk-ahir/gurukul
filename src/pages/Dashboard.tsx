@@ -1,335 +1,142 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { useTheme } from "../components/theme/ThemeContext";
-import { HiOutlineLibrary, HiOutlineUsers, HiOutlineShieldCheck } from "react-icons/hi";
-import {
-    AreaChart,
-    Area,
-    ResponsiveContainer,
-} from "recharts";
-
-interface RecentItem {
-    name: string;
-    meta: string;
-}
-
-interface StatCard {
-    key: "department" | "user" | "role";
-    label: string;
-    value: number;
-    caption: string;
-    icon: any;
-    color: string;
-    iconBg: string;
-    recentItems: RecentItem[];
-}
+import StatCard from "../components/dashboard/Statcard";
+import PerformanceChart, { type ChartPoint } from "../components/dashboard/Performancechart";
+import ActivityLogList, { type ActivityLogItem } from "../components/dashboard/Activityloglist";
+import RoleDistribution, { type RoleDistributionItem } from "../components/dashboard/Roledistribution";
+import LevelBadge from "../components/dashboard/Levelbadge";
+import { HiOutlineOfficeBuilding, HiOutlineUserGroup, HiOutlineShieldCheck, HiOutlineAcademicCap } from "react-icons/hi";
+import type { AuthUser } from "../Types/Role-create";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+interface DashboardStatsResponse {
+    cards: { label: string; value: number; subLabel: string }[];
+    chart: ChartPoint[];
+    logs?: ActivityLogItem[];
+    roleDistribution?: RoleDistributionItem[];
+}
+
 export default function Dashboard() {
     const { theme } = useTheme();
-    const userData = localStorage.getItem("user");
-    const username = userData ? JSON.parse(userData).username : "Guest";
-    // const [department, setDepartment] = useState("")
-    const [timeFrame, setTimeFrame] = useState<"week" | "month">("month");
-    const [dashboard, setDashboard] = useState<any>(null);
+    const [user, setUser] = useState<AuthUser | null>(null);
+    const [range, setRange] = useState<"week" | "month">("month");
+    const [stats, setStats] = useState<DashboardStatsResponse | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-
-        const fetchDashboard = async () => {
-
-            const res = await fetch(`${API_URL}/dashboard`);
-
-            const result = await res.json();
-
-            if (result.success) {
-
-                setDashboard(result.data);
-
-            }
-
-        }
-
-        fetchDashboard();
-
+        const data = localStorage.getItem("user");
+        if (data) setUser(JSON.parse(data));
     }, []);
 
-    const stats = {
-        departmentsCount: dashboard?.counts.departments ?? 0,
-        usersCount: dashboard?.counts.users ?? 0,
-        rolesCount: dashboard?.counts.roles ?? 0
-    }
+    useEffect(() => {
+        if (!user) return;
 
-    const graphData = {
-        month: [
-            {
-                name: "Week 1",
-                department: stats.departmentsCount,
-                user: stats.usersCount,
-                role: stats.rolesCount,
-            },
-            {
-                name: "Week 2",
-                department: stats.departmentsCount,
-                user: stats.usersCount,
-                role: stats.rolesCount,
-            },
-            {
-                name: "Week 3",
-                department: stats.departmentsCount,
-                user: stats.usersCount,
-                role: stats.rolesCount,
-            },
-            {
-                name: "Week 4",
-                department: stats.departmentsCount,
-                user: stats.usersCount,
-                role: stats.rolesCount,
-            },
-        ],
+        const fetchStats = async () => {
+            try {
+                setLoading(true);
 
-        week: [
-            {
-                name: "Mon",
-                department: stats.departmentsCount,
-                user: stats.usersCount,
-                role: stats.rolesCount,
-            },
-            {
-                name: "Tue",
-                department: stats.departmentsCount,
-                user: stats.usersCount,
-                role: stats.rolesCount,
-            },
-            {
-                name: "Wed",
-                department: stats.departmentsCount,
-                user: stats.usersCount,
-                role: stats.rolesCount,
-            },
-            {
-                name: "Thu",
-                department: stats.departmentsCount,
-                user: stats.usersCount,
-                role: stats.rolesCount,
-            },
-            {
-                name: "Fri",
-                department: stats.departmentsCount,
-                user: stats.usersCount,
-                role: stats.rolesCount,
-            },
-            {
-                name: "Sat",
-                department: stats.departmentsCount,
-                user: stats.usersCount,
-                role: stats.rolesCount,
-            },
-            {
-                name: "Sun",
-                department: stats.departmentsCount,
-                user: stats.usersCount,
-                role: stats.rolesCount,
-            },
-        ],
-    };
+                // 🎯 Role-aware query params — backend e mujab j alag data return kare chhe
+                const params = new URLSearchParams({
+                    role: user.roleCode,
+                    range,
+                });
+                if ((user as any).departmentId) params.set("departmentId", String((user as any).departmentId));
+                if ((user as any).sectionId) params.set("sectionId", String((user as any).sectionId));
+                if (user.suid) params.set("suid", String(user.suid));
 
-    const currentChartData = graphData[timeFrame];
+                const res = await fetch(`${API_URL}/dashboard/stats?${params.toString()}`);
+                const json = await res.json();
 
-    // 🌟 દરેક stat card ની maahiti ek j place ma define — have navo card
-    // add karvo hoy to fakt aa array ma entry ઉમેરવી padshe, JSX touch nathi karvanu.
-    // `recentItems` have static mock chhe — backend API connect karvanu hoy tyare
-    // fakt aa array ne API response thi map kari devu (niche "Backend connect karva mate" note).
-    const statCards: StatCard[] = [
-        {
-            key: "department" as const,
-            label: "Total Departments",
-            value: stats.departmentsCount,
-            caption: "Active Modules",
-            icon: HiOutlineLibrary,
-            color: "#9b001c",
-            iconBg: theme ? "bg-red-950/50 text-red-400" : "bg-red-50 text-red-600",
-            recentItems:
-                dashboard?.departments?.map((d: any) => ({
+                if (json.success) {
+                    setStats(json.data);
+                }
+            } catch (err) {
+                console.error("Failed to load dashboard stats", err);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-                    name: d.department_name,
+        fetchStats();
+    }, [user, range]);
 
-                    meta: "Department"
-
-                })) || []
-        },
-        {
-            key: "user" as const,
-            label: "Total Active Users",
-            value: stats.usersCount,
-            caption: "Verified Accounts",
-            icon: HiOutlineUsers,
-            color: "#2563eb",
-            iconBg: theme ? "bg-blue-950/50 text-blue-400" : "bg-blue-50 text-blue-600",
-            recentItems:
-                dashboard?.users?.map((u: any) => ({
-
-                    name: u.name,
-
-                    meta: "User"
-
-                })) || []
-        },
-        {
-            key: "role" as const,
-            label: "Total System Roles",
-            value: stats.rolesCount,
-            caption: "Configured Permissions",
-            icon: HiOutlineShieldCheck,
-            color: "#10b981",
-            iconBg: theme ? "bg-emerald-950/50 text-emerald-400" : "bg-emerald-50 text-emerald-600",
-            recentItems:
-                dashboard?.roles?.map((r: any) => ({
-
-                    name: r.role_name,
-
-                    meta: "Role"
-
-                })) || []
-        },
+    const cardIcons = [
+        <HiOutlineOfficeBuilding size={18} />,
+        <HiOutlineUserGroup size={18} />,
+        <HiOutlineShieldCheck size={18} />,
+        <HiOutlineAcademicCap size={18} />,
     ];
+    const cardColors: ("red" | "blue" | "green" | "purple" | "amber")[] = ["red", "blue", "green", "purple"];
 
-    // 🌟 Card ni andar background ma vaprai shake evu transparent sparkline —
-    // axes/grid/tooltip kashu nathi, fakt ek thin area-fill curve.
-    function CardSparkline({
-        dataKey,
-        color,
-    }: {
-        dataKey: "department" | "user" | "role";
-        color: string;
-    }) {
-        return (
-            <div className="w-36 h-20 min-w-35 min-h-20">
-                <ResponsiveContainer>
-                    <AreaChart data={currentChartData}>
-                        <defs>
-                            <linearGradient
-                                id={`gradient-${dataKey}`}
-                                x1="0"
-                                y1="0"
-                                x2="0"
-                                y2="1"
-                            >
-                                <stop offset="5%" stopColor={color} stopOpacity={0.6} />
-                                <stop offset="95%" stopColor={color} stopOpacity={0.05} />
-                            </linearGradient>
-                        </defs>
-
-                        <Area
-                            type="monotone"
-                            dataKey={dataKey}
-                            stroke={color}
-                            strokeWidth={3}
-                            fill={`url(#gradient-${dataKey})`}
-                            dot={false}
-                            activeDot={false}
-                            isAnimationActive
-                        />
-                    </AreaChart>
-                </ResponsiveContainer>
-            </div>
-        );
-    }
+    const isSuperAdmin = user?.roleCode === "SUPER_ADMIN";
+    const isStudent = user?.roleCode === "STUDENT";
 
     return (
-        <div className={`w-full space-y-8 rounded-2xl p-4 sm:p-6 transition-all duration-300 border ${theme ? "bg-gray-900 text-gray-50 border-gray-800" : "bg-neutral-50 text-neutral-900 border-neutral-200"
-            }`}>
-
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b pb-4 dark:border-gray-800 border-neutral-200">
+        <div className="p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-                        Welcome back, <span className={theme ? "text-blue-400" : "text-red-600"}>{username}</span>
+                    <h1 className={`text-2xl font-black ${theme ? "text-white" : "text-gray-900"}`}>
+                        Welcome back, <span className={theme ? "text-blue-400" : "text-[#9b001c]"}>{user?.roleCode?.toLowerCase()}</span>
                     </h1>
-                    <p className={`text-xs mt-1 ${theme ? "text-gray-400" : "text-neutral-500"}`}>
+                    <p className={`text-sm mt-1 ${theme ? "text-gray-500" : "text-gray-400"}`}>
                         Here is what's happening with your Gurukul management today.
                     </p>
                 </div>
 
-                {/* 1 Week અને 1 Month ફિલ્ટર — have sparkline cards ne control kare chhe */}
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setTimeFrame("week")}
-                        className={`px-4 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${timeFrame === "week"
-                            ? theme ? "bg-gray-700 border-gray-600 text-white" : "bg-neutral-900 border-neutral-900 text-white"
-                            : theme ? "border-gray-800 text-gray-400 hover:text-white" : "border-neutral-200 text-neutral-600 hover:bg-neutral-50"
-                            }`}
-                    >
-                        1 Week
-                    </button>
-                    <button
-                        onClick={() => setTimeFrame("month")}
-                        className={`px-4 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${timeFrame === "month"
-                            ? theme ? "bg-gray-700 border-gray-600 text-white" : "bg-neutral-900 border-neutral-900 text-white"
-                            : theme ? "border-gray-800 text-gray-400 hover:text-white" : "border-neutral-200 text-neutral-600 hover:bg-neutral-50"
-                            }`}
-                    >
-                        1 Month
-                    </button>
+                <div className="flex items-center gap-3">
+                    {isStudent && <LevelBadge level={1} />}
+                    <div className={`flex rounded-xl border p-1 ${theme ? "border-gray-700 bg-gray-800/60" : "border-gray-200 bg-gray-50"}`}>
+                        {(["week", "month"] as const).map((r) => (
+                            <button
+                                key={r}
+                                onClick={() => setRange(r)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                                    range === r
+                                        ? theme
+                                            ? "bg-gray-700 text-white"
+                                            : "bg-white text-gray-900 shadow-sm"
+                                        : theme
+                                            ? "text-gray-400"
+                                            : "text-gray-500"
+                                }`}
+                            >
+                                {r === "week" ? "1 Week" : "1 Month"}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            {/* 🌟 ત્રણેય card statCards.map() થી render */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-                {statCards.map((card) => {
-                    const Icon = card.icon;
-                    return (
-                        <div
-                            key={card.key}
-                            className={`relative p-5 sm:p-6 lg:p-8 rounded-3xl border flex flex-col shadow-md shadow-black/20 transition-all hover:scale-[1.01] overflow-hidden ${theme ? "bg-gray-800/50 border-gray-800" : "bg-white border-neutral-200"
-                                }`}
-                        >
-                            {/* ===== Header: label + icon ===== */}
-                            <div className="relative z-10 flex justify-between items-start">
-                                <p className={`text-sm sm:text-base font-bold tracking-wide uppercase ${theme ? "text-gray-400" : "text-neutral-500"}`}>
-                                    {card.label}
-                                </p>
-                                <div className={`p-3 sm:p-4 rounded-2xl shrink-0 ${card.iconBg}`}>
-                                    <Icon className="text-2xl sm:text-3xl" />
-                                </div>
-                            </div>
+            <div className={`grid gap-5 grid-cols-1 sm:grid-cols-2 ${isSuperAdmin ? "lg:grid-cols-4" : "lg:grid-cols-2"}`}>
+                {(stats?.cards || []).map((card, i) => (
+                    <StatCard
+                        key={card.label}
+                        label={card.label}
+                        value={card.value}
+                        subLabel={card.subLabel}
+                        icon={cardIcons[i % cardIcons.length]}
+                        colorScheme={cardColors[i % cardColors.length]}
+                        loading={loading}
+                    />
+                ))}
+            </div>
 
-                            {/* ===== Top 3 Recent items ===== */}
-                            <div className="w-full mt-5 flex flex-col gap-2.5">
-                                {card.recentItems.map((item, idx) => (
-                                    <div
-                                        key={idx}
-                                        className={`w-full px-3.5 py-2.5 rounded-2xl border flex justify-between items-center gap-3 ${theme
-                                            ? "border-gray-700 bg-gray-900/40"
-                                            : "border-neutral-200 bg-neutral-50/60"
-                                            }`}
-                                    >
-                                        <span className={`text-sm font-semibold truncate ${theme ? "text-gray-100" : "text-neutral-800"}`}>
-                                            {item.name}
-                                        </span>
-                                        <span className={`text-xs font-medium shrink-0 ${theme ? "text-gray-500" : "text-neutral-400"}`}>
-                                            {item.meta}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* ===== Footer: total value + sparkline ===== */}
-                            <div
-                                className={`relative mt-5 rounded-3xl z-10 flex flex-wrap sm:flex-nowrap gap-4 p-5 sm:p-6 justify-between items-center backdrop-blur-2xl border shadow-lg shadow-black/10 ${theme ? "border-gray-700" : "border-neutral-200"
-                                    }`}
-                            >
-                                <div>
-                                    <h3 className={`text-4xl sm:text-5xl lg:text-6xl ${theme ? 'text-gray-50' : 'text-gray-800'} font-black tracking-tight`}>
-                                        {card.value}
-                                    </h3>
-                                    <p className="text-xs text-emerald-500 font-semibold mt-1">{card.caption}</p>
-                                </div>
-
-                                <CardSparkline dataKey={card.key} color={card.color} />
-                            </div>
-                        </div>
-                    );
-                })}
+            <div className={`grid gap-5 grid-cols-1 ${isSuperAdmin ? "lg:grid-cols-3" : "lg:grid-cols-1"}`}>
+                <div className={isSuperAdmin ? "lg:col-span-2" : ""}>
+                    <PerformanceChart
+                        title={isStudent ? "My Progress" : "Growth Trend"}
+                        subtitle={range === "week" ? "Last 7 days" : "Last 30 days"}
+                        data={stats?.chart || []}
+                        loading={loading}
+                    />
+                </div>
+                {isSuperAdmin && (
+                    <div className="space-y-5">
+                        <RoleDistribution roles={stats?.roleDistribution || []} loading={loading} />
+                        <ActivityLogList logs={stats?.logs || []} loading={loading} />
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -3,32 +3,29 @@ import { motion } from "framer-motion";
 import ThemeToggle from "../../components/theme/ThemeToggle";
 import { useTheme } from "../../components/theme/ThemeContext";
 import { Link } from "react-router-dom";
-import EventCalendarPopup from "../../components/Event-Calendar/Event-Calendar";
-import { eventsData } from "../../components/Event-Calendar/event-constants";
-import { STATIC_DATA, API_BASE_URL } from "./overview-constants";
-
-const maskFade = (fromPercent: number) => {
-    return {
-        maskImage: `linear-gradient(to bottom, black ${fromPercent}%, transparent 100%)`,
-        WebkitMaskImage: `linear-gradient(to bottom, black ${fromPercent}%, transparent 100%)`,
-    };
-}
+import { API_BASE_URL } from "./overview-constants";
 
 function Reveal({
     children,
     delay = 0,
     className = "",
+    yOffset = 35,
 }: {
     children: React.ReactNode;
     delay?: number;
     className?: string;
+    yOffset?: number;
 }) {
     return (
         <motion.div
-            initial={{ opacity: 0, y: 28 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, y: yOffset, scale: 0.97 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{
+                duration: 0.7,
+                delay,
+                ease: [0.22, 1, 0.36, 1],
+            }}
             className={className}
         >
             {children}
@@ -36,430 +33,501 @@ function Reveal({
     );
 }
 
+// Demo Data for Sections
+const ACTIVITIES_DATA = [
+    {
+        id: 1,
+        title: "International Yoga Day Celebration",
+        date: "21 JUL 2026",
+        image: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&q=80&w=600",
+        category: "Educational Activities"
+    },
+    {
+        id: 2,
+        title: "Ghanshyam Maharaj Shantigram Darshan",
+        date: "20 MAY 2026",
+        image: "https://images.unsplash.com/photo-1669181533103-1650e8e72eba?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        category: "Wallpaper"
+    },
+    {
+        id: 3,
+        title: "Sadguru Hariswarupdasji Swami Memorial",
+        date: "23 APR 2026",
+        image: "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=600",
+        category: "Spiritual Activities"
+    },
+    {
+        id: 4,
+        title: "Gurukul Foundation Day Celebration 2026",
+        date: "19 APR 2026",
+        image: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&q=80&w=600",
+        category: "Cultural Activities"
+    }
+];
+
+const EVENTS_DATA = [
+    {
+        id: 1,
+        day: "19",
+        month: "AUG",
+        branch: "Atlanta Branch, USA",
+        title: "8th Patotsav Mahotsav",
+        thumbnail: "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=500"
+    },
+    {
+        id: 2,
+        day: "29",
+        month: "AUG",
+        branch: "Dallas Branch, USA",
+        title: "Rakshabandhan Celebration 2026",
+        thumbnail: "https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&q=80&w=500"
+    },
+    {
+        id: 3,
+        day: "30",
+        month: "AUG",
+        branch: "Melbourne Branch, Australia",
+        title: "RakshaBandhan & Bramha Pujan",
+        thumbnail: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=500"
+    },
+    {
+        id: 4,
+        day: "04",
+        month: "SEP",
+        branch: "Melbourne Branch, Australia",
+        title: "Janmashtami Utsav & Jhulan Seva",
+        thumbnail: "https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?auto=format&fit=crop&q=80&w=500"
+    }
+];
+
+const LATEST_QUOTES = [
+    {
+        id: 1,
+        title: "Love and compassion are the true essence of spirituality.",
+        date: "19 AUG 2026",
+        image: "https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&q=80&w=500"
+    },
+    {
+        id: 2,
+        title: "Service to parents is the true worship of God.",
+        date: "18 AUG 2026",
+        image: "https://images.unsplash.com/photo-1544200502-6652e105f865?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    {
+        id: 3,
+        title: "Satsang from the heart brings peace in thoughts.",
+        date: "17 AUG 2026",
+        image: "https://images.unsplash.com/photo-1786748012490-1fdddb1b52dd?q=80&w=1213&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    }
+];
+
+const LATEST_DARSHAN = [
+    {
+        id: 1,
+        title: "Shri Ganesha Maharaj Nitya Shringar Darshan",
+        date: "19 AUG 2026",
+        image: "https://images.unsplash.com/photo-1610085927744-7217728267a6?q=80&w=682&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    {
+        id: 2,
+        title: "Shri Radha Raman Dev Mangala Darshan",
+        date: "18 AUG 2026",
+        image: "https://images.unsplash.com/photo-1624030275207-77bac1c83be3?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    {
+        id: 3,
+        title: "Shri Krishna Maharaj Nitya Shringar Darshan",
+        date: "17 AUG 2026",
+        image: "https://images.unsplash.com/photo-1687627045984-82ec8a4d2697?q=80&w=1172&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    }
+];
+
 export default function Overview() {
     const { theme } = useTheme();
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
-    // 🚀 Backend thi aavta overview images mate state
-    const [overviewImages, setOverviewImages] = useState({
-        heroSlider: [] as string[],
-        featureImage: [] as string[],
-        smartInfrastructure: [] as string[],
-    });
-    const [isLoadingOverview, setIsLoadingOverview] = useState(true);
+    const [overviewImages, setOverviewImages] = useState<string[]>([
+        "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&q=80&w=1600",
+        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=1600",
+        "https://images.unsplash.com/photo-1616080409883-a96ae084a7e1?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    ]);
 
-    const [isEventCalendarOpen, setIsEventCalendarOpen] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-
-    const [formData, setFormData] = useState({ suid: "", fullName: "", std: "", grNo: "" });
-    const [photoFile, setPhotoFile] = useState<File | null>(null);
-    const [photoPreview, setPhotoPreview] = useState<string | null>(null); // 🚀 sirf preview batavva mate
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const { section1, section2, section3, footer } = STATIC_DATA;
-
-    const dayNumber = selectedDate.getDate().toString().padStart(2, '0');
-    const monthShort = selectedDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-    const yearStr = selectedDate.getFullYear();
-    const monthStr = String(selectedDate.getMonth() + 1).padStart(2, '0');
-    const dateStr = String(selectedDate.getDate()).padStart(2, '0');
-    const todayStr = `${yearStr}-${monthStr}-${dateStr}`;
-
-    const todayEvent = eventsData ? eventsData[todayStr] : null;
-
-    // 🚀 Backend API thi overview images fetch karvi
     useEffect(() => {
         const fetchOverviewData = async () => {
             try {
                 const res = await fetch(`${API_BASE_URL}/overview`);
                 const result = await res.json();
-
-                if (result.success) {
-                    setOverviewImages({
-                        heroSlider: result.data.heroSlider || [],
-                        featureImage: result.data.featureImage || [],
-                        smartInfrastructure: result.data.smartInfrastructure || [],
-                    });
+                if (result.success && result.data.heroSlider?.length) {
+                    setOverviewImages(result.data.heroSlider);
                 }
             } catch (error) {
                 console.error("Error fetching overview data:", error);
-            } finally {
-                setIsLoadingOverview(false);
             }
         };
-
         fetchOverviewData();
-
-        // Admin panel thi image update thay tyare window focus par re-fetch thashe
-        window.addEventListener("focus", fetchOverviewData);
-        return () => window.removeEventListener("focus", fetchOverviewData);
     }, []);
 
-    // 🚀 Dynamic hero slider mate image change logic
+    // Hero Slider Transition
     useEffect(() => {
-        if (overviewImages.heroSlider.length === 0) return;
-
+        if (overviewImages.length === 0) return;
         const timer = setInterval(() => {
-            setCurrentImgIndex((prevIndex) => (prevIndex + 1) % overviewImages.heroSlider.length);
-        }, 3000);
+            setCurrentImgIndex((prev) => (prev + 1) % overviewImages.length);
+        }, 4000);
         return () => clearInterval(timer);
-    }, [overviewImages.heroSlider.length]);
+    }, [overviewImages.length]);
 
-    // 🚀 File object save karo (backend ne moklva mate) + preview URL alag banavo
-    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            setPhotoFile(file);
-            setPhotoPreview(URL.createObjectURL(file));
+    const scrollToSection = (id: string) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.scrollIntoView({ behavior: "smooth" });
         }
     };
 
-    const handleFormSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (photoFile && !photoFile.type.startsWith("image/")) {
-            alert("Please upload a valid image file.");
-            return;
-        }
-
-        setIsSubmitting(true);
-
-        try {
-            // ⚠️ Note: Student registration backend endpoint (/students) hajub setup nathi thayu.
-            // Jyare banse tyare aa fetch call use karo:
-            /*
-            const data = new FormData();
-            data.append("suid", formData.suid);
-            data.append("fullName", formData.fullName);
-            data.append("std", formData.std);
-            data.append("grNo", formData.grNo);
-            if (photoFile) data.append("photo", photoFile);
-
-            const res = await fetch(`${API_BASE_URL}/students`, {
-                method: "POST",
-                body: data,
-            });
-            const result = await res.json();
-            if (!result.success) throw new Error(result.message);
-            */
-
-            alert("Student details submitted successfully!");
-            setFormData({ suid: "", fullName: "", std: "", grNo: "" });
-            setPhotoFile(null);
-            setPhotoPreview(null);
-        } catch (error) {
-            console.error("Error submitting form:", error);
-            alert("Something went wrong. Please try again.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const inputClasses = `w-full px-5 py-3.5 rounded-2xl text-sm font-medium transition-all duration-500 outline-none border backdrop-blur-md shadow-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield] ${
-        theme
-            ? "bg-slate-900/40 border-slate-800 text-slate-100 placeholder-slate-500 hover:border-blue-900/60 focus:border-blue-500 focus:bg-slate-900/80 focus:shadow-[0_0_20px_rgba(37,99,235,0.07)]"
-            : "bg-white/70 border-slate-200/60 text-slate-800 placeholder-slate-400 hover:border-red-300/60 focus:border-red-600 focus:bg-white focus:shadow-[0_0_20px_rgba(239,68,68,0.06)]"
-    }`;
+    const navItems = [
+        { name: "Activities", id: "section-activities" },
+        { name: "Events", id: "section-events" },
+        { name: "Daily Quotes", id: "section-quotes" },
+        { name: "Daily Darshan", id: "section-darshan" },
+    ];
 
     return (
-        <div className={`h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth [&::-webkit-scrollbar]:none [-ms-overflow-style:none] scrollbar-none relative transition-colors duration-500 ${theme ? "bg-slate-950" : "bg-slate-50/50"}`}>
-
-            <section className={`h-200 w-full snap-start relative flex flex-col justify-between p-6 overflow-hidden transition-colors duration-500 ${theme ? "bg-slate-950" : "bg-white"}`}>
-                <div className="absolute inset-0 z-0" style={maskFade(40)}>
-                    {overviewImages.heroSlider.length > 0 ? (
-                        overviewImages.heroSlider.map((img, index) => (
-                            <div
-                                key={index}
-                                className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === currentImgIndex ? "opacity-100" : "opacity-0"}`}
-                                style={{ backgroundImage: `url(${img})` }}
-                            />
-                        ))
-                    ) : (
-                        <div className="absolute inset-0 bg-slate-800 transition-opacity duration-1000 ease-in-out opacity-100"></div>
-                    )}
-                </div>
-
-                <motion.div
-                    initial={{ opacity: 0, y: -16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="relative z-30 flex justify-between items-center w-full"
-                >
-                    <div className="flex items-center gap-4 sm:gap-6">
-                        <ThemeToggle />
-
-                        <div className="relative">
-                            <button
-                                onClick={() => { setIsMenuOpen(!isMenuOpen); setIsEventCalendarOpen(false); }}
-                                className={`flex flex-col justify-center items-center gap-1 w-10 h-10 bg-white rounded-xl shadow-md border transition-all active:scale-90 cursor-pointer ${theme ? "border-blue-200" : "border-red-200"}`}
-                            >
-                                <div className={`h-0.5 w-5 transition-all rounded-2xl ${theme ? "bg-blue-600" : "bg-red-600"} ${isMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
-                                <div className={`h-0.5 w-5 transition-all rounded-2xl ${theme ? "bg-blue-600" : "bg-red-600"} ${isMenuOpen ? 'opacity-0' : ''}`} />
-                                <div className={`h-0.5 w-5 transition-all rounded-2xl ${theme ? "bg-blue-600" : "bg-red-600"} ${isMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`} />
-                            </button>
-
-                            <div className={`absolute top-12 left-0 w-56 bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 origin-top-left z-50 ${theme ? "border border-blue-200" : "border border-red-200"} ${isMenuOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}`}>
-                                <div className="flex flex-col p-2 gap-1">
-                                    {section1.menuOptions.map((option, idx) => (
-                                        <div key={option.id}>
-                                            <Link
-                                                to={option.path}
-                                                onClick={() => setIsMenuOpen(false)}
-                                                className={`w-full flex items-center gap-3 cursor-pointer p-3 rounded-xl transition-colors hover:bg-gray-50 font-bold text-sm ${theme ? "text-blue-600" : "text-red-600"}`}
-                                            >
-                                                <span className={`w-2 h-2 rounded-full ${theme ? "bg-blue-600" : "bg-red-600"}`} />
-                                                {option.label}
-                                            </Link>
-                                            {idx !== section1.menuOptions.length - 1 && (
-                                                <div className={`h-px w-full opacity-10 ${theme ? "bg-blue-600" : "bg-red-600"}`} />
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+        <div className={`w-full h-screen overflow-y-auto overflow-x-hidden font-sans transition-colors duration-500 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none ${theme ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-800"}`}>
+            
+            {/* ---------------- TRANSPARENT HEADER ---------------- */}
+            <header className="absolute top-0 left-0 z-50 w-full bg-transparent pt-6 pb-4">
+                <div className="w-full px-4 sm:px-8 lg:px-12 flex items-center justify-between relative">
+                    
+                    {/* Left Side: Dark/Light Mode Switch + Brand Logo */}
+                    <div className="flex items-center gap-6 sm:gap-10 shrink-0 z-10">
+                        <div className="shrink-0">
+                            <ThemeToggle />
                         </div>
+
+                        <Link to="/" className="text-2xl font-black tracking-tight flex items-center gap-2 shrink-0 group">
+                            <span className={`w-3.5 h-3.5 rounded-full transition-all duration-300 group-hover:scale-125 ${theme ? "bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.8)]" : "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)]"}`} />
+                            <span className="text-white drop-shadow-md">Gurukul</span>
+                        </Link>
                     </div>
 
-                    <Link
-                        to="/login"
-                        className={`flex items-center justify-center px-4 py-2 rounded-xl shadow-md text-sm font-bold transition-all active:scale-90 bg-white border ${theme ? "border-blue-200 text-blue-600 hover:bg-blue-50/30" : "border-red-200 text-red-600 hover:bg-red-50/30"}`}
-                    >
-                        Login
-                    </Link>
-                </motion.div>
+                    {/* Center Navigation */}
+                    <nav className="hidden lg:flex items-center gap-3 absolute left-1/2 -translate-x-1/2 z-10">
+                        {navItems.map((item) => (
+                            <button 
+                                key={item.name}
+                                onClick={() => scrollToSection(item.id)} 
+                                className={`px-5 py-2.5 rounded-xl text-sm font-bold tracking-wide backdrop-blur-md border shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 cursor-pointer ${
+                                    theme 
+                                    ? "bg-slate-900/60 border-slate-700/60 text-slate-100 hover:bg-slate-800/90 hover:border-blue-500/60 hover:shadow-blue-500/20" 
+                                    : "bg-white/50 border-white/70 text-slate-900 hover:bg-white/80 hover:border-red-500/50 hover:shadow-red-500/20"
+                                }`}
+                            >
+                                {item.name}
+                            </button>
+                        ))}
+                    </nav>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-                    className="relative z-10 flex flex-col items-center gap-3 mt-auto mb-2"
-                >
-                    <div className="flex justify-center gap-2">
-                        {(overviewImages.heroSlider.length > 0 ? overviewImages.heroSlider : [1, 2, 3]).map((_, idx) => (
-                            <div key={idx} className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentImgIndex ? (theme ? "w-6 bg-blue-500" : "w-6 bg-red-500") : "w-2 bg-white/40"}`} />
+                    {/* Right Side: Login Button */}
+                    <div className="flex items-center shrink-0 z-10">
+                        <Link
+                            to="/login"
+                            className={`px-7 py-2.5 rounded-xl font-bold text-sm shadow-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 border ${
+                                theme 
+                                    ? "bg-blue-600/90 border-blue-400/50 text-white hover:bg-blue-500 hover:shadow-blue-500/40" 
+                                    : "bg-red-600/90 border-red-500/50 text-white hover:bg-red-500 hover:shadow-red-500/40"
+                            }`}
+                        >
+                            Login
+                        </Link>
+                    </div>
+                </div>
+            </header>
+
+            {/* ---------------- SECTION 1: HERO SLIDER ---------------- */}
+            <section className="relative h-screen min-h-150 w-full flex items-center justify-center overflow-hidden shrink-0">
+                <div className="absolute inset-0 z-0">
+                    {overviewImages.map((img, index) => (
+                        <motion.div
+                            key={index}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: index === currentImgIndex ? 1 : 0 }}
+                            transition={{ duration: 1.2, ease: "easeInOut" }}
+                            className="absolute inset-0 bg-cover bg-center"
+                            style={{ backgroundImage: `url(${img})` }}
+                        />
+                    ))}
+                    <div className={`absolute inset-0 transition-colors duration-500 ${theme ? "bg-slate-950/60" : "bg-slate-900/40"}`} />
+                </div>
+
+                {/* Dots indicator */}
+                <div className="absolute bottom-10 left-0 right-0 z-10 flex justify-center gap-3">
+                    {overviewImages.map((_, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => setCurrentImgIndex(idx)}
+                            className={`h-2.5 rounded-full transition-all duration-300 hover:scale-125 ${
+                                idx === currentImgIndex 
+                                    ? (theme ? "w-10 bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.9)]" : "w-10 bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)]") 
+                                    : "w-2.5 bg-white/50 hover:bg-white"
+                            }`}
+                        />
+                    ))}
+                </div>
+            </section>
+
+            {/* ---------------- SECTION 2: ACTIVITIES ---------------- */}
+            <section id="section-activities" className="w-full min-h-screen flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-32 scroll-mt-0">
+                <Reveal>
+                    <div className="flex items-center justify-between mb-12 border-b pb-4 border-slate-200/20 group">
+                        <div>
+                            <span className={`text-xs font-bold uppercase tracking-widest transition-colors duration-300 ${theme ? "text-blue-400 group-hover:text-blue-300" : "text-red-600 group-hover:text-red-500"}`}>
+                                Gurukul Highlights
+                            </span>
+                            <h2 className="text-3xl font-black mt-1 tracking-tight">ACTIVITIES</h2>
+                        </div>
+                        <Link
+                            to="/activities"
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border ${
+                                theme ? "bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 hover:shadow-blue-900/30 hover:border-blue-500/60" : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:shadow-red-200 hover:border-red-300"
+                            }`}
+                        >
+                            VIEW ALL ACTIVITIES
+                        </Link>
+                    </div>
+                </Reveal>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {ACTIVITIES_DATA.map((act, idx) => (
+                        <Reveal key={act.id} delay={idx * 0.12} yOffset={45}>
+                            <motion.div
+                                whileHover={{ y: -8, scale: 1.02 }}
+                                transition={{ duration: 0.3, ease: "easeOut" }}
+                                className={`group rounded-2xl overflow-hidden border shadow-xs transition-all duration-300 ${
+                                    theme ? "bg-slate-900/60 border-slate-800 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-900/20" : "bg-white border-slate-200 hover:shadow-xl hover:border-red-200"
+                                }`}
+                            >
+                                <div className="h-64 overflow-hidden relative">
+                                    <img 
+                                        src={act.image} 
+                                        alt={act.title} 
+                                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" 
+                                    />
+                                    <span className="absolute bottom-3 left-3 bg-slate-900/80 text-white text-[11px] font-bold px-2.5 py-1 rounded-md backdrop-blur-xs transition-transform duration-300 group-hover:scale-105 group-hover:bg-black/90">
+                                        {act.date}
+                                    </span>
+                                </div>
+                                <div className="p-6">
+                                    <span className={`text-xs font-bold transition-colors duration-300 ${theme ? "text-blue-400 group-hover:text-blue-300" : "text-red-600 group-hover:text-red-500"}`}>
+                                        {act.category}
+                                    </span>
+                                    <h3 className="font-bold text-lg mt-2 line-clamp-2 leading-snug">
+                                        {act.title}
+                                    </h3>
+                                </div>
+                            </motion.div>
+                        </Reveal>
+                    ))}
+                </div>
+            </section>
+
+            {/* ---------------- SECTION 3: UPCOMING EVENTS ---------------- */}
+            <section id="section-events" className={`w-full min-h-screen flex flex-col justify-center py-32 scroll-mt-0 transition-colors duration-500 ${theme ? "bg-slate-900/40" : "bg-slate-100/60"}`}>
+                <div className="w-full px-6 sm:px-12 lg:px-16">
+                    <Reveal>
+                        <div className="flex items-center justify-between mb-12 border-b pb-4 border-slate-200/20 group">
+                            <div>
+                                <span className={`text-xs font-bold uppercase tracking-widest transition-colors duration-300 ${theme ? "text-blue-400 group-hover:text-blue-300" : "text-red-600 group-hover:text-red-500"}`}>
+                                    Satsang Schedule
+                                </span>
+                                <h2 className="text-3xl font-black mt-1 tracking-tight">UPCOMING EVENTS</h2>
+                            </div>
+                            <Link
+                                to="/events"
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border ${
+                                    theme ? "bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 hover:shadow-blue-900/30 hover:border-blue-500/60" : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:shadow-red-200 hover:border-red-300"
+                                }`}
+                            >
+                                VIEW ALL EVENTS
+                            </Link>
+                        </div>
+                    </Reveal>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {EVENTS_DATA.map((item, idx) => (
+                            <Reveal key={item.id} delay={idx * 0.12} yOffset={40}>
+                                <Link to={`/events#event-${item.id}`}>
+                                    <motion.div
+                                        whileHover={{ scale: 1.02, x: 6 }}
+                                        transition={{ duration: 0.3 }}
+                                        className={`group flex items-center p-6 rounded-2xl border transition-all duration-300 ${
+                                            theme 
+                                                ? "bg-slate-900/80 border-slate-800 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-900/30" 
+                                                : "bg-white border-slate-200/80 hover:shadow-xl hover:border-red-300"
+                                        }`}
+                                    >
+                                        <div className={`flex flex-col items-center justify-center min-w-20 h-20 rounded-xl font-bold p-3 mr-6 transition-all duration-300 group-hover:scale-105 ${
+                                            theme ? "bg-blue-600/20 text-blue-400 border border-blue-500/30 group-hover:bg-blue-600/30" : "bg-red-50 text-red-600 border border-red-200 group-hover:bg-red-100"
+                                        }`}>
+                                            <span className="text-2xl font-black leading-none">{item.day}</span>
+                                            <span className="text-xs tracking-widest mt-1">{item.month}</span>
+                                        </div>
+
+                                        <div className="flex-1 min-w-0 pr-4">
+                                            <span className={`text-xs font-bold transition-colors duration-300 ${theme ? "text-slate-400 group-hover:text-blue-300" : "text-slate-500 group-hover:text-red-500"}`}>
+                                                {item.branch}
+                                            </span>
+                                            <h3 className="font-bold text-lg truncate mt-1">
+                                                {item.title}
+                                            </h3>
+                                        </div>
+
+                                        <div className="overflow-hidden rounded-xl w-24 h-24 shrink-0">
+                                            <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-125" />
+                                        </div>
+                                    </motion.div>
+                                </Link>
+                            </Reveal>
                         ))}
                     </div>
-
-                    <div className="flex flex-col items-center">
-                        <span className={`text-xs font-bold mb-1 ${theme ? "text-white/80" : "text-slate-900/70"}`}>
-                            Scroll Down
-                        </span>
-                        <motion.div
-                            animate={{ y: [0, 6, 0] }}
-                            transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-                            className={`w-1 h-4 rounded-full ${theme ? "bg-blue-500" : "bg-red-500"}`}
-                        />
-                    </div>
-                </motion.div>
-            </section>
-
-            {/* ---------------- SECTION 2: TEXT INTRODUCTION & FEATURE IMAGE ---------------- */}
-            <section className={`relative h-screen w-full snap-start flex flex-col items-center gap-10 justify-center text-center px-6 transition-colors duration-500 ${theme ? "bg-slate-950" : "bg-white"}`}>
-                <div className="relative z-20">
-                    <Reveal>
-                        <h1 className={`text-4xl md:text-5xl font-black mb-4 tracking-wide transition-colors ${theme ? "text-blue-600" : "text-red-600"}`}>
-                            {section2.title}
-                        </h1>
-                    </Reveal>
-                    <Reveal delay={0.15}>
-                        <p className={`font-medium max-w-xl leading-relaxed ${theme ? "text-gray-400" : "text-gray-500"}`}>
-                            {section2.description}
-                        </p>
-                    </Reveal>
-                </div>
-
-                <div className={`w-150 max-w-full h-87.5 p-5 rounded-[50px] bg-amber-300 shadow-xl`}>
-                    {overviewImages.featureImage.length > 0 ? (
-                        <img
-                            src={overviewImages.featureImage[0]}
-                            alt="Feature"
-                            className="w-full h-full rounded-[40px] object-cover shadow-inner"
-                        />
-                    ) : (
-                        <div className={`w-full h-full rounded-[40px] bg-gray-900 flex items-center justify-center text-gray-500 text-sm`}>
-                            {isLoadingOverview ? "Loading..." : "No Feature Image Available"}
-                        </div>
-                    )}
                 </div>
             </section>
 
-            {/* ---------------- SECTION 3: 70% - 30% LUXURY LAYOUT ---------------- */}
-            <section className="h-screen w-full snap-start relative flex flex-col lg:flex-row gap-6 p-6 lg:p-8 overflow-hidden">
-
-                <div className={`relative flex-1 lg:w-[70%] h-[50%] lg:h-full rounded-4xl p-8 flex items-center justify-center shadow-[0_22px_50px_rgba(0,0,0,0.03)] border transition-all duration-500 ${theme ? "bg-slate-900/95 border-slate-800 shadow-black/40" : "bg-white border-slate-100"}`}>
-                </div>
-
-                <div className={`relative w-full lg:w-[30%] h-[50%] lg:h-full rounded-4xl p-8 flex flex-col justify-between shadow-[0_25px_60px_-15px_rgba(0,0,0,0.04)] border transition-all duration-500 backdrop-blur-xl ${theme
-                        ? "bg-slate-900/20 border-slate-800/60 shadow-black/50"
-                        : "bg-white/90 border-slate-200/50"
-                    }`}>
-
-                    <div className="flex justify-between items-center w-full mb-8 relative z-30">
-                        <div className="flex flex-col gap-0.5">
-                            <h3 className={`text-sm font-black tracking-tight leading-tight uppercase ${theme ? "text-blue-500" : "text-red-600"}`}>
-                                Join Us
-                            </h3>
-                            <p className={`text-lg font-bold tracking-tight ${theme ? "text-slate-200" : "text-slate-800"}`}>
-                                Student Entry
-                            </p>
+            {/* ---------------- SECTION 4: DAILY QUOTES ---------------- */}
+            <section id="section-quotes" className="w-full min-h-screen flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-32 scroll-mt-0">
+                <Reveal>
+                    <div className="flex items-center justify-between mb-12 border-b pb-4 border-slate-200/20 group">
+                        <div>
+                            <span className={`text-xs font-bold uppercase tracking-widest transition-colors duration-300 ${theme ? "text-blue-400 group-hover:text-blue-300" : "text-red-600 group-hover:text-red-500"}`}>
+                                Daily Inspiration
+                            </span>
+                            <h2 className="text-3xl font-black mt-1 tracking-tight">DAILY QUOTES</h2>
                         </div>
-
-                        <div className="relative flex flex-col items-end">
-                            <button
-                                onClick={() => setIsEventCalendarOpen(!isEventCalendarOpen)}
-                                className={`group relative flex items-center justify-center h-11 px-4 rounded-2xl shadow-sm border transition-all duration-300 active:scale-95 cursor-pointer backdrop-blur-md ${theme
-                                        ? "bg-slate-900/80 border-slate-800 text-slate-100 hover:border-blue-500/50 hover:bg-slate-900"
-                                        : "bg-white border-slate-200/80 text-slate-800 hover:border-red-500/40 hover:shadow-md"
-                                    }`}
-                            >
-                                <div className="flex items-center">
-                                    <span className={`text-[16px] font-black tracking-tight ${theme ? "text-blue-500" : "text-red-600"}`}>
-                                        {dayNumber}
-                                    </span>
-                                    <span className={`text-[12px] font-light mx-2 ${theme ? "text-slate-700" : "text-slate-300"}`}>|</span>
-                                    <span className="text-[11px] font-black tracking-widest mt-0.5 opacity-80">
-                                        {monthShort}
-                                    </span>
-                                </div>
-                                {todayEvent && (
-                                    <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 animate-pulse border-white ${todayEvent.category === 'event' ? "bg-emerald-500" : "bg-blue-500"}`}></span>
-                                )}
-                            </button>
-
-                            <div className="absolute top-14 right-0 origin-top-right">
-                                <EventCalendarPopup
-                                    isOpen={isEventCalendarOpen}
-                                    onClose={() => setIsEventCalendarOpen(false)}
-                                    selectedDate={selectedDate}
-                                    onSelectDate={(date: Date) => {
-                                        setSelectedDate(date);
-                                        setIsEventCalendarOpen(false);
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <form onSubmit={handleFormSubmit} className="flex flex-col flex-1 gap-5 overflow-y-auto scrollbar-none pb-1">
-                        <div className="flex justify-center mb-4">
-                            <label className="relative cursor-pointer group">
-                                <motion.div
-                                    whileHover={{ scale: 1.03 }}
-                                    transition={{ duration: 0.3 }}
-                                    className={`w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center transition-all duration-500 overflow-hidden ${theme
-                                            ? "border-slate-800 group-hover:border-blue-500 bg-slate-900/30 group-hover:bg-slate-900/60"
-                                            : "border-slate-200 group-hover:border-red-600 bg-slate-50/60 group-hover:bg-white"
-                                        }`}
-                                >
-                                    {photoPreview ? (
-                                        <img src={photoPreview} alt="Student Preview" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-1.5">
-                                            <svg className={`w-6 h-6 transition-colors duration-300 ${theme ? "text-slate-600 group-hover:text-blue-400" : "text-slate-400 group-hover:text-red-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                            <span className={`text-[9px] font-black tracking-[0.15em] uppercase ${theme ? "text-slate-500" : "text-slate-400"}`}>Upload</span>
-                                        </div>
-                                    )}
-                                </motion.div>
-                                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
-                            </label>
-                        </div>
-
-                        <div className="w-full">
-                            <input type="number" required placeholder="SUID *" value={formData.suid} onChange={(e) => setFormData({ ...formData, suid: e.target.value })} className={inputClasses} />
-                        </div>
-                        <div className="w-full">
-                            <input type="text" required placeholder="Full Name *" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} className={inputClasses} />
-                        </div>
-                        <div className="flex gap-4 w-full">
-                            <div className="flex-1">
-                                <input type="text" placeholder="STD " value={formData.std} onChange={(e) => setFormData({ ...formData, std: e.target.value })} className={inputClasses} />
-                            </div>
-                            <div className="flex-1">
-                                <input type="number" placeholder="G.R. Number" value={formData.grNo} onChange={(e) => setFormData({ ...formData, grNo: e.target.value })} className={inputClasses} />
-                            </div>
-                        </div>
-
-                        <motion.button
-                            whileTap={{ scale: 0.98 }}
-                            type="submit"
-                            disabled={isSubmitting}
-                            className={`w-full mt-4 py-4 rounded-2xl font-bold tracking-wide text-white text-sm transition-all duration-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${theme
-                                    ? "bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-[0_15px_30px_rgba(37,99,235,0.2)] hover:shadow-[0_15px_35px_rgba(37,99,235,0.35)]"
-                                    : "bg-linear-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 shadow-[0_15px_30px_rgba(239,68,68,0.2)] hover:shadow-[0_15px_35px_rgba(239,68,68,0.35)]"
-                                }`}
+                        <Link
+                            to="/amrut-aachaman"
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border ${
+                                theme ? "bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 hover:shadow-blue-900/30 hover:border-blue-500/60" : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:shadow-red-200 hover:border-red-300"
+                            }`}
                         >
-                            {isSubmitting ? "Submitting..." : "Submit Application"}
-                        </motion.button>
-                    </form>
-                </div>
-            </section>
-
-            {/* ---------------- SECTION 4: SMART & OFFLINE INFRASTRUCTURE ---------------- */}
-            <section className={`h-screen w-full snap-start relative flex items-center justify-center transition-colors duration-500 overflow-hidden ${theme ? "bg-slate-950" : "bg-white"}`}>
-
-                {overviewImages.smartInfrastructure.length > 0 && (
-                    <div
-                        className="absolute inset-0 bg-cover bg-center opacity-30 md:opacity-40 transition-opacity duration-700"
-                        style={{ backgroundImage: `url(${overviewImages.smartInfrastructure[0]})` }}
-                    />
-                )}
-
-                <Reveal className={`relative max-w-2xl p-8 px-6 rounded-3xl shadow-xl text-center z-10 backdrop-blur-md border ${theme ? "bg-slate-900/85 border-slate-800" : "bg-white/85 border-gray-100"}`}>
-                    <span className={`text-xs font-black tracking-widest uppercase ${theme ? "text-blue-500" : "text-red-500"}`}>
-                        {section3.tagline}
-                    </span>
-                    <h2 className={`text-3xl md:text-4xl font-extrabold mt-2 mb-4 ${theme ? "text-white" : "text-slate-800"}`}>
-                        {section3.title}
-                    </h2>
-                    <p className={`text-sm md:text-base leading-relaxed ${theme ? "text-gray-300" : "text-gray-600"}`}>
-                        {section3.description}
-                    </p>
+                            VIEW MORE QUOTES
+                        </Link>
+                    </div>
                 </Reveal>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {LATEST_QUOTES.map((q, idx) => (
+                        <Reveal key={q.id} delay={idx * 0.1}>
+                            <motion.div
+                                whileHover={{ y: -8, scale: 1.02 }}
+                                transition={{ duration: 0.3 }}
+                                className={`group rounded-2xl overflow-hidden border transition-all duration-300 ${
+                                    theme ? "bg-slate-900/60 border-slate-800 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-900/20" : "bg-white border-slate-200 shadow-xs hover:shadow-xl hover:border-red-200"
+                                }`}
+                            >
+                                <div className="h-72 overflow-hidden relative">
+                                    <img src={q.image} alt={q.title} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" />
+                                </div>
+                                <div className="p-6">
+                                    <span className={`text-xs font-medium transition-colors duration-300 ${theme ? "text-slate-400 group-hover:text-blue-400" : "text-slate-500 group-hover:text-red-500"}`}>{q.date}</span>
+                                    <p className="font-bold text-xl mt-2 leading-snug">
+                                        "{q.title}"
+                                    </p>
+                                </div>
+                            </motion.div>
+                        </Reveal>
+                    ))}
+                </div>
             </section>
 
-            {/* ---------------- SECTION 5: FOOTER SECTION ---------------- */}
-            <section className="h-screen w-full snap-start relative flex flex-col justify-between p-10 bg-slate-950 text-gray-400">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-auto max-w-6xl w-full mx-auto">
-                    <Reveal className="flex flex-col gap-3">
-                        <h3 className={`text-2xl font-black ${theme ? "text-blue-500" : "text-red-500"}`}>
-                            {footer.brandName}
-                        </h3>
-                        <p className="text-sm text-gray-500 max-w-xs">
-                            {footer.brandDescription}
-                        </p>
+            {/* ---------------- SECTION 5: DAILY DARSHAN ---------------- */}
+            <section id="section-darshan" className={`w-full min-h-screen flex flex-col justify-center py-32 scroll-mt-0 transition-colors duration-500 ${theme ? "bg-slate-900/30" : "bg-slate-100/50"}`}>
+                <div className="w-full px-6 sm:px-12 lg:px-16">
+                    <Reveal>
+                        <div className="flex items-center justify-between mb-12 border-b pb-4 border-slate-200/20 group">
+                            <div>
+                                <span className={`text-xs font-bold uppercase tracking-widest transition-colors duration-300 ${theme ? "text-blue-400 group-hover:text-blue-300" : "text-red-600 group-hover:text-red-500"}`}>
+                                    Nitya Darshan
+                                </span>
+                                <h2 className="text-3xl font-black mt-1 tracking-tight">DAILY DARSHAN</h2>
+                            </div>
+                            <Link
+                                to="/daily-darshan"
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border ${
+                                    theme ? "bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 hover:shadow-blue-900/30 hover:border-blue-500/60" : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:shadow-red-200 hover:border-red-300"
+                                }`}
+                            >
+                                VIEW MORE DARSHAN
+                            </Link>
+                        </div>
                     </Reveal>
 
-                    <Reveal className="flex flex-col gap-2" delay={0.1}>
-                        <h4 className="text-white font-bold text-sm uppercase tracking-wider">Quick Links</h4>
-                        <nav className="flex flex-col gap-1 text-sm">
-                            {footer.links.map((link, idx) => (
-                                <a key={idx} href={link.href} className="hover:text-white transition-colors">
-                                    {link.label}
-                                </a>
-                            ))}
-                        </nav>
-                    </Reveal>
-
-                    <Reveal className="flex flex-col gap-2" delay={0.2}>
-                        <h4 className="text-white font-bold text-sm uppercase tracking-wider">Contact Support</h4>
-                        <p className="text-sm text-gray-500">Have questions? Reach out to us at:</p>
-                        <a href={`mailto:${footer.contactEmail}`} className={`text-sm font-bold ${theme ? "text-blue-400 hover:text-blue-300" : "text-red-400 hover:text-red-300"}`}>
-                            {footer.contactEmail}
-                        </a>
-                    </Reveal>
-                </div>
-
-                <div className="border-t border-gray-800/60 pt-6 mt-10 max-w-6xl w-full mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-600">
-                    <p>© {new Date().getFullYear()} {footer.brandName}. All rights reserved.</p>
-                    <div className="flex gap-4">
-                        <a href="#privacy" className="hover:text-gray-400 transition-colors">Privacy Policy</a>
-                        <a href="#terms" className="hover:text-gray-400 transition-colors">Terms of Service</a>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {LATEST_DARSHAN.map((d, idx) => (
+                            <Reveal key={d.id} delay={idx * 0.1}>
+                                <motion.div
+                                    whileHover={{ y: -8, scale: 1.02 }}
+                                    transition={{ duration: 0.3 }}
+                                    className={`group rounded-2xl overflow-hidden border transition-all duration-300 ${
+                                        theme ? "bg-slate-900/60 border-slate-800 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-900/20" : "bg-white border-slate-200 shadow-xs hover:shadow-xl hover:border-red-200"
+                                    }`}
+                                >
+                                    <div className="h-80 overflow-hidden relative">
+                                        <img src={d.image} alt={d.title} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" />
+                                    </div>
+                                    <div className="p-6">
+                                        <span className={`text-xs font-medium transition-colors duration-300 ${theme ? "text-slate-400 group-hover:text-blue-400" : "text-slate-500 group-hover:text-red-500"}`}>{d.date}</span>
+                                        <h3 className="font-bold text-lg mt-2 leading-snug">
+                                            {d.title}
+                                        </h3>
+                                    </div>
+                                </motion.div>
+                            </Reveal>
+                        ))}
                     </div>
                 </div>
             </section>
+
+            {/* ---------------- SECTION 6: FOOTER ---------------- */}
+            <footer className={`w-full pt-16 pb-12 border-t transition-colors duration-500 ${theme ? "bg-slate-950 border-slate-800 text-slate-300" : "bg-slate-900 border-slate-800 text-slate-200"}`}>
+                <div className="w-full px-6 sm:px-12 lg:px-16">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-10 pb-12 border-b border-slate-800">
+                        <Reveal>
+                            <h3 className={`text-2xl font-black mb-3 transition-colors duration-300 ${theme ? "text-blue-400 hover:text-blue-300" : "text-red-500 hover:text-red-400"}`}>
+                                Shree Swaminarayan Gurukul - Bhayavadar
+                            </h3>
+                            <p className="text-sm leading-relaxed text-slate-400">
+                                Padvala Road, Ta.Upleta, Dist. Rajkot, Bhayavadar (Gujarat)<br />
+                                Establishing true education with moral values and divine devotion for societal welfare.
+                            </p>
+                        </Reveal>
+
+                        <Reveal delay={0.1}>
+                            <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Quick Navigation</h4>
+                            <ul className="space-y-3 text-sm text-slate-400">
+                                <li><button onClick={() => scrollToSection("section-quotes")} className={`inline-block transition-all duration-300 hover:translate-x-2 cursor-pointer ${theme ? "hover:text-blue-400" : "hover:text-red-400"}`}>Daily Quotes</button></li>
+                                <li><button onClick={() => scrollToSection("section-darshan")} className={`inline-block transition-all duration-300 hover:translate-x-2 cursor-pointer ${theme ? "hover:text-blue-400" : "hover:text-red-400"}`}>Daily Darshan</button></li>
+                                <li><button onClick={() => scrollToSection("section-activities")} className={`inline-block transition-all duration-300 hover:translate-x-2 cursor-pointer ${theme ? "hover:text-blue-400" : "hover:text-red-400"}`}>Activities</button></li>
+                                <li><button onClick={() => scrollToSection("section-events")} className={`inline-block transition-all duration-300 hover:translate-x-2 cursor-pointer ${theme ? "hover:text-blue-400" : "hover:text-red-400"}`}>Upcoming Events</button></li>
+                            </ul>
+                        </Reveal>
+
+                        <Reveal delay={0.2}>
+                            <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Contact & Support</h4>
+                            <div className="space-y-3 text-sm text-slate-400">
+                                <p className="transition-colors duration-300 hover:text-white"><strong className={theme ? "text-blue-400" : "text-red-400"}>Phone:</strong> +91 70484 80003/4</p>
+                                <p className="transition-colors duration-300 hover:text-white"><strong className={theme ? "text-blue-400" : "text-red-400"}>Email:</strong> BhayavarGurukul@gmail.com</p>
+                                <p className="transition-colors duration-300 hover:text-white"><strong className={theme ? "text-blue-400" : "text-red-400"}>Support:</strong> support@RajkotSansthan.com</p>
+                            </div>
+                        </Reveal>
+                    </div>
+
+                    <div className="pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-4">
+                        <p>© {new Date().getFullYear()} Swaminarayan Gurukul Rajkot Sansthan. All Rights Reserved.</p>
+                        <div className="flex gap-6">
+                            <span className="hover:text-slate-300 transition-colors duration-300 cursor-pointer">Privacy Policy</span>
+                            <span className="hover:text-slate-300 transition-colors duration-300 cursor-pointer">Terms of Service</span>
+                        </div>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 }

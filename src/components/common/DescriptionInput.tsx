@@ -450,7 +450,7 @@ export default function DescriptionInput({
 
                 {showPreview ? (
                     <div
-                        className={`w-full px-4 py-3 text-sm min-h-[96px] [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:rounded-lg [&_pre]:p-2 [&_pre]:my-1 [&_pre]:overflow-x-auto [&_code]:font-mono [&_code]:text-xs ${theme
+                        className={`w-full px-4 py-3 text-sm min-h-24 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:rounded-lg [&_pre]:p-2 [&_pre]:my-1 [&_pre]:overflow-x-auto [&_code]:font-mono [&_code]:text-xs ${theme
                                 ? "text-white [&_pre]:bg-gray-900"
                                 : "text-neutral-900 [&_pre]:bg-neutral-200"
                             }`}

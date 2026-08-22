@@ -6,11 +6,11 @@ import Input from "../../../components/common/Input";
 import Button from "../../../components/common/Button";
 import SearchableDropdown from "../../../components/common/SearchableDropdown";
 import DatePicker from "../../../components/common/Calendar";
+import ImageUploader from "../../../components/common/ImageUploader";
 import {
     HiOutlineUser,
     HiOutlineIdentification,
     HiOutlineKey,
-    HiCamera,
     HiOutlineOfficeBuilding,
     HiOutlineCalendar,
     HiOutlineShieldCheck,
@@ -18,7 +18,8 @@ import {
 import type { UserCreate } from "../../../Types/User-create";
 import { FaUserCircle } from "react-icons/fa";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+// 🎯 FIX: /api hatavyu — departmentService/sectionService/uploadService badha "http://localhost:5000" (bina /api) vapare che
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 interface RoleOption {
     role_id: number;
@@ -87,7 +88,6 @@ export default function CreateUserForm() {
         roleId: 0,
         bod: new Date().toISOString().split("T")[0],
         roleCode: "",
-        // 🎯 અહિયાં 0 ની જગ્યાએ default null રાખ્યું છે
         departmentId: incomingData?.departmentId || (null as any),
         sectionId: 0,
         standardId: 0,
@@ -138,7 +138,6 @@ export default function CreateUserForm() {
                     }
                 }
                 if (deptsRes.ok && deptsResult.success) {
-                    // 🎯 FIX: snake_case ne camelCase ma convert karo
                     const mappedDepts = deptsResult.data.map((d: any) => ({
                         departmentId: d.department_id,
                         departmentName: d.department_name,
@@ -167,16 +166,8 @@ export default function CreateUserForm() {
         }));
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData((prev) => ({ ...prev, avatar: reader.result as string }));
-            };
-            reader.readAsDataURL(file);
-        }
-    };
+    // 🎯 FIX: base64 FileReader logic hatavi didhi — have ImageUploader component
+    // Cloudinary par upload kari ne direct URL pacha aape che, e j formData.avatar ma save thay che
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -271,39 +262,17 @@ export default function CreateUserForm() {
 
             <form onSubmit={handleSubmit} className="space-y-8">
 
-                {/* ===== Avatar ===== */}
+                {/* ===== Avatar — have Cloudinary ImageUploader vaparo che ===== */}
                 <div className="flex flex-col items-center justify-center gap-2">
-                    <label
-                        className={`relative w-40 h-30 rounded-3xl overflow-hidden border-2 ${theme ? "border-blue-500/60" : "border-red-500/60"
-                            } flex items-center justify-center shrink-0 cursor-pointer group transition-shadow ring-4 ${theme ? "ring-blue-500/5 hover:ring-blue-500/10" : "ring-red-500/5 hover:ring-red-500/10"
-                            }`}
-                    >
-                        {formData.avatar ? (
-                            <img src={formData.avatar} alt="Selected Profile" className="w-full h-full object-cover" />
-                        ) : (
-                            <span
-                                className={`flex items-center justify-center w-full h-full ${theme ? "bg-gray-800 text-gray-500" : "bg-neutral-100 text-neutral-400"
-                                    }`}
-                            >
-                                <HiOutlineUser className="text-5xl" />
-                            </span>
-                        )}
-
-                        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                            <HiCamera className="text-white text-2xl" />
-                            <span className="text-white text-[10px] font-medium">Upload</span>
-                        </div>
-
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            className="hidden"
-                        />
-                    </label>
-                    <p className={`text-xs ${theme ? "text-gray-500" : "text-neutral-400"}`}>
-                        Profile photo (optional)
-                    </p>
+                    <ImageUploader
+                        value={formData.avatar}
+                        onChange={(url) => setFormData((prev) => ({ ...prev, avatar: url }))}
+                        theme={theme}
+                        uploadType="avatar"
+                        shape="circle"
+                        size={128}
+                        label="Profile photo (optional)"
+                    />
                 </div>
 
                 {/* ===== Identity section ===== */}
@@ -347,7 +316,6 @@ export default function CreateUserForm() {
                     <SectionHeading icon={<HiOutlineShieldCheck className="text-sm" />} title="Role & Department" theme={theme} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                        {/* 🌟 1. Role Dropdown */}
                         <SearchableDropdown
                             label="Select Role *"
                             placeholder={roles.length === 0 ? "Loading roles..." : "Choose Role"}
@@ -361,7 +329,6 @@ export default function CreateUserForm() {
                                     roleId: selectedRole?.role_id ?? 0,
                                     roleCode: selectedRole?.role_code ?? "",
                                     status: selectedRole?.role_code === "USER" ? "PENDING" : "APPROVED",
-                                    // 🎯 જો HEAD100 ના હોય તો અહિયાં પણ 0 ની જગ્યાએ null સેટ કર્યું
                                     ...(selectedRole?.role_code !== "HEAD100" && {
                                         departmentId: null as any,
                                     }),
@@ -371,7 +338,6 @@ export default function CreateUserForm() {
                             disabled={isFromPipeline || roles.length === 0}
                         />
 
-                        {/* 🌟 2. Department Dropdown */}
                         {(isHeadRole || isFromPipeline) ? (
                             <SearchableDropdown
                                 label="Assign Department *"

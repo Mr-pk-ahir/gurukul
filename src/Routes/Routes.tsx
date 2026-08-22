@@ -5,8 +5,10 @@ import Overview from "../pages/Overview/Overview";
 import Login from "../auth/Login";
 import Dashboard from "../pages/Dashboard";
 
-import PublicAmrutNuAachaman from "../pages/Overview/Amrut-Nu-Aachaman";
-import PublicDailyDarshan from "../pages/Overview/Daily-Darshan";
+import AmrutAachaman from "../pages/Overview/Amrut-Nu-Aachaman";
+import DailyDarshanPage from "../pages/Overview/Daily-Darshan";
+import ActivitiesPage from "../pages/Overview/ActivitiesPage";
+import UpcomingEventsPage from "../pages/Overview/UpcomingEventsPage";
 
 // યુઝર મેનેજમેન્ટ
 import CreateUserForm from "../pages/Section/Users-Managemant/Create-user-form";
@@ -37,6 +39,18 @@ import AdminAmrutNuAachaman from "../pages/Section/Overview-Management/Amrut-Nu-
 import AdminDailyDarshan from "../pages/Section/Overview-Management/Daily-Darshan";
 import Permission from "../pages/Section/Permissions-Managemant/Permission";
 
+import Activities from "../pages/Section/Overview-Management/Activities";
+import UpcomingEvents from "../pages/Section/Overview-Management/Upcoming-Events";
+
+import ProgressDashboard from "../pages/Section/ProgressDashboard";
+
+// 👑 ગ્રુપ મેનેજમેન્ટ ઇમ્પોર્ટ
+import CreateGroup from "../pages/Section/Group-Managemant/Create-Group";
+import GroupList from "../pages/Section/Group-Managemant/Group-List";
+
+// 👥 NAVU: Group Member Detail — group ma je member chhe e joi shake tevu page
+import GroupMemberDetail from "../pages/Section/Group-Managemant/Groupmemberdetail";
+
 
 interface ProtectedRouteProps {
     module?: string;
@@ -46,7 +60,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ module, action = "view", requireLoginOnly = false }) => {
     const userString = localStorage.getItem("user");
-    const user: AuthUser | null = userString ? JSON.parse(userString) : null;
+    let user: AuthUser | null = userString ? JSON.parse(userString) : null;
 
     if (!user) {
         return <Navigate to="/login" replace />;
@@ -56,25 +70,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ module, action = "view"
         return <Outlet />;
     }
 
-    // 🎯 FIX: SUPER_ADMIN bypass અને permissions string parsing
-    let hasPermission = false;
-    
-    if (user.roleCode === "SUPER_ADMIN") {
-        hasPermission = true; // સુપર એડમિન ને બધો એક્સેસ છે
-    } else {
-        let parsedPermissions = user.permissions;
-        
-        // જો backend માંથી permissions string બની ને આવ્યું હોય તો parse કરો
-        if (typeof parsedPermissions === "string") {
-            try {
-                parsedPermissions = JSON.parse(parsedPermissions);
-            } catch (e) {
-                parsedPermissions = {};
-            }
+    // Permissions string parse safety check
+    let permissions = user.permissions;
+    if (typeof permissions === "string") {
+        try {
+            permissions = JSON.parse(permissions);
+        } catch (e) {
+            permissions = {};
         }
-        
-        hasPermission = !!parsedPermissions?.[module || ""]?.[action];
     }
+
+    const hasPermission = permissions?.[module || ""]?.[action];
 
     if (!hasPermission) {
         return <Navigate to="/dashboard/unauthorized" replace />;
@@ -88,7 +94,7 @@ const UnauthorizedView = () => (
         <h1 className="text-5xl font-black text-red-500 tracking-wide animate-bounce">403</h1>
         <h2 className="text-xl font-bold text-gray-700 mt-2 dark:text-gray-300">Access Denied!</h2>
         <p className="text-sm text-gray-400 mt-1 max-w-sm">
-            તમારી પાસે આ મોડ્યુલ અથવા એક્શન એક્સેસ કરવાની પરમિશન નથી. કૃપા કરીને એડમિનનો સંપર્ક કરો.
+            You do not have permission to view this page. Please contact your administrator if you believe this is an error.
         </p>
     </div>
 );
@@ -98,8 +104,10 @@ export default function Routers() {
         <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Overview />} />
-            <Route path="/amrut-nu-aachaman" element={<PublicAmrutNuAachaman />} />
-            <Route path="/daily-darshan" element={<PublicDailyDarshan />} />
+            <Route path="/amrut-nu-aachaman" element={<AmrutAachaman />} />
+            <Route path="/daily-darshan" element={<DailyDarshanPage />} />
+            <Route path="/events" element={<UpcomingEventsPage />} />
+            <Route path="/activities" element={<ActivitiesPage />} />
             <Route path="/login" element={<Login />} />
 
             <Route path="/dashboard" element={<Layout />} >
@@ -143,9 +151,32 @@ export default function Routers() {
                     <Route path="permissions/lesson" element={<RoleList />} />
                 </Route>
 
+                {/* 👑 Group Management - fakt SUPER_ADMIN, HEAD100 mate */}
+                <Route element={<ProtectedRoute module="Group" action="create" />}>
+                    <Route path="groups/create" element={<CreateGroup />} />
+                </Route>
+                <Route element={<ProtectedRoute module="Group" action="view" />}>
+                    <Route path="groups/list" element={<GroupList />} />
+                </Route>
+                <Route element={<ProtectedRoute module="Group" action="view" />}>
+                    <Route path="groups/edit/:groupId" element={<CreateGroup />} />
+                </Route>
+
+                {/* 👥 NAVU: Group Member Detail — access group-membership thi backend check thashe,
+                    etle requireLoginOnly vaparyu chhe (static role permission na badle). Badha members
+                    (SUPER_ADMIN thi student sudhi) potana group no detail joi shake. */}
+                <Route element={<ProtectedRoute requireLoginOnly />}>
+                    <Route path="groups/member/:groupId" element={<GroupMemberDetail />} />
+                </Route>
+
                 <Route element={<ProtectedRoute requireLoginOnly />}>
                     <Route path="profile" element={<Profile />} />
                     <Route path="settings/profile" element={<ProfileSetting />} />
+                </Route>
+
+                {/* 📊 Progress Module Route */}
+                <Route element={<ProtectedRoute module="Progress" action="view" />}>
+                    <Route path="progress" element={<ProgressDashboard />} />
                 </Route>
 
                 <Route element={<ProtectedRoute module="OverviewEdit" action="view" />}>
@@ -156,6 +187,12 @@ export default function Routers() {
                 </Route>
                 <Route element={<ProtectedRoute module="DailyDarshan" action="view" />}>
                     <Route path="overview-management/daily-darshan" element={<AdminDailyDarshan />} />
+                </Route>
+                <Route element={<ProtectedRoute module="OverviewEdit" action="view" />}>
+                    <Route path="overview-management/activities" element={<Activities />} />
+                </Route>
+                <Route element={<ProtectedRoute module="OverviewEdit" action="view" />}>
+                    <Route path="overview-management/events" element={<UpcomingEvents />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />

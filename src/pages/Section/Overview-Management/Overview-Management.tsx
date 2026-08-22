@@ -1,311 +1,262 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { UploadCloud, Image as ImageIcon, X, RefreshCw, Layers, CheckCircle, Loader2 } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { motion } from "framer-motion";
 import { useTheme } from "../../../components/theme/ThemeContext";
-import { RiGalleryLine } from "react-icons/ri";
 
-type ImageSection = "heroSlider" | "featureImage" | "smartInfrastructure";
-
-interface ImageItem {
-    id: number;
-    url: string;
+// Smooth Entrance Animation Component
+function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
+  );
 }
-
-const defaultImages: { [key in ImageSection]: ImageItem[] } = {
-    heroSlider: [],
-    featureImage: [],
-    smartInfrastructure: [],
-};
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
-// --- Reusable Upload Card Component (Extracted outside) ---
-interface UploadCardProps {
-    title: string;
-    description: string;
-    section: ImageSection;
-    multiple?: boolean;
-    limit?: number;
-    icon: React.ComponentType<any>;
-    currentImages: ImageItem[];
-    isUploading: boolean;
-    onUpload: (event: React.ChangeEvent<HTMLInputElement>, section: ImageSection) => void;
-    onRemove: (section: ImageSection, id: number) => void;
-}
-
-const UploadCard = ({
-    title,
-    description,
-    section,
-    multiple = false,
-    limit = 10,
-    icon: Icon,
-    currentImages,
-    isUploading,
-    onUpload,
-    onRemove,
-}: UploadCardProps) => {
-    const { theme } = useTheme();
-    const isSingleUploadComplete = !multiple && currentImages.length > 0;
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 flex flex-col ${
-                theme ? "bg-slate-900/60 border-slate-800 shadow-black/20" : "bg-white border-gray-100 shadow-gray-200/50 hover:shadow-xl"
-            }`}
-        >
-            <div className="flex rounded-2xl items-start gap-4 mb-6">
-                <div className={`p-3.5 rounded-2xl shrink-0 ${theme ? "bg-slate-800 text-indigo-400" : "bg-indigo-50 text-indigo-600"}`}>
-                    <Icon size={26} strokeWidth={1.5} />
-                </div>
-                <div className="flex-1">
-                    <div className="flex justify-between items-center w-full">
-                        <h3 className={`text-lg font-bold ${theme ? "text-white" : "text-slate-800"}`}>{title}</h3>
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${theme ? "bg-slate-800 text-slate-300" : "bg-gray-100 text-gray-600"}`}>
-                            {currentImages.length} / {limit}
-                        </span>
-                    </div>
-                    <p className={`text-sm mt-1 leading-snug ${theme ? "text-slate-400" : "text-gray-500"}`}>{description}</p>
-                </div>
-            </div>
-
-            <div className="relative group flex-1 flex flex-col justify-center min-h-40">
-                {isUploading ? (
-                    <div className={`w-full flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed min-h-40 ${theme ? "border-slate-700 bg-slate-800/30" : "border-gray-300 bg-gray-50"}`}>
-                        <Loader2 size={32} className="animate-spin mb-3 text-indigo-500" />
-                        <p className={`font-medium text-center ${theme ? "text-slate-300" : "text-slate-700"}`}>Uploading...</p>
-                    </div>
-                ) : isSingleUploadComplete ? (
-                    <div className="relative w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-slate-700 shadow-sm aspect-video">
-                        <img src={currentImages[0].url} alt="Preview" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm">
-                            <button onClick={() => onRemove(section, currentImages[0].id)} className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transform hover:scale-110 transition-all shadow-lg">
-                                <X size={20} strokeWidth={3} />
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        <input type="file" multiple={multiple} accept="image/*" onChange={(e) => onUpload(e, section)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" disabled={currentImages.length >= limit} />
-                        <div className={`w-full flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed transition-all duration-300 min-h-40 ${theme ? "border-slate-700 bg-slate-800/30 group-hover:border-indigo-500 group-hover:bg-slate-800/50" : "border-gray-300 bg-gray-50 group-hover:border-indigo-400 group-hover:bg-indigo-50/30"}`}>
-                            <UploadCloud size={40} className={`mb-3 transition-colors ${theme ? "text-slate-500 group-hover:text-indigo-400" : "text-gray-400 group-hover:text-indigo-500"}`} />
-                            <p className={`font-medium text-center ${theme ? "text-slate-300" : "text-slate-700"}`}>Click to upload (Max 60MB)</p>
-                        </div>
-                    </>
-                )}
-            </div>
-
-            {multiple && currentImages.length > 0 && (
-                <div className="grid gap-3 mt-6 grid-cols-2 sm:grid-cols-3">
-                    {currentImages.map((img) => (
-                        <div key={img.id} className="relative group rounded-xl overflow-hidden aspect-video border border-gray-200 dark:border-slate-700 shadow-sm">
-                            <img src={img.url} alt="Preview" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm z-20">
-                                <button onClick={() => onRemove(section, img.id)} className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transform hover:scale-110 transition-all shadow-lg">
-                                    <X size={16} strokeWidth={3} />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </motion.div>
-    );
-};
 
 export default function OverviewManagement() {
-    const { theme } = useTheme();
-    const [images, setImages] = useState<{ [key in ImageSection]: ImageItem[] }>(defaultImages);
-    const [showToast, setShowToast] = useState(false);
-    const [toastMessage, setToastMessage] = useState("Saved Successfully!");
-    const [isLoading, setIsLoading] = useState(true);
-    const [uploadingSection, setUploadingSection] = useState<ImageSection | null>(null);
+  const { theme } = useTheme();
 
-    // 🚀 Backend thi data fetch karo
-    const fetchOverview = async () => {
-        try {
-            const res = await fetch(`${API_BASE_URL}/overview`);
-            const result = await res.json();
-            if (result.success) {
-                setImages({
-                    heroSlider: result.data.heroSlider || [],
-                    featureImage: result.data.featureImage || [],
-                    smartInfrastructure: result.data.smartInfrastructure || [],
-                });
-            }
-        } catch (error) {
-            console.error("Error fetching overview:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  // 3 Images State
+  const [images, setImages] = useState<Array<string | null>>([null, null, null]);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        fetchOverview();
-    }, []);
+  // Hidden File Input Refs
+  const fileInputRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
 
-    const showNotification = (message: string) => {
-        setToastMessage(message);
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
-    };
-
-    // 🚀 Upload direct backend/Cloudinary ne thay chhe - IndexedDB/base64 nathi
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, section: ImageSection) => {
-        if (!e.target.files || e.target.files.length === 0) return;
-
-        const selectedFiles = Array.from(e.target.files);
-
-        const MAX_SIZE_BYTE = 60 * 1024 * 1024;
-        for (const file of selectedFiles) {
-            if (file.size > MAX_SIZE_BYTE) {
-                alert(`"${file.name}" આ ફાઇલ 60MB કરતાં મોટી છે! મહેરબાની કરીને નાની ફાઇલ સિલેક્ટ કરો.`);
-                return;
-            }
-        }
-
-        if (section === "heroSlider" && images.heroSlider.length + selectedFiles.length > 10) {
-            alert("તમે સ્લાઈડરમાં વધુમાં વધુ ૧૦ ઈમેજીસ જ રાખી શકો છો.");
-            return;
-        }
-
-        setUploadingSection(section);
-
-        try {
-            // Multiple files hoy to ek pachi ek upload thashe (backend single file j lai chhe)
-            for (const file of selectedFiles) {
-                const formData = new FormData();
-                formData.append("section", section);
-                formData.append("image", file);
-
-                const res = await fetch(`${API_BASE_URL}/overview/update`, {
-                    method: "POST",
-                    body: formData,
-                });
-
-                const result = await res.json();
-                if (!result.success) {
-                    throw new Error(result.message || "Upload failed");
-                }
-            }
-
-            await fetchOverview(); // fresh data reload karo
-            showNotification("Image uploaded successfully!");
-        } catch (error: any) {
-            console.error("Upload error:", error);
-            alert(error.message || "Upload failed. Please try again.");
-        } finally {
-            setUploadingSection(null);
-            e.target.value = "";
-        }
-    };
-
-    const removeImage = async (section: ImageSection, imageId: number) => {
-        const confirmDelete = window.confirm("Are you sure you want to delete this image?");
-        if (!confirmDelete) return;
-
-        try {
-            const res = await fetch(`${API_BASE_URL}/overview/${imageId}`, {
-                method: "DELETE",
-            });
-            const result = await res.json();
-
-            if (!result.success) {
-                throw new Error(result.message || "Delete failed");
-            }
-
-            setImages((prev) => ({
-                ...prev,
-                [section]: prev[section].filter((img) => img.id !== imageId),
-            }));
-            showNotification("Image deleted successfully!");
-        } catch (error: any) {
-            console.error("Delete error:", error);
-            alert(error.message || "Delete failed. Please try again.");
-        }
-    };
-
-    // --- Reusable Upload Card Component (Extracted outside) ---
-    
-    if (isLoading) {
-        return (
-            <div className={`min-h-screen flex items-center justify-center ${theme ? "bg-slate-950" : "bg-slate-50"}`}>
-                <Loader2 size={40} className="animate-spin text-indigo-500" />
-            </div>
-        );
+  // Image Upload Handler
+  const handleFileUpload = (index: number, file: File) => {
+    if (file && file.type.startsWith("image/")) {
+      const imageUrl = URL.createObjectURL(file);
+      const newImages = [...images];
+      newImages[index] = imageUrl;
+      setImages(newImages);
     }
+  };
 
-    return (
-        <div className={`min-h-screen p-6 md:p-10 transition-colors duration-500 relative ${theme ? "bg-slate-950" : "bg-slate-50"}`}>
-            <AnimatePresence>
-                {showToast && (
-                    <motion.div initial={{ opacity: 0, y: -50, x: "-50%" }} animate={{ opacity: 1, y: 0, x: "-50%" }} exit={{ opacity: 0, y: -20, x: "-50%" }} className={`fixed top-6 left-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl border font-semibold text-sm transition-all ${theme ? "bg-slate-900 border-slate-800 text-emerald-400 shadow-black/40" : "bg-white border-emerald-100 text-emerald-600 shadow-emerald-100"}`}>
-                        <CheckCircle size={20} className="text-emerald-500" />
-                        <span>{toastMessage}</span>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+  // Drag & Drop Handlers
+  const onDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDraggingIndex(index);
+  };
 
-            <div className="max-w-6xl mx-auto space-y-8">
-                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 rounded-3xl shadow-sm border ${theme ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"}`}>
-                    <div>
-                        <h1 className={`text-2xl font-black tracking-wide ${theme ? "text-white" : "text-slate-900"}`}>Overview Controller</h1>
-                        <p className={`text-sm mt-1 font-medium ${theme ? "text-slate-400" : "text-gray-500"}`}>Manage and update the images for the website's overview sections.</p>
-                    </div>
-                    <div className="flex items-center gap-4 w-full md:w-auto">
-                        <button onClick={fetchOverview} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 border ${theme ? "border-slate-600 text-slate-300 hover:bg-slate-800" : "border-gray-500 text-slate-700 hover:bg-gray-200"}`}>
-                            <RefreshCw size={16} /> Refresh
-                        </button>
-                    </div>
-                </motion.div>
+  const onDragLeave = () => {
+    setDraggingIndex(null);
+  };
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                    <div className="flex flex-col gap-8">
-                        <UploadCard
-                            title="Section 1 : Feature Image"
-                            description="Upload the main feature image (Single Image)"
-                            section="featureImage"
-                            multiple={false}
-                            limit={1}
-                            icon={ImageIcon}
-                            currentImages={images.featureImage}
-                            isUploading={uploadingSection === "featureImage"}
-                            onUpload={handleImageUpload}
-                            onRemove={removeImage}
-                        />
-                        <UploadCard
-                            title="Section 3 : Smart Infrastructure"
-                            description="Upload single image for Smart Infrastructure"
-                            section="smartInfrastructure"
-                            multiple={false}
-                            limit={1}
-                            icon={RiGalleryLine}
-                            currentImages={images.smartInfrastructure}
-                            isUploading={uploadingSection === "smartInfrastructure"}
-                            onUpload={handleImageUpload}
-                            onRemove={removeImage}
-                        />
-                    </div>
-                    <div className="flex flex-col gap-8">
-                        <UploadCard
-                            title="Section 2 : Scroll Slider Images"
-                            description="Upload multiple images for the scrolling slider"
-                            section="heroSlider"
-                            multiple={true}
-                            limit={10}
-                            icon={Layers}
-                            currentImages={images.heroSlider}
-                            isUploading={uploadingSection === "heroSlider"}
-                            onUpload={handleImageUpload}
-                            onRemove={removeImage}
-                        />
-                    </div>
-                </div>
-            </div>
+  const onDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDraggingIndex(null);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileUpload(index, e.dataTransfer.files[0]);
+    }
+  };
+
+  // Remove Image Handler
+  const removeImage = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newImages = [...images];
+    newImages[index] = null;
+    setImages(newImages);
+  };
+
+  return (
+    <div
+      className={`w-full min-h-screen p-6 sm:p-10 lg:p-12 font-sans transition-colors duration-500 ${
+        theme ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-800"
+      }`}
+    >
+      {/* 📌 Header Section */}
+      <Reveal>
+        <div className="text-center mb-14 relative">
+          {theme && (
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-blue-500/10 blur-[70px] rounded-full pointer-events-none" />
+          )}
+
+          <h1 className="relative z-10 text-4xl sm:text-5xl font-extrabold tracking-tight mb-4 transition-all duration-500">
+            <span
+              className={`bg-clip-text text-transparent ${
+                theme
+                  ? "bg-linear-to-r from-white via-slate-200 to-slate-400 drop-shadow-[0_2px_15px_rgba(255,255,255,0.08)]"
+                  : "bg-linear-to-r from-slate-900 via-slate-700 to-slate-500"
+              }`}
+            >
+              Overview{" "}
+            </span>
+
+            <span
+              className={`bg-clip-text text-transparent ${
+                theme
+                  ? "bg-linear-to-r from-blue-400 to-indigo-400 drop-shadow-[0_0_20px_rgba(96,165,250,0.3)]"
+                  : "bg-linear-to-r from-red-600 to-rose-500 drop-shadow-xs"
+              }`}
+            >
+              Management
+            </span>
+          </h1>
+
+          <p
+            className={`relative z-10 text-base sm:text-lg max-w-2xl mx-auto font-medium leading-relaxed transition-colors duration-300 ${
+              theme ? "text-slate-400" : "text-slate-500"
+            }`}
+          >
+            Curate and manage your featured section images with precision.
+          </p>
         </div>
-    );
+      </Reveal>
+
+      {/* 📌 3 Equal Premium Luxury Image Boxes */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+        {[0, 1, 2].map((index) => (
+          <Reveal key={index} delay={index * 0.1}>
+            <motion.div
+              whileHover={{ y: -6, scale: 1.01 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className={`relative h-105 rounded-3xl overflow-hidden cursor-pointer backdrop-blur-md transition-all duration-500 group flex flex-col justify-center items-center ${
+                images[index]
+                  ? theme
+                    ? "bg-slate-900/80 border border-slate-700/80 hover:border-blue-400/80 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(59,130,246,0.25)]"
+                    : "bg-white border border-slate-200 hover:border-rose-400/80 shadow-[0_10px_30px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_rgba(225,29,72,0.15)]"
+                  : draggingIndex === index
+                  ? theme
+                    ? "bg-blue-950/40 border-2 border-dashed border-blue-400 scale-[1.02] shadow-[0_0_35px_rgba(59,130,246,0.3)]"
+                    : "bg-rose-50/60 border-2 border-dashed border-rose-500 scale-[1.02] shadow-[0_15px_30px_rgba(225,29,72,0.18)]"
+                  : theme
+                  ? "bg-slate-900/40 border-2 border-dashed border-slate-700/70 hover:border-blue-400/80 hover:bg-slate-900/70 hover:shadow-[0_0_25px_rgba(59,130,246,0.2)]"
+                  : "bg-white/80 border-2 border-dashed border-slate-300 hover:border-rose-400/90 hover:bg-white hover:shadow-[0_15px_35px_rgba(225,29,72,0.12)]"
+              }`}
+              onClick={() => !images[index] && fileInputRefs[index].current?.click()}
+              onDragOver={(e) => onDragOver(e, index)}
+              onDragLeave={onDragLeave}
+              onDrop={(e) => onDrop(e, index)}
+            >
+              {/* Luxury Accent Top Border Glow Line */}
+              <div
+                className={`absolute top-0 left-0 right-0 h-0.5 transition-all duration-500 ${
+                  theme
+                    ? "bg-linear-to-r from-transparent via-blue-500/60 to-transparent group-hover:via-blue-400"
+                    : "bg-linear-to-r from-transparent via-rose-500/50 to-transparent group-hover:via-rose-500"
+                }`}
+              />
+
+              {/* Hidden File Input */}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRefs[index]}
+                onChange={(e) => {
+                  if (e.target.files) handleFileUpload(index, e.target.files[0]);
+                }}
+              />
+
+              {images[index] ? (
+                /* 📸 Uploaded Image Display */
+                <div className="w-full h-full relative overflow-hidden">
+                  <img
+                    src={images[index]!}
+                    alt={`Overview Image ${index + 1}`}
+                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                  />
+
+                  {/* Slot Number Badge */}
+                  <div
+                    className={`absolute top-4 left-4 z-10 px-3.5 py-1.5 rounded-full text-xs font-bold backdrop-blur-md border shadow-md ${
+                      theme
+                        ? "bg-slate-900/80 text-blue-400 border-slate-700/80"
+                        : "bg-white/90 text-rose-600 border-slate-200"
+                    }`}
+                  >
+                    Slot 0{index + 1}
+                  </div>
+
+                  {/* Glassmorphism Action Overlay */}
+                  <div className="absolute inset-0 bg-black/40 backdrop-blur-[3px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center p-6">
+                    <div className="flex flex-col sm:flex-row gap-3 transform translate-y-3 group-hover:translate-y-0 transition-all duration-300">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          fileInputRefs[index].current?.click();
+                        }}
+                        className={`px-5 py-2.5 rounded-full font-bold text-xs backdrop-blur-md border shadow-lg transition-all duration-300 active:scale-95 ${
+                          theme
+                            ? "bg-slate-800/90 text-slate-100 border-slate-600 hover:bg-blue-600 hover:border-blue-500 hover:text-white"
+                            : "bg-white/90 text-slate-800 border-slate-200 hover:bg-rose-600 hover:border-rose-500 hover:text-white"
+                        }`}
+                      >
+                        Change Image
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => removeImage(index, e)}
+                        className="px-5 py-2.5 rounded-full font-bold text-xs bg-red-500/90 hover:bg-red-600 text-white border border-red-400/30 backdrop-blur-md shadow-lg transition-all duration-300 active:scale-95"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* 📤 Empty Upload Placeholder */
+                <div className="flex flex-col items-center justify-center p-8 text-center pointer-events-none select-none">
+                  {/* Luxury Icon Box */}
+                  <div
+                    className={`w-16 h-16 mb-5 rounded-2xl flex items-center justify-center border transition-all duration-300 shadow-lg ${
+                      theme
+                        ? "bg-slate-800/60 border-slate-700/80 text-blue-400 group-hover:scale-110 group-hover:border-blue-400 group-hover:shadow-blue-500/20"
+                        : "bg-slate-100/90 border-slate-200/80 text-rose-500 group-hover:scale-110 group-hover:border-rose-400 group-hover:shadow-rose-500/20"
+                    }`}
+                  >
+                    <svg
+                      className="w-8 h-8 stroke-current"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.8}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"
+                      />
+                    </svg>
+                  </div>
+
+                  <span
+                    className={`text-xs font-bold tracking-wider uppercase mb-1 transition-colors duration-300 ${
+                      theme ? "text-blue-400" : "text-rose-600"
+                    }`}
+                  >
+                    Image
+                  </span>
+
+                  <h3
+                    className={`text-lg font-bold transition-colors duration-300 ${
+                      theme ? "text-slate-200" : "text-slate-800"
+                    }`}
+                  >
+                    Upload Overview Image
+                  </h3>
+
+                  <p
+                    className={`text-xs mt-2 font-medium max-w-50 leading-relaxed transition-colors duration-300 ${
+                      theme ? "text-slate-400" : "text-slate-500"
+                    }`}
+                  >
+                    Drag & drop high-resolution image here or click to browse
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </Reveal>
+        ))}
+      </div>
+    </div>
+  );
 }

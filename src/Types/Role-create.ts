@@ -19,6 +19,7 @@ export interface RoleCreate {
 }
 
 export interface AuthUser {
+    suid: any;
     id: string | number;
     username: string;
     email?: string;
