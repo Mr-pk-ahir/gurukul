@@ -15,7 +15,16 @@ export interface GroupData {
     created_by_name?: string;
     members: GroupMember[];
     created_at?: string;
+    // 🆕 getGroupsByMember API thi aave chhe (Navbar "My Groups" mate) —
+    // backend already nakki kare chhe: member_ids[1] === logged-in suid
+    is_leader?: boolean;
 }
+
+// 🎯 Navbar "My Groups" mate — leader flag backend thi j aave chhe (member_ids no pahelo member).
+// suid param signature-compatibility mate rakhyu chhe, pan vaparyu nathi — backend j source of truth chhe.
+export const isGroupLeader = (group: Pick<GroupData, "is_leader">, _suid?: number | null): boolean => {
+    return !!group.is_leader;
+};
 
 export interface CreateGroupPayload {
     group_name: string;
@@ -23,14 +32,23 @@ export interface CreateGroupPayload {
     member_ids: number[];
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// 🆕 GroupMemberDetail.tsx page mate — camelCase shape, leader flag sathe
+export interface GroupMemberDetailItem {
+    suid: number;
+    name: string;
+    username: string;
+    roleCode: string;
+    isLeader: boolean;
+}
 
-// 🎯 NAVU: "pehla add thay te leader" — created_by j group no leader chhe (group banavnar).
-// Navbar/GroupMemberDetail banne j helper thi consistent rite gold-star nakki karshe.
-export const isGroupLeader = (group: Pick<GroupData, "created_by">, suid?: number | null): boolean => {
-    if (!suid) return false;
-    return group.created_by === suid;
-};
+export interface GroupDetail {
+    groupId: number;
+    groupName: string;
+    description: string | null;
+    members: GroupMemberDetailItem[];
+}
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export const groupService = {
     createGroup: async (payload: CreateGroupPayload) => {
@@ -61,11 +79,38 @@ export const groupService = {
         }
     },
 
-    // 🆕 Edit page prefill karva mate / Group Member Detail page mate
+    // Edit page prefill karva mate (raw snake_case shape)
     getGroupById: async (groupId: number) => {
         try {
             const res = await axios.get(`${API_URL}/groups/${groupId}`);
             return { success: true, data: res.data?.data ?? res.data };
+        } catch (error: any) {
+            return { success: false, message: error?.response?.data?.message || "Error fetching group" };
+        }
+    },
+
+    // 🆕 GroupMemberDetail.tsx page mate — camelCase mapped shape, isLeader flag sathe.
+    // 👑 Leader = member_ids array ma sauthi pahela add thayelo member (index 0) —
+    // backend "getGroupById" already members ne array_position thi order karine mokle chhe.
+    getGroupMembers: async (groupId: number) => {
+        try {
+            const res = await axios.get(`${API_URL}/groups/${groupId}`);
+            const raw = res.data?.data ?? res.data;
+
+            const mapped: GroupDetail = {
+                groupId: raw.group_id,
+                groupName: raw.group_name,
+                description: raw.description,
+                members: (raw.members || []).map((m: any, idx: number) => ({
+                    suid: m.suid,
+                    name: m.name,
+                    username: m.username ?? "",
+                    roleCode: m.role_code ?? "",
+                    isLeader: idx === 0, // 👑 array no pahelo member = leader
+                })),
+            };
+
+            return { success: true, data: mapped };
         } catch (error: any) {
             return { success: false, message: error?.response?.data?.message || "Error fetching group" };
         }

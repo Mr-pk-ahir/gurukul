@@ -17,7 +17,7 @@ export default function GroupMemberDetail() {
             if (!groupId) return;
             setLoading(true);
             const res = await groupService.getGroupMembers(Number(groupId));
-            if (res.success) setGroup(res.data);
+            if (res.success) setGroup(res.data ?? null);
             setLoading(false);
         };
         fetchGroup();
