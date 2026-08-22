@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 
 export const uploadService = {
   uploadAvatar: async (file: File): Promise<string> => {
@@ -8,7 +9,7 @@ export const uploadService = {
       const formData = new FormData();
       formData.append("avatar", file);
 
-      const response = await axios.post(`${API_BASE_URL}/upload/avatar`, formData, {
+      const response = await axios.post(`${API_URL}/upload/avatar`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -26,7 +27,7 @@ export const uploadService = {
       const formData = new FormData();
       formData.append("image", file);
 
-      const response = await axios.post(`${API_BASE_URL}/upload/section`, formData, {
+      const response = await axios.post(`${API_URL}/upload/section`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
