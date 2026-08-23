@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     // Limit ne standard size par set kari chhe
-    chunkSizeWarningLimit: 1500, 
+    chunkSizeWarningLimit: 5500, 
     
     rollupOptions: {
       output: {
