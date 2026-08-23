@@ -60,7 +60,7 @@ const DailyDarshan: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen p-6 md:p-12 font-sans relative transition-colors duration-300 ${theme ? "bg-[#0B1120]" : "bg-linear-to-br from-slate-50 to-slate-100"
+    <div className={`w-full h-screen overflow-y-auto scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none p-6 md:p-12 font-sans relative transition-colors duration-300 ${theme ? "bg-[#0B1120]" : "bg-linear-to-br from-slate-50 to-slate-100"
       }`}>
 
       {/* 0. LUXURY BACK BUTTON */}

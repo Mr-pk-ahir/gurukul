@@ -6,9 +6,9 @@ import { useTheme } from "../../../components/theme/ThemeContext";
 import SearchableDropdown from "../../../components/common/SearchableDropdown";
 import { userService } from "../../../services/userService";
 import { groupService } from "../../../services/groupService";
-import { IoClose, IoArrowBack } from "react-icons/io5";
+import { IoClose } from "react-icons/io5";
 
-// 👑 users table nu actual primary key "suid" chhe — "user_id" nathi
+//  users table nu actual primary key "suid" chhe — "user_id" nathi
 interface UserOption {
     suid: number;
     name: string;
@@ -51,10 +51,10 @@ export default function CreateGroup() {
                     }));
                     setAllUsers(mapped);
                 } else {
-                    toast.error(result.message || "Users fetch karva ma error");
+                    toast.error(result.message || "Error fetching users");
                 }
             } catch (error: any) {
-                toast.error(error.message || "Users fetch karva ma error");
+                toast.error(error.message || "Error fetching users");
             } finally {
                 setLoadingUsers(false);
             }
@@ -62,7 +62,7 @@ export default function CreateGroup() {
         fetchUsers();
     }, []);
 
-    // 🆕 Edit mode — existing group data fetch karine form prefill karo
+    //  Edit mode — existing group data fetch karine form prefill karo
     useEffect(() => {
         if (!isEditMode) return;
 
@@ -81,11 +81,11 @@ export default function CreateGroup() {
                     }));
                     setSelectedMembers(members);
                 } else {
-                    toast.error(result.message || "Group fetch karva ma error");
+                    toast.error(result.message || "Error fetching group data");
                     navigate("/dashboard/groups/list");
                 }
             } catch (error: any) {
-                toast.error(error.message || "Group fetch karva ma error");
+                toast.error(error.message || "Error fetching group data");
             } finally {
                 setLoadingGroup(false);
             }
@@ -93,7 +93,7 @@ export default function CreateGroup() {
         fetchGroup();
     }, [isEditMode, groupId, navigate]);
 
-    // ➜ Dropdown na options — je users already select thai gaya chhe tene list ma thi hide karo
+    //  Dropdown na options — je users already select thai gaya chhe tene list ma thi hide karo
     const dropdownOptions: DropdownOption[] = useMemo(() => {
         const selectedIds = new Set(selectedMembers.map((m) => m.suid));
         return allUsers
@@ -104,7 +104,7 @@ export default function CreateGroup() {
             }));
     }, [allUsers, selectedMembers]);
 
-    // 👑 Dropdown ma user select karta j direct add thai jay chhe
+    //  Dropdown ma user select karta j direct add thai jay chhe
     const handleSelectUser = (val: string | number) => {
         const user = allUsers.find((u) => String(u.suid) === String(val));
         if (!user) return;
@@ -117,15 +117,23 @@ export default function CreateGroup() {
         setSelectedMembers((prev) => prev.filter((m) => m.suid !== suid));
     };
 
+    //  Cancel function 
+    const handleCancel = () => {
+        setGroupName("");
+        setDescription("");
+        setSelectedMembers([]);
+        setCurrentSelect("");
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!groupName.trim()) {
-            toast.error("Group name aapavu jaruri chhe");
+            toast.error("Group name Required");
             return;
         }
         if (selectedMembers.length === 0) {
-            toast.error("Ochha ma ochhu ek member select karo");
+            toast.error("Please select at least one member");
             return;
         }
 
@@ -142,19 +150,19 @@ export default function CreateGroup() {
                 : await groupService.createGroup(payload);
 
             if (result.success) {
-                toast.success(isEditMode ? "Group successfully update thayu!" : "Group successfully banyu!");
+                toast.success(isEditMode ? "Group successfully updated!" : "Group successfully created!");
                 navigate("/dashboard/groups/list");
             } else {
-                toast.error(result.message || (isEditMode ? "Group update karva ma error" : "Group create karva ma error"));
+                toast.error(result.message || (isEditMode ? "Error updating group" : "Error creating group"));
             }
         } catch (error: any) {
-            toast.error(error.message || "Kaink khotu thayu");
+            toast.error(error.message || "Error occurred while submitting the form");
         } finally {
             setSubmitting(false);
         }
     };
 
-    // 👑 Avatar mate name na pahela 1-2 letters
+    //  Avatar mate name na pahela 1-2 letters
     const getInitials = (name: string) => {
         if (!name) return "?";
         const parts = name.trim().split(" ");
@@ -164,157 +172,224 @@ export default function CreateGroup() {
 
     if (loadingGroup) {
         return (
-            <div className={`w-full max-w-6xl mx-auto p-6 rounded-2xl ${theme ? "bg-gray-900 text-white" : "bg-white text-gray-800"}`}>
-                <p className="opacity-60 text-sm">Group data load thai rahyu chhe...</p>
+            <div className={`w-full max-w-6xl mx-auto p-8 flex items-center justify-center min-h-[60vh] rounded-4xl transition-colors duration-500 ${theme ? "bg-[#0f172a] text-slate-200" : "bg-white text-slate-800"}`}>
+                <div className="flex flex-col items-center gap-4">
+                    <div className={`w-12 h-12 border-4 rounded-full animate-spin ${theme ? "border-slate-700 border-t-blue-500" : "border-slate-200 border-t-red-500"}`}></div>
+                    <p className="opacity-70 text-sm font-medium tracking-wide">Loading group data...</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className={`w-full max-w-6xl mx-auto p-6 rounded-2xl ${theme ? "bg-gray-900 text-white" : "bg-white text-gray-800"}`}>
-            <button
-                type="button"
-                onClick={() => navigate("/dashboard/groups/list")}
-                className={`flex items-center gap-2 text-sm font-medium mb-4 ${theme ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-800"}`}
-            >
-                <IoArrowBack /> Back
-            </button>
+        <>
+            <style>{`
+                @keyframes smoothFadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-up {
+                    animation: smoothFadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+            `}</style>
 
-            <h1 className="text-2xl font-bold mb-6">{isEditMode ? "Edit Group" : "Create Group"}</h1>
-
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* ---------- LEFT PART: FORM ---------- */}
-                <div className="space-y-5">
-                    <div>
-                        <label className="block text-sm font-semibold mb-1.5">Group Name</label>
-                        <input
-                            type="text"
-                            value={groupName}
-                            onChange={(e) => setGroupName(e.target.value)}
-                            placeholder="e.g. Semester 3 - CS Batch"
-                            className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-red-500 ${
-                                theme ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-50 border-gray-200"
-                            }`}
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-semibold mb-1.5">Description (optional)</label>
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            rows={3}
-                            placeholder="Group ni short details..."
-                            className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-red-500 ${
-                                theme ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-50 border-gray-200"
-                            }`}
-                        />
-                    </div>
-
-                    {/* Member picker: select karta j direct add thai jay chhe */}
-                    <div>
-                        <label className="block text-sm font-semibold mb-1.5">Add Members</label>
-
-                        <SearchableDropdown
-                            placeholder={loadingUsers ? "Loading users..." : "Select a user"}
-                            searchPlaceholder="Search users..."
-                            options={dropdownOptions}
-                            selectedValue={currentSelect}
-                            onSelect={handleSelectUser}
-                            disabled={loadingUsers}
-                        />
-                        <p className={`text-xs mt-1.5 ${theme ? "text-gray-500" : "text-gray-400"}`}>
-                            User pasand karo — automatic right side ni list ma umerai jashe.
-                        </p>
-                    </div>
-
-                    <div className="flex gap-3 pt-2">
-                        <button
-                            type="submit"
-                            disabled={submitting}
-                            className="px-6 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-50"
-                        >
-                            {submitting
-                                ? (isEditMode ? "Updating..." : "Creating...")
-                                : (isEditMode ? "Update Group" : "Create Group")}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/dashboard/groups/list")}
-                            className={`px-6 py-2.5 rounded-xl font-semibold ${theme ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-600"}`}
-                        >
-                            Cancel
-                        </button>
-                    </div>
+            <div className={`w-full max-w-6xl mx-auto p-8 md:p-10 rounded-4xl transition-all duration-500 animate-fade-up ${
+                theme 
+                ? "bg-[#0f172a] text-slate-100 shadow-[0_0_40px_rgba(0,0,0,0.3)] border border-slate-800/60" 
+                : "bg-white text-slate-800 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-50"
+            }`}>
+                
+                {/* ---------- PREMIUM HEADER W/ GLOW ---------- */}
+                <div className={`mb-10 pb-6 border-b transition-colors duration-500 ${theme ? "border-slate-800/80" : "border-slate-100"}`}>
+                    <h1 className={`text-3xl md:text-4xl font-extrabold tracking-tight transition-all duration-300 ${
+                        theme 
+                        ? "text-transparent bg-clip-text bg-linear-to-r from-blue-300 via-indigo-300 to-purple-300 drop-shadow-[0_0_15px_rgba(99,102,241,0.4)]" 
+                        : "text-transparent bg-clip-text bg-linear-to-r from-slate-900 via-red-800 to-red-600 drop-shadow-[0_2px_10px_rgba(220,38,38,0.15)]"
+                    }`}>
+                        {isEditMode ? "Edit Group" : "Create Group"}
+                    </h1>
+                    <p className={`mt-3 text-sm font-medium ${theme ? "text-slate-400" : "text-slate-500"}`}>
+                        {isEditMode 
+                            ? "Update the details and manage members for this group." 
+                            : "Set up a new group and assign members seamlessly."}
+                    </p>
                 </div>
 
-                {/* ---------- RIGHT PART: SELECTED MEMBERS LIST ---------- */}
-                <div>
-                    <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-semibold">Selected Members</label>
-                        <span
-                            className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                                theme ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-600"
-                            }`}
-                        >
-                            {selectedMembers.length}
-                        </span>
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+                    
+                    {/* ---------- LEFT PART: FORM ---------- */}
+                    <div className="lg:col-span-7 space-y-7">
+                        {/* Group Name */}
+                        <div className="group">
+                            <label className={`block text-sm font-bold mb-2 ml-1 transition-colors ${
+                                theme ? "text-slate-300 group-focus-within:text-blue-400" : "text-slate-700 group-focus-within:text-red-600"
+                            }`}>
+                                Group Name
+                            </label>
+                            <input
+                                type="text"
+                                value={groupName}
+                                onChange={(e) => setGroupName(e.target.value)}
+                                placeholder="e.g. Semester 3 - CS Batch"
+                                className={`w-full px-5 py-3.5 rounded-2xl border outline-none transition-all duration-300 focus:ring-4 ${
+                                    theme 
+                                    ? "bg-[#1e293b]/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20" 
+                                    : "bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-red-500 focus:ring-red-500/20"
+                                }`}
+                            />
+                        </div>
+
+                        {/* Description */}
+                        <div className="group">
+                            <label className={`block text-sm font-bold mb-2 ml-1 transition-colors ${
+                                theme ? "text-slate-300 group-focus-within:text-blue-400" : "text-slate-700 group-focus-within:text-red-600"
+                            }`}>
+                                Description <span className="opacity-60 font-normal">(optional)</span>
+                            </label>
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                rows={4}
+                                placeholder="Add notes, purpose, or details about this group..."
+                                className={`w-full px-5 py-3.5 rounded-2xl border outline-none transition-all duration-300 focus:ring-4 resize-none ${
+                                    theme 
+                                    ? "bg-[#1e293b]/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20" 
+                                    : "bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-red-500 focus:ring-red-500/20"
+                                }`}
+                            />
+                        </div>
+
+                        {/* Add Members */}
+                        <div className="group">
+                            <label className={`block text-sm font-bold mb-2 ml-1 transition-colors ${
+                                theme ? "text-slate-300 group-focus-within:text-blue-400" : "text-slate-700 group-focus-within:text-red-600"
+                            }`}>
+                                Add Members
+                            </label>
+                            
+                            <div className="relative z-10">
+                                <SearchableDropdown
+                                    placeholder={loadingUsers ? "Loading users..." : "Search and select a user..."}
+                                    searchPlaceholder="Search users..."
+                                    options={dropdownOptions}
+                                    selectedValue={currentSelect}
+                                    onSelect={handleSelectUser}
+                                    disabled={loadingUsers}
+                                />
+                            </div>
+                            <p className={`text-xs mt-2 ml-1 transition-colors ${theme ? "text-slate-500" : "text-slate-400"}`}>
+                                Selected users will automatically appear in the list on the right.
+                            </p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-4 pt-4">
+                            <button
+                                type="submit"
+                                disabled={submitting}
+                                className={`px-8 py-3.5 rounded-2xl font-bold text-white transition-all duration-300 ease-in-out transform hover:-translate-y-0.5 shadow-lg ${
+                                    submitting 
+                                    ? (theme ? "bg-blue-500 opacity-60 shadow-none cursor-not-allowed" : "bg-red-500 opacity-60 shadow-none cursor-not-allowed")
+                                    : (theme 
+                                        ? "bg-linear-to-r from-blue-600 to-indigo-500 hover:from-blue-500 hover:to-indigo-400 shadow-blue-500/30 hover:shadow-blue-500/40" 
+                                        : "bg-linear-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 shadow-red-500/30 hover:shadow-red-500/40")
+                                }`}
+                            >
+                                {submitting
+                                    ? (isEditMode ? "Updating..." : "Creating...")
+                                    : (isEditMode ? "Save Changes" : "Create Group")}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCancel}
+                                className={`px-8 py-3.5 rounded-2xl font-bold transition-all duration-300 ring-1 ${
+                                    theme 
+                                    ? "bg-[#1e293b]/50 text-slate-300 hover:bg-slate-800 hover:text-white ring-slate-700/50" 
+                                    : "bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 ring-slate-200"
+                                }`}
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
 
-                    <div
-                        className={`rounded-xl border h-105 overflow-y-auto ${
-                            theme ? "border-gray-700 bg-gray-800/40" : "border-gray-200 bg-gray-50"
-                        }`}
-                    >
-                        {selectedMembers.length === 0 ? (
-                            <div className="h-full flex items-center justify-center p-6">
-                                <p className="text-sm opacity-50 text-center">
-                                    Haju koi member select nathi karyu.
-                                    <br />
-                                    Left side thi dropdown vaparine members umero.
-                                </p>
+                    {/* ---------- RIGHT PART: SELECTED MEMBERS LIST ---------- */}
+                    <div className="lg:col-span-5 flex flex-col h-full">
+                        <div className="flex items-center justify-between mb-3 px-1">
+                            <label className={`text-sm font-bold ${theme ? "text-slate-300" : "text-slate-700"}`}>
+                                Selected Members
+                            </label>
+                            <div className={`flex items-center justify-center min-w-7 h-7 px-2 rounded-full text-xs font-bold transition-colors shadow-inner ${
+                                theme ? "bg-blue-900/40 text-blue-300 border border-blue-700/50" : "bg-red-50 text-red-600 border border-red-100"
+                            }`}>
+                                {selectedMembers.length}
                             </div>
-                        ) : (
-                            <div className={`divide-y ${theme ? "divide-gray-700" : "divide-gray-200"}`}>
-                                {selectedMembers.map((m) => (
-                                    <div
-                                        key={m.suid}
-                                        className={`flex items-center gap-3 px-4 py-3 ${
-                                            theme ? "hover:bg-gray-800" : "hover:bg-white"
-                                        }`}
-                                    >
-                                        <div
-                                            className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                                                theme ? "bg-gray-700 text-blue-200" : "bg-red-100 text-red-600"
-                                            }`}
-                                        >
-                                            {getInitials(m.name)}
-                                        </div>
+                        </div>
 
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold truncate">{m.name}</p>
-                                            {m.role_code && (
-                                                <p className="text-xs opacity-50">{m.role_code}</p>
-                                            )}
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveMember(m.suid)}
-                                            title="Remove member"
-                                            className={`p-1.5 rounded-full shrink-0 ${
-                                                theme ? "hover:bg-gray-700 text-gray-400" : "hover:bg-red-50 text-gray-400 hover:text-red-600"
-                                            }`}
-                                        >
-                                            <IoClose className="text-base" />
-                                        </button>
+                        <div className={`flex-1 min-h-100 max-h-125 rounded-3xl border overflow-hidden flex flex-col transition-colors duration-500 ${
+                            theme ? "border-slate-800/80 bg-[#0B1120]/50 shadow-inner" : "border-slate-200/60 bg-slate-50/50"
+                        }`}>
+                            
+                            {selectedMembers.length === 0 ? (
+                                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-fade-up">
+                                    <div className={`w-16 h-16 mb-4 rounded-full flex items-center justify-center transition-colors ${
+                                        theme ? "bg-blue-900/20 text-blue-400/50 border border-blue-800/30" : "bg-red-50 text-red-300 border border-red-100"
+                                    }`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                        </svg>
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                    <p className={`text-sm font-medium ${theme ? "text-slate-400" : "text-slate-500"}`}>
+                                        No members selected yet.
+                                    </p>
+                                    <p className={`text-xs mt-1 max-w-50 mx-auto ${theme ? "text-slate-500" : "text-slate-400"}`}>
+                                        Use the dropdown on the left to add members to this group.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className={`flex-1 overflow-y-auto divide-y ${theme ? "divide-slate-800/60" : "divide-slate-200/60"}`}>
+                                    {selectedMembers.map((m) => (
+                                        <div
+                                            key={m.suid}
+                                            className={`group/item flex items-center gap-4 px-5 py-4 transition-all duration-300 ${
+                                                theme ? "hover:bg-[#1e293b]/70" : "hover:bg-white hover:shadow-sm"
+                                            }`}
+                                        >
+                                            <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shrink-0 transition-colors ${
+                                                theme ? "bg-blue-900/40 text-blue-300 border border-blue-800/50" : "bg-red-100 text-red-600 border border-red-200/50"
+                                            }`}>
+                                                {getInitials(m.name)}
+                                            </div>
+
+                                            <div className="flex-1 min-w-0">
+                                                <p className={`text-sm font-bold truncate ${theme ? "text-slate-200" : "text-slate-800"}`}>
+                                                    {m.name}
+                                                </p>
+                                                {m.role_code && (
+                                                    <p className={`text-xs mt-0.5 truncate font-medium ${theme ? "text-slate-500" : "text-slate-400"}`}>
+                                                        {m.role_code}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveMember(m.suid)}
+                                                title="Remove member"
+                                                className={`p-2 rounded-full shrink-0 opacity-0 group-hover/item:opacity-100 transition-all duration-300 transform scale-90 group-hover/item:scale-100 ${
+                                                    theme ? "hover:bg-red-500/20 text-slate-500 hover:text-red-400" : "hover:bg-red-50 text-slate-400 hover:text-red-600"
+                                                }`}
+                                            >
+                                                <IoClose className="text-lg" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            </form>
-        </div>
+                </form>
+            </div>
+        </>
     );
 }

@@ -146,7 +146,6 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
         setRefreshing(true);
         try {
             await fetchDepartments();
-            toast.success("Navbar refreshed!");
         } finally {
             setRefreshing(false);
         }
