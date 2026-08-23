@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export type QuoteType = "activity" | "event";
 
@@ -24,7 +24,7 @@ export const quoteService = {
       formData.append("date", date);
       if (description) formData.append("description", description);
 
-      const response = await axios.post(`${API_BASE_URL}/quotes/create`, formData, {
+      const response = await axios.post(`${API_URL}/quotes/create`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       return response.data;
@@ -36,7 +36,7 @@ export const quoteService = {
   // 2. Type pramane badha fetch karo
   getQuotesByType: async (type: QuoteType) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/quotes/type/${type}`);
+      const response = await axios.get(`${API_URL}/quotes/type/${type}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch");
@@ -46,7 +46,7 @@ export const quoteService = {
   // 3. Delete karo
   deleteQuote: async (id: number) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/quotes/${id}`);
+      const response = await axios.delete(`${API_URL}/quotes/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to delete");
