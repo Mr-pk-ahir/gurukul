@@ -1,56 +1,55 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../../components/theme/ThemeContext";
+import { quoteService, type QuoteData } from "../../services/Quoteservice";
 
 interface EventItem {
     id: number;
     date: string;
-    branch: string;
     title: string;
     description: string;
     thumbnail: string;
 }
 
-const ALL_EVENTS: EventItem[] = [
-    {
-        id: 1,
-        date: "19 AUG 2026",
-        branch: "Atlanta Branch, USA",
-        title: "8th Patotsav Mahotsav",
-        description: "Mahotsav of 8th Patotsav with special satsang, bhakti music, and divine celebrations.",
-        thumbnail: "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-        id: 2,
-        date: "29 AUG 2026",
-        branch: "Dallas Branch, USA",
-        title: "Rakshabandhan Celebration 2026",
-        description: "Special celebration of Rakshabandhan with satsang, bhakti music, and divine festivities.",
-        thumbnail: "https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-        id: 3,
-        date: "30 AUG 2026",
-        branch: "Melbourne Branch, Australia",
-        title: "RakshaBandhan & Bramha Pujan",
-        description: "Special vedic Brahma puja and satsang celebration.",
-        thumbnail: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-        id: 4,
-        date: "04 SEP 2026",
-        branch: "Melbourne Branch, Australia",
-        title: "Janmashtami Celebration",
-        description: "Shri Krishna Janmashtami, Dahi Handa celebration, and Midnight Mahotsav.",
-        thumbnail: "https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?auto=format&fit=crop&q=80&w=800"
-    }
-];
+// 🎯 Backend QuoteData ne page na shape ma convert karo
+function mapQuoteToEventItem(q: QuoteData): EventItem {
+    const dateObj = new Date(q.event_date);
+    return {
+        id: q.id,
+        date: dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase(),
+        title: q.description?.trim() || "Upcoming Event",
+        description: q.description?.trim() || "No description provided.",
+        thumbnail: q.image_url,
+    };
+}
 
 export default function UpcomingEventsPage() {
     const { theme } = useTheme();
     const [applyEvent, setApplyEvent] = useState<EventItem | null>(null);
     const [role, setRole] = useState<string>("");
     const [isMounted, setIsMounted] = useState(false);
+    const [phone, setPhone] = useState<string>("");
+
+    // 🎯 NAVU: real API thi events fetch karo (dummy data na badle)
+    const [events, setEvents] = useState<EventItem[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+
+    useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                setLoading(true);
+                const result = await quoteService.getQuotesByType("event");
+                if (result.success) {
+                    setEvents(result.data.map(mapQuoteToEventItem));
+                }
+            } catch (error) {
+                console.error("Error fetching events:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchEvents();
+    }, []);
 
     // Page Load Animation: Delay to ensure smooth transition
     useEffect(() => {
@@ -64,6 +63,7 @@ export default function UpcomingEventsPage() {
     const handleCloseModal = () => {
         setApplyEvent(null);
         setRole("");
+        setPhone("");
     };
 
     // Form Submit Function: Handle form submission
@@ -72,10 +72,6 @@ export default function UpcomingEventsPage() {
         alert(`Successfully applied for: ${applyEvent?.title}`);
         handleCloseModal();
     };
-
-    function setPhone(_onlyNums: string) {
-        throw new Error("Function not implemented.");
-    }
 
     return (
         <div className={`scrollbar-none h-screen overflow-y-auto p-4 sm:p-8 scroll-smooth transition-colors duration-300 ${theme ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-800"}`}>
@@ -112,61 +108,71 @@ export default function UpcomingEventsPage() {
                 </div>
 
                 {/* Events Full-Width List */}
-                <div className="space-y-6 w-full">
-                    {ALL_EVENTS.map((item, index) => (
-                        <div
-                            key={item.id}
-                            style={{ transitionDelay: `${index * 150}ms` }}
-                            className={`transition-all duration-1000 ease-out transform ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16"}`}
-                        >
-                            {/* Card Layout: 80% Details + 20% Apply Box */}
+                {loading ? (
+                    <div className="flex justify-center py-20">
+                        <div className={`w-10 h-10 rounded-full border-4 border-t-transparent animate-spin ${theme ? "border-blue-500" : "border-red-600"}`} />
+                    </div>
+                ) : events.length === 0 ? (
+                    <p className={`text-center py-20 text-sm ${theme ? "text-slate-500" : "text-slate-400"}`}>
+                        No upcoming events added yet.
+                    </p>
+                ) : (
+                    <div className="space-y-6 w-full">
+                        {events.map((item, index) => (
                             <div
-                                id={`event-${item.id}`}
-                                className={`flex flex-col md:flex-row rounded-2xl border transition-all duration-300 hover:shadow-2xl overflow-hidden ${theme
-                                    ? "bg-slate-900/80 border-slate-800 shadow-slate-950/50"
-                                    : "bg-white border-slate-200 shadow-sm hover:shadow-xl"
-                                    }`}
+                                key={item.id}
+                                style={{ transitionDelay: `${index * 150}ms` }}
+                                className={`transition-all duration-1000 ease-out transform ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16"}`}
                             >
-                                {/* 80% Area: Image & Details */}
-                                <div className="flex flex-col md:flex-row gap-6 p-6 w-full md:w-[80%]">
-                                    <div className="relative overflow-hidden rounded-xl w-full md:w-80 h-56 shrink-0">
-                                        <img
-                                            src={item.thumbnail}
-                                            alt={item.title}
-                                            className="w-full h-full object-cover rounded-xl transition-transform duration-700 hover:scale-105"
-                                        />
+                                {/* Card Layout: 80% Details + 20% Apply Box */}
+                                <div
+                                    id={`event-${item.id}`}
+                                    className={`flex flex-col md:flex-row rounded-2xl border transition-all duration-300 hover:shadow-2xl overflow-hidden ${theme
+                                        ? "bg-slate-900/80 border-slate-800 shadow-slate-950/50"
+                                        : "bg-white border-slate-200 shadow-sm hover:shadow-xl"
+                                        }`}
+                                >
+                                    {/* 80% Area: Image & Details */}
+                                    <div className="flex flex-col md:flex-row gap-6 p-6 w-full md:w-[80%]">
+                                        <div className="relative overflow-hidden rounded-xl w-full md:w-80 h-56 shrink-0">
+                                            <img
+                                                src={item.thumbnail}
+                                                alt={item.title}
+                                                className="w-full h-full object-cover rounded-xl transition-transform duration-700 hover:scale-105"
+                                            />
+                                        </div>
+
+                                        <div className="flex-1 flex flex-col justify-center">
+                                            <span className={`text-xs font-bold tracking-wide uppercase ${theme ? "text-blue-400" : "text-red-600"}`}>
+                                                {item.date}
+                                            </span>
+                                            <h2 className="text-2xl font-bold mt-2">{item.title}</h2>
+                                            <p className={`text-sm mt-3 leading-relaxed ${theme ? "text-slate-400" : "text-slate-600"}`}>
+                                                {item.description}
+                                            </p>
+                                        </div>
                                     </div>
 
-                                    <div className="flex-1 flex flex-col justify-center">
-                                        <span className={`text-xs font-bold tracking-wide uppercase ${theme ? "text-blue-400" : "text-red-600"}`}>
-                                            {item.date} • {item.branch}
-                                        </span>
-                                        <h2 className="text-2xl font-bold mt-2">{item.title}</h2>
-                                        <p className={`text-sm mt-3 leading-relaxed ${theme ? "text-slate-400" : "text-slate-600"}`}>
-                                            {item.description}
-                                        </p>
+                                    {/* 20% Area: Apply Now Small Box */}
+                                    <div className={`w-full md:w-[18%] p-5 flex flex-col items-center justify-center border-t md:border-t-0 md:border-0 transition-colors ${theme ? 'border-slate-900/80 bg-slate-900' : 'border-slate-200 bg-white/80'}`}>
+                                        <button
+                                            onClick={() => {
+                                                setApplyEvent(item);
+                                                setRole(""); // Reset role on open
+                                            }}
+                                            className={`w-full px-4 py-3 rounded-xl font-bold text-sm shadow-md transition-all active:scale-95 ${theme
+                                                ? "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20"
+                                                : "bg-red-600 hover:bg-red-700 text-white shadow-red-500/20"
+                                                }`}
+                                        >
+                                            Apply And Join Event
+                                        </button>
                                     </div>
-                                </div>
-
-                                {/* 20% Area: Apply Now Small Box */}
-                                <div className={`w-full md:w-[18%] p-5 flex flex-col items-center justify-center border-t md:border-t-0 md:border-0 transition-colors ${theme ? 'border-slate-900/80 bg-slate-900' : 'border-slate-200 bg-white/80'}`}>
-                                    <button
-                                        onClick={() => {
-                                            setApplyEvent(item);
-                                            setRole(""); // Reset role on open
-                                        }}
-                                        className={`w-full px-4 py-3 rounded-xl font-bold text-sm shadow-md transition-all active:scale-95 ${theme
-                                            ? "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20"
-                                            : "bg-red-600 hover:bg-red-700 text-white shadow-red-500/20"
-                                            }`}
-                                    >
-                                        Apply And Join Event
-                                    </button>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* 70% Width Popup Form Modal */}
@@ -201,7 +207,7 @@ export default function UpcomingEventsPage() {
                             </span>
                             <h2 className="text-2xl sm:text-3xl font-black mb-2">{applyEvent.title}</h2>
                             <p className="text-sm opacity-70 font-medium">
-                                {applyEvent.date} • {applyEvent.branch}
+                                {applyEvent.date}
                             </p>
                         </div>
 
@@ -296,10 +302,11 @@ export default function UpcomingEventsPage() {
                                         inputMode="numeric"
                                         maxLength={10}
                                         required={role !== "student"}
+                                        value={phone}
                                         placeholder="Enter your phone number"
                                         onChange={(e) => {
                                             const onlyNums = e.target.value.replace(/[^0-9]/g, "");
-                                            setPhone?.(onlyNums);
+                                            setPhone(onlyNums);
                                         }}
                                         onInput={(e: React.FormEvent<HTMLInputElement>) => {
                                             e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "");

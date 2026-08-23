@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useTheme } from "../../components/theme/ThemeContext";
+import { quoteService, type QuoteData } from "../../services/Quoteservice";
 
 function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
     return (
@@ -20,81 +21,45 @@ interface ActivityItem {
     title: string;
     date: string;
     image: string;
-    category: string;
     description: string;
 }
 
-// All Activities Data
-const ALL_ACTIVITIES: ActivityItem[] = [
-    {
-        id: 1,
-        title: "International Yoga Day Celebration",
-        date: "21 JUL 2026",
-        image: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&q=80&w=600",
-        category: "Educational Activities",
-        description: "Students and teachers participated in a grand yoga session, promoting physical and mental well-being, followed by a meditation workshop."
-    },
-    {
-        id: 2,
-        title: "Ghanshyam Maharaj Shantigram Darshan",
-        date: "20 MAY 2026",
-        image: "https://images.unsplash.com/photo-1609137860786-5812d8816c4c?auto=format&fit=crop&q=80&w=600",
-        category: "Wallpaper",
-        description: "Shri Ganesha Maharaj's Shantigram Darshan, a special event with unique decorations and a grand celebration."
-    },
-    {
-        id: 3,
-        title: "Sadguru Hariswarupdasji Swami Memorial",
-        date: "23 APR 2026",
-        image: "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=600",
-        category: "Spiritual Activities",
-        description: "Pujable Sadguru Hariswarupdasji Swami's anniversary celebration, featuring a special satsang meeting, storytelling, and guru vandana."
-    },
-    {
-        id: 4,
-        title: "Gurukul Foundation Day Celebration 2026",
-        date: "19 APR 2026",
-        image: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&q=80&w=600",
-        category: "Cultural Activities",
-        description: "Gurukul Foundation Day celebration, featuring cultural programs, folk dances, and a special play presented by students."
-    },
-    {
-        id: 5,
-        title: "Mega Blood Donation Camp",
-        date: "10 MAR 2026",
-        image: "https://images.unsplash.com/photo-1615461066841-6116e61058f4?auto=format&fit=crop&q=80&w=600",
-        category: "Social Service",
-        description: "A grand blood donation camp organized to promote the cause of saving lives, with active participation from the community."
-    },
-    {
-        id: 6,
-        title: "Annual Sports Meet 2026",
-        date: "25 FEB 2026",
-        image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&q=80&w=600",
-        category: "Sports Activities",
-        description: "Students participate in various sports competitions, athletics, and awards ceremony."
-    },
-    {
-        id: 7,
-        title: "Vasant Panchami Mahotsav",
-        date: "14 FEB 2026",
-        image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=600",
-        category: "Spiritual Activities",
-        description: "A grand celebration of Vasant Panchami with Saraswati Puja, cultural programs, and devotional singing."
-    },
-    {
-        id: 8,
-        title: "Science & Innovation Fair",
-        date: "28 JAN 2026",
-        image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&q=80&w=600",
-        category: "Educational Activities",
-        description: "Students showcase their scientific thinking and innovative projects in this grand fair."
-    }
-];
+// 🎯 Backend QuoteData ne page na shape ma convert karo
+function mapQuoteToActivityItem(q: QuoteData): ActivityItem {
+    const dateObj = new Date(q.event_date);
+    return {
+        id: q.id,
+        title: q.description?.trim() || "Gurukul Activity",
+        date: dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase(),
+        image: q.image_url,
+        description: q.description?.trim() || "No description provided.",
+    };
+}
 
 export default function ActivitiesPage() {
     const { theme } = useTheme();
     const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
+
+    // 🎯 NAVU: real API thi activities fetch karo (dummy data na badle)
+    const [activities, setActivities] = useState<ActivityItem[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+
+    useEffect(() => {
+        const fetchActivities = async () => {
+            try {
+                setLoading(true);
+                const result = await quoteService.getQuotesByType("activity");
+                if (result.success) {
+                    setActivities(result.data.map(mapQuoteToActivityItem));
+                }
+            } catch (error) {
+                console.error("Error fetching activities:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchActivities();
+    }, []);
 
     return (
         <div className={`w-full h-screen overflow-y-auto scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none font-sans transition-colors duration-500 ${theme ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-800"}`}>
@@ -157,50 +122,60 @@ export default function ActivitiesPage() {
                 </Reveal>
 
                 {/* 📌 Activities Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {ALL_ACTIVITIES.map((act, idx) => (
-                        <Reveal key={act.id} delay={idx * 0.05}>
-                            <motion.div
-                                whileHover={{ y: -8, scale: 1.02 }}
-                                transition={{ duration: 0.3, ease: "easeOut" }}
-                                onClick={() => setSelectedActivity(act)}
-                                className={`rounded-2xl overflow-hidden border shadow-xs h-full flex flex-col transition-all duration-300 cursor-pointer group ${theme
-                                    ? "bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:shadow-xl hover:shadow-black/50"
-                                    : "bg-white border-slate-200 hover:shadow-2xl"
-                                    }`}
-                            >
-                                {/* Image Container with Hover Overlay */}
-                                <div className="h-48 overflow-hidden relative shrink-0">
-                                    <img
-                                        src={act.image}
-                                        alt={act.title}
-                                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                                    />
+                {loading ? (
+                    <div className="flex justify-center py-20">
+                        <div className={`w-10 h-10 rounded-full border-4 border-t-transparent animate-spin ${theme ? "border-blue-500" : "border-red-600"}`} />
+                    </div>
+                ) : activities.length === 0 ? (
+                    <p className={`text-center py-20 text-sm ${theme ? "text-slate-500" : "text-slate-400"}`}>
+                        No activities added yet.
+                    </p>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {activities.map((act, idx) => (
+                            <Reveal key={act.id} delay={idx * 0.05}>
+                                <motion.div
+                                    whileHover={{ y: -8, scale: 1.02 }}
+                                    transition={{ duration: 0.3, ease: "easeOut" }}
+                                    onClick={() => setSelectedActivity(act)}
+                                    className={`rounded-2xl overflow-hidden border shadow-xs h-full flex flex-col transition-all duration-300 cursor-pointer group ${theme
+                                        ? "bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:shadow-xl hover:shadow-black/50"
+                                        : "bg-white border-slate-200 hover:shadow-2xl"
+                                        }`}
+                                >
+                                    {/* Image Container with Hover Overlay */}
+                                    <div className="h-48 overflow-hidden relative shrink-0">
+                                        <img
+                                            src={act.image}
+                                            alt={act.title}
+                                            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                                        />
 
-                                    {/* Hover Overlay Badge */}
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                                        <span className="text-white text-xs font-semibold px-4 py-2 bg-black/60 rounded-full border border-white/20 shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                                            Click to View
+                                        {/* Hover Overlay Badge */}
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                                            <span className="text-white text-xs font-semibold px-4 py-2 bg-black/60 rounded-full border border-white/20 shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                                                Click to View
+                                            </span>
+                                        </div>
+
+                                        <span className="absolute bottom-3 left-3 bg-slate-900/80 text-white text-[11px] font-bold px-2.5 py-1 rounded-md backdrop-blur-xs">
+                                            {act.date}
                                         </span>
                                     </div>
 
-                                    <span className="absolute bottom-3 left-3 bg-slate-900/80 text-white text-[11px] font-bold px-2.5 py-1 rounded-md backdrop-blur-xs">
-                                        {act.date}
-                                    </span>
-                                </div>
-
-                                <div className="p-5 flex flex-col grow">
-                                    <span className={`text-xs font-bold mb-1 ${theme ? "text-blue-400" : "text-red-600"}`}>
-                                        {act.category}
-                                    </span>
-                                    <h3 className="font-bold text-base leading-snug line-clamp-2">
-                                        {act.title}
-                                    </h3>
-                                </div>
-                            </motion.div>
-                        </Reveal>
-                    ))}
-                </div>
+                                    <div className="p-5 flex flex-col grow">
+                                        <span className={`text-xs font-bold mb-1 ${theme ? "text-blue-400" : "text-red-600"}`}>
+                                            Gurukul Highlights
+                                        </span>
+                                        <h3 className="font-bold text-base leading-snug line-clamp-2">
+                                            {act.title}
+                                        </h3>
+                                    </div>
+                                </motion.div>
+                            </Reveal>
+                        ))}
+                    </div>
+                )}
             </main>
 
             {/* 🌟 Center Image & Details Modal Popup */}
@@ -250,7 +225,7 @@ export default function ActivitiesPage() {
                                 {/* Popup Content */}
                                 <div className="p-6 sm:p-8">
                                     <span className={`text-xs font-bold uppercase tracking-wider ${theme ? "text-blue-400" : "text-red-600"}`}>
-                                        {selectedActivity.category}
+                                        Gurukul Highlights
                                     </span>
                                     <h2 className="text-2xl sm:text-3xl font-extrabold mt-2 leading-snug">
                                         {selectedActivity.title}

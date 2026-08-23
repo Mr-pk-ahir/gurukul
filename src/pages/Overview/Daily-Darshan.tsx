@@ -1,54 +1,60 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom'; // Link import karyu chhe
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useTheme } from '../../components/theme/ThemeContext';
 
-// Backend mathi aavta data mate nu TypeScript Interface
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+// 🎯 FIX: Backend DTO sathe exact match — camelCase
 interface DarshanData {
-  id: string;
+  id: number;
   title: string;
   imageUrl: string;
   description: string;
+  date: string;
 }
 
 const DailyDarshan: React.FC = () => {
-  const { theme } = useTheme(); // Theme Hook
+  const { theme } = useTheme();
 
-  // Dynamic data store karva mate state
   const [darshanItems, setDarshanItems] = useState<DarshanData[]>([]);
-  // Popup/Modal mate selected image no state
   const [selectedDarshan, setSelectedDarshan] = useState<DarshanData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Current Date logic
   const today = new Date();
   const date = today.getDate();
   const month = today.toLocaleString('default', { month: 'short' });
   const day = today.toLocaleString('default', { weekday: 'long' });
   const year = today.getFullYear();
+  const todayISO = today.toISOString().split('T')[0];
 
-  // Backend mathi data fetch karvanu simulation
+  // 🎯 FIX: mock data hatavi ne real backend fetch — /daily-darshan thi badhi entries mangavi,
+  // pachi aaje ni date wali j batavi (Amrut Nu Aachaman ni j pattern)
+  const fetchDarshan = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/daily-darshan`, { cache: "no-store" });
+      const result = await res.json();
+
+      if (result.success) {
+        const todayItems = (result.data as DarshanData[]).filter((item) => item.date === todayISO);
+        setDarshanItems(todayItems);
+        setError(null);
+      } else {
+        setError(result.message || "Failed to load darshan");
+      }
+    } catch (err) {
+      setError("સર્વર સાથે કનેક્ટ થઈ શક્યું નથી!");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [todayISO]);
+
   useEffect(() => {
-    const fetchBackendData = async () => {
-      const mockData: DarshanData[] = [
-        {
-          id: '1',
-          title: 'Shree Swaminarayan Bhagwan',
-          imageUrl: 'https://images.unsplash.com/photo-1604085572504-a392ddf0d86a?q=80&w=800&auto=format&fit=crop',
-          description: 'Today`s divine darshan of Shree Swaminarayan Bhagwan. Witness the spiritual presence and blessings of the revered deity.',
-        },
-        {
-          id: '2',
-          title: 'Ghanshyam Maharaj',
-          imageUrl: 'https://images.unsplash.com/photo-1590284483736-2c5e5fbab8cc?q=80&w=800&auto=format&fit=crop',
-          description: 'Today`s divine darshan of Ghanshyam Maharaj. Experience the spiritual aura and blessings of the young deity.',
-        }
-      ];
-      setDarshanItems(mockData);
-    };
+    fetchDarshan();
+  }, [fetchDarshan]);
 
-    fetchBackendData();
-  }, []);
-
-  // Popup bandh karva mate function
   const closeModal = () => {
     setSelectedDarshan(null);
   };
@@ -66,7 +72,6 @@ const DailyDarshan: React.FC = () => {
               : "bg-white/80 text-slate-700 border-slate-200 hover:text-red-600 hover:border-red-300 hover:shadow-lg hover:shadow-red-500/15"
             }`}
         >
-          {/* Animated Arrow Icon */}
           <svg
             className="w-4 h-4 transform transition-transform duration-300 group-hover:-translate-x-1"
             fill="none"
@@ -80,13 +85,12 @@ const DailyDarshan: React.FC = () => {
         </Link>
       </div>
 
-      {/* 1. ULTRA-PREMIUM HEADER (Sauthi Upar) */}
+      {/* 1. ULTRA-PREMIUM HEADER */}
       <div className="text-center pt-2 mb-8">
         <h1 className={`text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text drop-shadow-sm mb-4 tracking-tight ${theme ? "bg-linear-to-r from-white via-blue-400 to-slate-400" : "bg-linear-to-r from-black via-slate-700 to-red-600"
           }`}>
           Daily Darshan
         </h1>
-        {/* Animated Gradient Underline */}
         <div className={`h-1.5 w-32 mx-auto rounded-full shadow-lg ${theme ? "bg-linear-to-r from-blue-500 to-white shadow-blue-500/20" : "bg-linear-to-r from-red-600 to-slate-800 shadow-red-500/20"
           }`}></div>
         <p className={`mt-4 font-medium tracking-wide text-lg ${theme ? "text-slate-400" : "text-slate-600"
@@ -95,15 +99,13 @@ const DailyDarshan: React.FC = () => {
         </p>
       </div>
 
-      {/* 2. CURRENT DATE SECTION (Header ni niche, Right side) */}
+      {/* 2. CURRENT DATE SECTION */}
       <div className="flex justify-end mb-12">
         <div className={`backdrop-blur-md rounded-2xl p-4 flex gap-5 items-center transform hover:scale-105 transition-all duration-300 ease-out cursor-default relative overflow-hidden ${theme ? "bg-[#151D2F]/90 shadow-xl shadow-black/50 border border-slate-700/50" : "bg-white/80 shadow-xl shadow-slate-200 border border-slate-200"
           }`}>
-          {/* Subtle line indicator inside box */}
           <div className={`absolute top-0 left-0 w-full h-1 opacity-80 ${theme ? "bg-linear-to-r from-blue-500 to-slate-400" : "bg-linear-to-r from-black to-red-600"
             }`}></div>
 
-          {/* Left Side: Date & Month */}
           <div className={`flex flex-col items-center justify-center border-r-2 pr-5 ${theme ? "border-slate-700" : "border-slate-200"
             }`}>
             <span className={`text-4xl font-black bg-clip-text text-transparent leading-none ${theme ? "bg-linear-to-b from-white to-blue-400" : "bg-linear-to-b from-black to-red-600"
@@ -116,7 +118,6 @@ const DailyDarshan: React.FC = () => {
             </span>
           </div>
 
-          {/* Right Side: Day & Year */}
           <div className="flex flex-col items-start pl-1">
             <span className={`text-lg font-bold tracking-wide ${theme ? "text-slate-200" : "text-slate-800"
               }`}>
@@ -130,56 +131,66 @@ const DailyDarshan: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. DYNAMIC IMAGES & DESCRIPTION BOXES */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 max-w-7xl mx-auto">
-        {darshanItems.length > 0 ? (
-          darshanItems.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => setSelectedDarshan(item)}
-              className={`group cursor-pointer relative rounded-3xl transition-all duration-500 overflow-hidden flex flex-col transform hover:-translate-y-2 ${theme ? "bg-[#151D2F] shadow-lg shadow-black/50 border border-slate-800 hover:border-blue-500/50" : "bg-white shadow-lg hover:shadow-2xl hover:shadow-red-500/10 border border-slate-100 hover:border-red-400"
-                }`}
-            >
-              {/* Image Section */}
-              <div className="relative h-72 overflow-hidden">
-                <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <img
-                  src={item.imageUrl}
-                  alt={item.title}
-                  className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out"
-                />
-                {/* Hover Text/Icon indicator */}
-                <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <span className="bg-white/30 backdrop-blur-md text-white px-6 py-2 rounded-full font-medium tracking-wide border border-white/50 shadow-lg">
-                    Divine Darshan
-                  </span>
+      {/* 3. LOADING / ERROR STATES */}
+      {loading && (
+        <div className="text-center py-10 font-bold">
+          <p className={theme ? "text-slate-400" : "text-slate-500"}>Loading darshan...</p>
+        </div>
+      )}
+      {error && !loading && (
+        <div className="text-center text-red-500 py-10 font-bold">{error}</div>
+      )}
+
+      {/* 4. DYNAMIC IMAGES & DESCRIPTION BOXES */}
+      {!loading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 max-w-7xl mx-auto">
+          {darshanItems.length > 0 ? (
+            darshanItems.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => setSelectedDarshan(item)}
+                className={`group cursor-pointer relative rounded-3xl transition-all duration-500 overflow-hidden flex flex-col transform hover:-translate-y-2 ${theme ? "bg-[#151D2F] shadow-lg shadow-black/50 border border-slate-800 hover:border-blue-500/50" : "bg-white shadow-lg hover:shadow-2xl hover:shadow-red-500/10 border border-slate-100 hover:border-red-400"
+                  }`}
+              >
+                <div className="relative h-72 overflow-hidden">
+                  <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span className="bg-white/30 backdrop-blur-md text-white px-6 py-2 rounded-full font-medium tracking-wide border border-white/50 shadow-lg">
+                      Divine Darshan
+                    </span>
+                  </div>
+                </div>
+
+                <div className={`p-8 flex-1 flex flex-col justify-start bg-linear-to-b ${theme ? "from-[#151D2F] to-[#0B1120]" : "from-white to-slate-50"
+                  }`}>
+                  <h3 className={`text-2xl font-bold mb-3 transition-colors duration-300 ${theme ? "text-slate-200 group-hover:text-blue-400" : "text-slate-800 group-hover:text-red-600"
+                    }`}>
+                    {item.title}
+                  </h3>
+                  <p className={`leading-relaxed font-medium line-clamp-2 ${theme ? "text-slate-400" : "text-slate-600"
+                    }`}>
+                    {item.description}
+                  </p>
                 </div>
               </div>
-
-              {/* Description Section */}
-              <div className={`p-8 flex-1 flex flex-col justify-start bg-linear-to-b ${theme ? "from-[#151D2F] to-[#0B1120]" : "from-white to-slate-50"
-                }`}>
-                <h3 className={`text-2xl font-bold mb-3 transition-colors duration-300 ${theme ? "text-slate-200 group-hover:text-blue-400" : "text-slate-800 group-hover:text-red-600"
-                  }`}>
-                  {item.title}
-                </h3>
-                <p className={`leading-relaxed font-medium line-clamp-2 ${theme ? "text-slate-400" : "text-slate-600"
-                  }`}>
-                  {item.description}
-                </p>
-              </div>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-20">
+              <p className={`text-2xl font-semibold ${theme ? "text-slate-500" : "text-slate-400"}`}>
+                Today's darshan is not available yet. Please check back later for divine blessings.
+              </p>
             </div>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-20">
-            <p className={`text-2xl font-semibold ${theme ? "text-slate-500" : "text-slate-400"}`}>
-              Today's darshan is not available yet. Please check back later for divine blessings.
-            </p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* 4. LUXURY POPUP MODAL */}
+      {/* 5. LUXURY POPUP MODAL */}
       {selectedDarshan && (
         <div
           className={`fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 backdrop-blur-xl transition-opacity ${theme ? "bg-black/80" : "bg-black/60"
@@ -191,7 +202,6 @@ const DailyDarshan: React.FC = () => {
               }`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close Button */}
             <button
               onClick={() => setSelectedDarshan(null)}
               className={`absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 backdrop-blur-md shadow-md cursor-pointer hover:scale-110 active:scale-95 ${theme
@@ -203,7 +213,6 @@ const DailyDarshan: React.FC = () => {
               ✕
             </button>
 
-            {/* Left Side: Large Luxury Image */}
             <div className="md:w-1/2 h-80 md:h-150 relative">
               <img
                 src={selectedDarshan.imageUrl}
@@ -213,11 +222,9 @@ const DailyDarshan: React.FC = () => {
               <div className="absolute inset-0 bg-linear-to-r from-transparent to-black/10"></div>
             </div>
 
-            {/* Right Side: Description Area */}
             <div className={`md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center relative ${theme ? "bg-[#151D2F]" : "bg-linear-to-br from-white via-slate-50 to-red-50/20"
               }`}>
 
-              {/* Decorative elements */}
               <div className={`absolute top-0 right-0 w-32 h-32 rounded-bl-full -z-10 bg-linear-to-bl ${theme ? "from-blue-500/10" : "from-red-500/10"
                 }`}></div>
 
@@ -234,7 +241,6 @@ const DailyDarshan: React.FC = () => {
                 {selectedDarshan.description}
               </p>
 
-              {/* Extra premium touch text in popup */}
               <p className={`mt-10 text-sm font-bold uppercase tracking-widest ${theme ? "text-blue-400" : "text-red-600"
                 }`}>
                 Swaminarayan Gurukul - Bhayavadar

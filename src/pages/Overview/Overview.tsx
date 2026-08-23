@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { HiMenu, HiX } from "react-icons/hi";
 import ThemeToggle from "../../components/theme/ThemeToggle";
 import { useTheme } from "../../components/theme/ThemeContext";
 import { Link } from "react-router-dom";
 import { API_BASE_URL } from "./overview-constants";
+import { quoteService, type QuoteData } from "../../services/Quoteservice";
 
 function Reveal({
     children,
@@ -33,72 +35,69 @@ function Reveal({
     );
 }
 
-// Demo Data for Sections
-const ACTIVITIES_DATA = [
-    {
-        id: 1,
-        title: "International Yoga Day Celebration",
-        date: "21 JUL 2026",
-        image: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&q=80&w=600",
-        category: "Educational Activities"
-    },
-    {
-        id: 2,
-        title: "Ghanshyam Maharaj Shantigram Darshan",
-        date: "20 MAY 2026",
-        image: "https://images.unsplash.com/photo-1669181533103-1650e8e72eba?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        category: "Wallpaper"
-    },
-    {
-        id: 3,
-        title: "Sadguru Hariswarupdasji Swami Memorial",
-        date: "23 APR 2026",
-        image: "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=600",
-        category: "Spiritual Activities"
-    },
-    {
-        id: 4,
-        title: "Gurukul Foundation Day Celebration 2026",
-        date: "19 APR 2026",
-        image: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&q=80&w=600",
-        category: "Cultural Activities"
-    }
-];
+// 🎯 Backend QuoteData ne Activities card na shape ma convert karo
+interface ActivityCard {
+    id: number;
+    title: string;
+    date: string;
+    image: string;
+}
 
-const EVENTS_DATA = [
-    {
-        id: 1,
-        day: "19",
-        month: "AUG",
-        branch: "Atlanta Branch, USA",
-        title: "8th Patotsav Mahotsav",
-        thumbnail: "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=500"
-    },
-    {
-        id: 2,
-        day: "29",
-        month: "AUG",
-        branch: "Dallas Branch, USA",
-        title: "Rakshabandhan Celebration 2026",
-        thumbnail: "https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&q=80&w=500"
-    },
-    {
-        id: 3,
-        day: "30",
-        month: "AUG",
-        branch: "Melbourne Branch, Australia",
-        title: "RakshaBandhan & Bramha Pujan",
-        thumbnail: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=500"
-    },
-    {
-        id: 4,
-        day: "04",
-        month: "SEP",
-        branch: "Melbourne Branch, Australia",
-        title: "Janmashtami Utsav & Jhulan Seva",
-        thumbnail: "https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?auto=format&fit=crop&q=80&w=500"
-    }
-];
+function mapQuoteToActivityCard(q: QuoteData): ActivityCard {
+    const dateObj = new Date(q.event_date);
+    return {
+        id: q.id,
+        title: q.description?.trim() || "Gurukul Activity",
+        date: dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase(),
+        image: q.image_url,
+    };
+}
+
+// 🎯 Backend QuoteData ne Events card na shape ma convert karo
+interface EventCard {
+    id: number;
+    day: string;
+    month: string;
+    title: string;
+    thumbnail: string;
+}
+
+function mapQuoteToEventCard(q: QuoteData): EventCard {
+    const dateObj = new Date(q.event_date);
+    return {
+        id: q.id,
+        day: dateObj.getDate().toString().padStart(2, "0"),
+        month: dateObj.toLocaleDateString("en-GB", { month: "short" }).toUpperCase(),
+        title: q.description?.trim() || "Upcoming Event",
+        thumbnail: q.image_url,
+    };
+}
+
+// 🎯 NAVU: Daily Darshan backend DTO ne home page card na shape ma convert karo
+interface DarshanCard {
+    id: number;
+    title: string;
+    date: string;
+    image: string;
+}
+
+interface DarshanDTO {
+    id: number;
+    title: string;
+    imageUrl: string;
+    description: string;
+    date: string; // "YYYY-MM-DD"
+}
+
+function mapDarshanToCard(d: DarshanDTO): DarshanCard {
+    const dateObj = new Date(d.date);
+    return {
+        id: d.id,
+        title: d.title,
+        date: dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase(),
+        image: d.imageUrl,
+    };
+}
 
 const LATEST_QUOTES = [
     {
@@ -121,30 +120,12 @@ const LATEST_QUOTES = [
     }
 ];
 
-const LATEST_DARSHAN = [
-    {
-        id: 1,
-        title: "Shri Ganesha Maharaj Nitya Shringar Darshan",
-        date: "19 AUG 2026",
-        image: "https://images.unsplash.com/photo-1610085927744-7217728267a6?q=80&w=682&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-    },
-    {
-        id: 2,
-        title: "Shri Radha Raman Dev Mangala Darshan",
-        date: "18 AUG 2026",
-        image: "https://images.unsplash.com/photo-1624030275207-77bac1c83be3?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-    },
-    {
-        id: 3,
-        title: "Shri Krishna Maharaj Nitya Shringar Darshan",
-        date: "17 AUG 2026",
-        image: "https://images.unsplash.com/photo-1687627045984-82ec8a4d2697?q=80&w=1172&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-    }
-];
-
 export default function Overview() {
     const { theme } = useTheme();
     const [currentImgIndex, setCurrentImgIndex] = useState(0);
+
+    // 🎯 mobile hamburger menu open/close state
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const [overviewImages, setOverviewImages] = useState<string[]>([
         "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&q=80&w=1600",
@@ -152,19 +133,87 @@ export default function Overview() {
         "https://images.unsplash.com/photo-1616080409883-a96ae084a7e1?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
     ]);
 
+    // 🎯 Activities ane Events real API thi (dummy data na badle)
+    const [activities, setActivities] = useState<ActivityCard[]>([]);
+    const [activitiesLoading, setActivitiesLoading] = useState<boolean>(true);
+
+    const [events, setEvents] = useState<EventCard[]>([]);
+    const [eventsLoading, setEventsLoading] = useState<boolean>(true);
+
+    // 🎯 NAVU: Daily Darshan real API thi (LATEST_DARSHAN dummy data hatavi didhu)
+    const [darshanItems, setDarshanItems] = useState<DarshanCard[]>([]);
+    const [darshanLoading, setDarshanLoading] = useState<boolean>(true);
+
     useEffect(() => {
         const fetchOverviewData = async () => {
             try {
                 const res = await fetch(`${API_BASE_URL}/overview`);
                 const result = await res.json();
                 if (result.success && result.data.heroSlider?.length) {
-                    setOverviewImages(result.data.heroSlider);
+                    // 🎯 FIX: {id, url} objects ma thi sirf url string kadho
+                    const urls = result.data.heroSlider.map((img: { id: number; url: string }) => img.url);
+                    setOverviewImages(urls);
                 }
             } catch (error) {
                 console.error("Error fetching overview data:", error);
             }
         };
         fetchOverviewData();
+    }, []);
+
+    // 🎯 Activities fetch — sauthi tazi 4 activities highlight mate
+    useEffect(() => {
+        const fetchActivities = async () => {
+            try {
+                setActivitiesLoading(true);
+                const result = await quoteService.getQuotesByType("activity");
+                if (result.success) {
+                    setActivities(result.data.map(mapQuoteToActivityCard).slice(0, 4));
+                }
+            } catch (error) {
+                console.error("Error fetching activities:", error);
+            } finally {
+                setActivitiesLoading(false);
+            }
+        };
+        fetchActivities();
+    }, []);
+
+    // 🎯 Events fetch — sauthi taja 4 upcoming events highlight mate
+    useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                setEventsLoading(true);
+                const result = await quoteService.getQuotesByType("event");
+                if (result.success) {
+                    setEvents(result.data.map(mapQuoteToEventCard).slice(0, 4));
+                }
+            } catch (error) {
+                console.error("Error fetching events:", error);
+            } finally {
+                setEventsLoading(false);
+            }
+        };
+        fetchEvents();
+    }, []);
+
+    // 🎯 NAVU: Daily Darshan fetch — sauthi tazi 3 darshan entries highlight mate
+    useEffect(() => {
+        const fetchDarshan = async () => {
+            try {
+                setDarshanLoading(true);
+                const res = await fetch(`${API_BASE_URL}/daily-darshan`, { cache: "no-store" });
+                const result = await res.json();
+                if (result.success) {
+                    setDarshanItems((result.data as DarshanDTO[]).map(mapDarshanToCard).slice(0, 3));
+                }
+            } catch (error) {
+                console.error("Error fetching daily darshan:", error);
+            } finally {
+                setDarshanLoading(false);
+            }
+        };
+        fetchDarshan();
     }, []);
 
     // Hero Slider Transition
@@ -181,6 +230,8 @@ export default function Overview() {
         if (element) {
             element.scrollIntoView({ behavior: "smooth" });
         }
+        // 🎯 item click kare to mobile menu automatically band thai jay
+        setMobileMenuOpen(false);
     };
 
     const navItems = [
@@ -192,11 +243,11 @@ export default function Overview() {
 
     return (
         <div className={`w-full h-screen overflow-y-auto overflow-x-hidden font-sans transition-colors duration-500 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none ${theme ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-800"}`}>
-            
+
             {/* ---------------- TRANSPARENT HEADER ---------------- */}
             <header className="absolute top-0 left-0 z-50 w-full bg-transparent pt-6 pb-4">
                 <div className="w-full px-4 sm:px-8 lg:px-12 flex items-center justify-between relative">
-                    
+
                     {/* Left Side: Dark/Light Mode Switch + Brand Logo */}
                     <div className="flex items-center gap-6 sm:gap-10 shrink-0 z-10">
                         <div className="shrink-0">
@@ -209,37 +260,81 @@ export default function Overview() {
                         </Link>
                     </div>
 
-                    {/* Center Navigation */}
-                    <nav className="hidden lg:flex items-center gap-3 absolute left-1/2 -translate-x-1/2 z-10">
-                        {navItems.map((item) => (
-                            <button 
-                                key={item.name}
-                                onClick={() => scrollToSection(item.id)} 
-                                className={`px-5 py-2.5 rounded-xl text-sm font-bold tracking-wide backdrop-blur-md border shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 cursor-pointer ${
-                                    theme 
-                                    ? "bg-slate-900/60 border-slate-700/60 text-slate-100 hover:bg-slate-800/90 hover:border-blue-500/60 hover:shadow-blue-500/20" 
-                                    : "bg-white/50 border-white/70 text-slate-900 hover:bg-white/80 hover:border-red-500/50 hover:shadow-red-500/20"
-                                }`}
-                            >
-                                {item.name}
-                            </button>
-                        ))}
-                    </nav>
+                    {/* Right Side: Nav (desktop) + Hamburger (mobile) + Login */}
+                    <div className="flex items-center gap-3 sm:gap-4 shrink-0 z-10">
 
-                    {/* Right Side: Login Button */}
-                    <div className="flex items-center shrink-0 z-10">
+                        {/* Desktop Nav — sirf lg thi upar dekhay */}
+                        <nav className="hidden lg:flex items-center gap-3">
+                            {navItems.map((item) => (
+                                <button
+                                    key={item.name}
+                                    onClick={() => scrollToSection(item.id)}
+                                    className={`px-5 py-2.5 rounded-xl text-sm font-bold tracking-wide backdrop-blur-md border shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 cursor-pointer ${theme
+                                        ? "bg-slate-900/60 border-slate-700/60 text-slate-100 hover:bg-slate-800/90 hover:border-blue-500/60 hover:shadow-blue-500/20"
+                                        : "bg-white/50 border-white/70 text-slate-900 hover:bg-white/80 hover:border-red-500/50 hover:shadow-red-500/20"
+                                        }`}
+                                >
+                                    {item.name}
+                                </button>
+                            ))}
+                        </nav>
+
+                        {/* Hamburger button — sirf mobile/tablet par (lg thi niche) dekhay, Login ni left side ma */}
+                        <button
+                            onClick={() => setMobileMenuOpen((prev) => !prev)}
+                            aria-label="Toggle navigation menu"
+                            className={`lg:hidden flex items-center justify-center w-11 h-11 rounded-xl backdrop-blur-md border shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer ${theme
+                                ? "bg-slate-900/60 border-slate-700/60 text-white hover:bg-slate-800/90"
+                                : "bg-white/50 border-white/70 text-slate-900 hover:bg-white/80"
+                                }`}
+                        >
+                            {mobileMenuOpen ? <HiX size={20} /> : <HiMenu size={20} />}
+                        </button>
+
                         <Link
                             to="/login"
-                            className={`px-7 py-2.5 rounded-xl font-bold text-sm shadow-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 border ${
-                                theme 
-                                    ? "bg-blue-600/90 border-blue-400/50 text-white hover:bg-blue-500 hover:shadow-blue-500/40" 
-                                    : "bg-red-600/90 border-red-500/50 text-white hover:bg-red-500 hover:shadow-red-500/40"
-                            }`}
+                            className={`px-7 py-2.5 rounded-xl font-bold text-sm shadow-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 border ${theme
+                                ? "bg-blue-600/90 border-blue-400/50 text-white hover:bg-blue-500 hover:shadow-blue-500/40"
+                                : "bg-red-600/90 border-red-500/50 text-white hover:bg-red-500 hover:shadow-red-500/40"
+                                }`}
                         >
                             Login
                         </Link>
                     </div>
                 </div>
+
+                {/* Mobile dropdown menu — hamburger click kare to 4 nav items niche khule */}
+                <AnimatePresence>
+                    {mobileMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="lg:hidden w-full px-4 sm:px-8 mt-3"
+                        >
+                            <div
+                                className={`flex flex-col gap-2 p-3 rounded-2xl backdrop-blur-md border shadow-xl ${theme
+                                    ? "bg-slate-900/90 border-slate-700/60"
+                                    : "bg-white/90 border-white/70"
+                                    }`}
+                            >
+                                {navItems.map((item) => (
+                                    <button
+                                        key={item.name}
+                                        onClick={() => scrollToSection(item.id)}
+                                        className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 cursor-pointer ${theme
+                                            ? "text-slate-100 hover:bg-slate-800/90 hover:text-blue-300"
+                                            : "text-slate-900 hover:bg-red-50 hover:text-red-600"
+                                            }`}
+                                    >
+                                        {item.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </header>
 
             {/* ---------------- SECTION 1: HERO SLIDER ---------------- */}
@@ -264,11 +359,10 @@ export default function Overview() {
                         <button
                             key={idx}
                             onClick={() => setCurrentImgIndex(idx)}
-                            className={`h-2.5 rounded-full transition-all duration-300 hover:scale-125 ${
-                                idx === currentImgIndex 
-                                    ? (theme ? "w-10 bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.9)]" : "w-10 bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)]") 
-                                    : "w-2.5 bg-white/50 hover:bg-white"
-                            }`}
+                            className={`h-2.5 rounded-full transition-all duration-300 hover:scale-125 ${idx === currentImgIndex
+                                ? (theme ? "w-10 bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.9)]" : "w-10 bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)]")
+                                : "w-2.5 bg-white/50 hover:bg-white"
+                                }`}
                         />
                     ))}
                 </div>
@@ -286,47 +380,55 @@ export default function Overview() {
                         </div>
                         <Link
                             to="/activities"
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border ${
-                                theme ? "bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 hover:shadow-blue-900/30 hover:border-blue-500/60" : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:shadow-red-200 hover:border-red-300"
-                            }`}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border ${theme ? "bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 hover:shadow-blue-900/30 hover:border-blue-500/60" : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:shadow-red-200 hover:border-red-300"
+                                }`}
                         >
                             VIEW ALL ACTIVITIES
                         </Link>
                     </div>
                 </Reveal>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {ACTIVITIES_DATA.map((act, idx) => (
-                        <Reveal key={act.id} delay={idx * 0.12} yOffset={45}>
-                            <motion.div
-                                whileHover={{ y: -8, scale: 1.02 }}
-                                transition={{ duration: 0.3, ease: "easeOut" }}
-                                className={`group rounded-2xl overflow-hidden border shadow-xs transition-all duration-300 ${
-                                    theme ? "bg-slate-900/60 border-slate-800 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-900/20" : "bg-white border-slate-200 hover:shadow-xl hover:border-red-200"
-                                }`}
-                            >
-                                <div className="h-64 overflow-hidden relative">
-                                    <img 
-                                        src={act.image} 
-                                        alt={act.title} 
-                                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" 
-                                    />
-                                    <span className="absolute bottom-3 left-3 bg-slate-900/80 text-white text-[11px] font-bold px-2.5 py-1 rounded-md backdrop-blur-xs transition-transform duration-300 group-hover:scale-105 group-hover:bg-black/90">
-                                        {act.date}
-                                    </span>
-                                </div>
-                                <div className="p-6">
-                                    <span className={`text-xs font-bold transition-colors duration-300 ${theme ? "text-blue-400 group-hover:text-blue-300" : "text-red-600 group-hover:text-red-500"}`}>
-                                        {act.category}
-                                    </span>
-                                    <h3 className="font-bold text-lg mt-2 line-clamp-2 leading-snug">
-                                        {act.title}
-                                    </h3>
-                                </div>
-                            </motion.div>
-                        </Reveal>
-                    ))}
-                </div>
+                {activitiesLoading ? (
+                    <div className="flex justify-center py-16">
+                        <div className={`w-10 h-10 rounded-full border-4 border-t-transparent animate-spin ${theme ? "border-blue-500" : "border-red-600"}`} />
+                    </div>
+                ) : activities.length === 0 ? (
+                    <p className={`text-center py-16 text-sm ${theme ? "text-slate-500" : "text-slate-400"}`}>
+                        No activities added yet.
+                    </p>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {activities.map((act, idx) => (
+                            <Reveal key={act.id} delay={idx * 0.12} yOffset={45}>
+                                <motion.div
+                                    whileHover={{ y: -8, scale: 1.02 }}
+                                    transition={{ duration: 0.3, ease: "easeOut" }}
+                                    className={`group rounded-2xl overflow-hidden border shadow-xs transition-all duration-300 ${theme ? "bg-slate-900/60 border-slate-800 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-900/20" : "bg-white border-slate-200 hover:shadow-xl hover:border-red-200"
+                                        }`}
+                                >
+                                    <div className="h-64 overflow-hidden relative">
+                                        <img
+                                            src={act.image}
+                                            alt={act.title}
+                                            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                                        />
+                                        <span className="absolute bottom-3 left-3 bg-slate-900/80 text-white text-[11px] font-bold px-2.5 py-1 rounded-md backdrop-blur-xs transition-transform duration-300 group-hover:scale-105 group-hover:bg-black/90">
+                                            {act.date}
+                                        </span>
+                                    </div>
+                                    <div className="p-6">
+                                        <span className={`text-xs font-bold transition-colors duration-300 ${theme ? "text-blue-400 group-hover:text-blue-300" : "text-red-600 group-hover:text-red-500"}`}>
+                                            Gurukul Highlights
+                                        </span>
+                                        <h3 className="font-bold text-lg mt-2 line-clamp-2 leading-snug">
+                                            {act.title}
+                                        </h3>
+                                    </div>
+                                </motion.div>
+                            </Reveal>
+                        ))}
+                    </div>
+                )}
             </section>
 
             {/* ---------------- SECTION 3: UPCOMING EVENTS ---------------- */}
@@ -342,52 +444,56 @@ export default function Overview() {
                             </div>
                             <Link
                                 to="/events"
-                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border ${
-                                    theme ? "bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 hover:shadow-blue-900/30 hover:border-blue-500/60" : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:shadow-red-200 hover:border-red-300"
-                                }`}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border ${theme ? "bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 hover:shadow-blue-900/30 hover:border-blue-500/60" : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:shadow-red-200 hover:border-red-300"
+                                    }`}
                             >
                                 VIEW ALL EVENTS
                             </Link>
                         </div>
                     </Reveal>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {EVENTS_DATA.map((item, idx) => (
-                            <Reveal key={item.id} delay={idx * 0.12} yOffset={40}>
-                                <Link to={`/events#event-${item.id}`}>
-                                    <motion.div
-                                        whileHover={{ scale: 1.02, x: 6 }}
-                                        transition={{ duration: 0.3 }}
-                                        className={`group flex items-center p-6 rounded-2xl border transition-all duration-300 ${
-                                            theme 
-                                                ? "bg-slate-900/80 border-slate-800 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-900/30" 
+                    {eventsLoading ? (
+                        <div className="flex justify-center py-16">
+                            <div className={`w-10 h-10 rounded-full border-4 border-t-transparent animate-spin ${theme ? "border-blue-500" : "border-red-600"}`} />
+                        </div>
+                    ) : events.length === 0 ? (
+                        <p className={`text-center py-16 text-sm ${theme ? "text-slate-500" : "text-slate-400"}`}>
+                            No upcoming events added yet.
+                        </p>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {events.map((item, idx) => (
+                                <Reveal key={item.id} delay={idx * 0.12} yOffset={40}>
+                                    <Link to="/events">
+                                        <motion.div
+                                            whileHover={{ scale: 1.02, x: 6 }}
+                                            transition={{ duration: 0.3 }}
+                                            className={`group flex items-center p-6 rounded-2xl border transition-all duration-300 ${theme
+                                                ? "bg-slate-900/80 border-slate-800 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-900/30"
                                                 : "bg-white border-slate-200/80 hover:shadow-xl hover:border-red-300"
-                                        }`}
-                                    >
-                                        <div className={`flex flex-col items-center justify-center min-w-20 h-20 rounded-xl font-bold p-3 mr-6 transition-all duration-300 group-hover:scale-105 ${
-                                            theme ? "bg-blue-600/20 text-blue-400 border border-blue-500/30 group-hover:bg-blue-600/30" : "bg-red-50 text-red-600 border border-red-200 group-hover:bg-red-100"
-                                        }`}>
-                                            <span className="text-2xl font-black leading-none">{item.day}</span>
-                                            <span className="text-xs tracking-widest mt-1">{item.month}</span>
-                                        </div>
+                                                }`}
+                                        >
+                                            <div className={`flex flex-col items-center justify-center min-w-20 h-20 rounded-xl font-bold p-3 mr-6 transition-all duration-300 group-hover:scale-105 ${theme ? "bg-blue-600/20 text-blue-400 border border-blue-500/30 group-hover:bg-blue-600/30" : "bg-red-50 text-red-600 border border-red-200 group-hover:bg-red-100"
+                                                }`}>
+                                                <span className="text-2xl font-black leading-none">{item.day}</span>
+                                                <span className="text-xs tracking-widest mt-1">{item.month}</span>
+                                            </div>
 
-                                        <div className="flex-1 min-w-0 pr-4">
-                                            <span className={`text-xs font-bold transition-colors duration-300 ${theme ? "text-slate-400 group-hover:text-blue-300" : "text-slate-500 group-hover:text-red-500"}`}>
-                                                {item.branch}
-                                            </span>
-                                            <h3 className="font-bold text-lg truncate mt-1">
-                                                {item.title}
-                                            </h3>
-                                        </div>
+                                            <div className="flex-1 min-w-0 pr-4">
+                                                <h3 className="font-bold text-lg truncate mt-1">
+                                                    {item.title}
+                                                </h3>
+                                            </div>
 
-                                        <div className="overflow-hidden rounded-xl w-24 h-24 shrink-0">
-                                            <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-125" />
-                                        </div>
-                                    </motion.div>
-                                </Link>
-                            </Reveal>
-                        ))}
-                    </div>
+                                            <div className="overflow-hidden rounded-xl w-24 h-24 shrink-0">
+                                                <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-125" />
+                                            </div>
+                                        </motion.div>
+                                    </Link>
+                                </Reveal>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -403,9 +509,8 @@ export default function Overview() {
                         </div>
                         <Link
                             to="/amrut-aachaman"
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border ${
-                                theme ? "bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 hover:shadow-blue-900/30 hover:border-blue-500/60" : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:shadow-red-200 hover:border-red-300"
-                            }`}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border ${theme ? "bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 hover:shadow-blue-900/30 hover:border-blue-500/60" : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:shadow-red-200 hover:border-red-300"
+                                }`}
                         >
                             VIEW MORE QUOTES
                         </Link>
@@ -418,9 +523,8 @@ export default function Overview() {
                             <motion.div
                                 whileHover={{ y: -8, scale: 1.02 }}
                                 transition={{ duration: 0.3 }}
-                                className={`group rounded-2xl overflow-hidden border transition-all duration-300 ${
-                                    theme ? "bg-slate-900/60 border-slate-800 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-900/20" : "bg-white border-slate-200 shadow-xs hover:shadow-xl hover:border-red-200"
-                                }`}
+                                className={`group rounded-2xl overflow-hidden border transition-all duration-300 ${theme ? "bg-slate-900/60 border-slate-800 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-900/20" : "bg-white border-slate-200 shadow-xs hover:shadow-xl hover:border-red-200"
+                                    }`}
                             >
                                 <div className="h-72 overflow-hidden relative">
                                     <img src={q.image} alt={q.title} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" />
@@ -450,38 +554,46 @@ export default function Overview() {
                             </div>
                             <Link
                                 to="/daily-darshan"
-                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border ${
-                                    theme ? "bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 hover:shadow-blue-900/30 hover:border-blue-500/60" : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:shadow-red-200 hover:border-red-300"
-                                }`}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border ${theme ? "bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 hover:shadow-blue-900/30 hover:border-blue-500/60" : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:shadow-red-200 hover:border-red-300"
+                                    }`}
                             >
                                 VIEW MORE DARSHAN
                             </Link>
                         </div>
                     </Reveal>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {LATEST_DARSHAN.map((d, idx) => (
-                            <Reveal key={d.id} delay={idx * 0.1}>
-                                <motion.div
-                                    whileHover={{ y: -8, scale: 1.02 }}
-                                    transition={{ duration: 0.3 }}
-                                    className={`group rounded-2xl overflow-hidden border transition-all duration-300 ${
-                                        theme ? "bg-slate-900/60 border-slate-800 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-900/20" : "bg-white border-slate-200 shadow-xs hover:shadow-xl hover:border-red-200"
-                                    }`}
-                                >
-                                    <div className="h-80 overflow-hidden relative">
-                                        <img src={d.image} alt={d.title} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" />
-                                    </div>
-                                    <div className="p-6">
-                                        <span className={`text-xs font-medium transition-colors duration-300 ${theme ? "text-slate-400 group-hover:text-blue-400" : "text-slate-500 group-hover:text-red-500"}`}>{d.date}</span>
-                                        <h3 className="font-bold text-lg mt-2 leading-snug">
-                                            {d.title}
-                                        </h3>
-                                    </div>
-                                </motion.div>
-                            </Reveal>
-                        ))}
-                    </div>
+                    {darshanLoading ? (
+                        <div className="flex justify-center py-16">
+                            <div className={`w-10 h-10 rounded-full border-4 border-t-transparent animate-spin ${theme ? "border-blue-500" : "border-red-600"}`} />
+                        </div>
+                    ) : darshanItems.length === 0 ? (
+                        <p className={`text-center py-16 text-sm ${theme ? "text-slate-500" : "text-slate-400"}`}>
+                            No darshan added yet.
+                        </p>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {darshanItems.map((d, idx) => (
+                                <Reveal key={d.id} delay={idx * 0.1}>
+                                    <motion.div
+                                        whileHover={{ y: -8, scale: 1.02 }}
+                                        transition={{ duration: 0.3 }}
+                                        className={`group rounded-2xl overflow-hidden border transition-all duration-300 ${theme ? "bg-slate-900/60 border-slate-800 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-900/20" : "bg-white border-slate-200 shadow-xs hover:shadow-xl hover:border-red-200"
+                                            }`}
+                                    >
+                                        <div className="h-80 overflow-hidden relative">
+                                            <img src={d.image} alt={d.title} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" />
+                                        </div>
+                                        <div className="p-6">
+                                            <span className={`text-xs font-medium transition-colors duration-300 ${theme ? "text-slate-400 group-hover:text-blue-400" : "text-slate-500 group-hover:text-red-500"}`}>{d.date}</span>
+                                            <h3 className="font-bold text-lg mt-2 leading-snug">
+                                                {d.title}
+                                            </h3>
+                                        </div>
+                                    </motion.div>
+                                </Reveal>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 

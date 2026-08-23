@@ -22,7 +22,7 @@ export const STATIC_DATA = {
             "Empowering rural education through cutting-edge AI technology, bringing digital content where it matters most.",
         contactEmail: "support@ruralspark.com",
         links: [
-            { label: "About Us", href: "#about" },
+            { label: "About Us", href: "    #about" },
             { label: "Features", href: "#features" },
             { label: "Contact", href: "#contact" },
         ],
