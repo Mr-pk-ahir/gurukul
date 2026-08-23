@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import { sectionService } from "../../../services/sectionService";
 import {
@@ -29,6 +30,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function SectionListDropdown() {
     const { theme } = useTheme();
+    const navigate = useNavigate();
     const [sections, setSections] = useState<SectionData[]>([]);
     const [allStudents, setAllStudents] = useState<StudentData[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -127,7 +129,7 @@ export default function SectionListDropdown() {
     });
 
     const handleEditSection = (id: number) => {
-        console.log("Edit Section ID:", id);
+        navigate(`/dashboard/sections/edit/${id}`);
         setOpenActionId(null);
     };
 

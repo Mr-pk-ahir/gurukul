@@ -103,7 +103,8 @@ export default function UserList() {
 
     const handleDeleteUser = async (user: UserData) => {
         try {
-            await userDelete(user.suid);
+            const deleted = await userDelete(user.suid);
+            if (!deleted) return;
             setUsers((prevUsers) => prevUsers.filter((item) => item.suid !== user.suid));
             setSelectedUser(null);
             setActiveModal(null);

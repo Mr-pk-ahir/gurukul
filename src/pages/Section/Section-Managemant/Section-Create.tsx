@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import Input from "../../../components/common/Input";
 import Button from "../../../components/common/Button";
@@ -57,6 +58,9 @@ interface DropdownOption {
 
 export default function CreateSection() {
     const { theme } = useTheme();
+    const navigate = useNavigate();
+    const { sectionId } = useParams<{ sectionId: string }>();
+    const isEditMode = Boolean(sectionId);
     const [loading, setLoading] = useState<boolean>(false);
 
     const [deptOptions, setDeptOptions] = useState<DropdownOption[]>([]);
@@ -69,6 +73,26 @@ export default function CreateSection() {
         departmentId: "",
         description: "",
     });
+
+    useEffect(() => {
+        if (!sectionId) return;
+        const loadSection = async () => {
+            try {
+                const result = await sectionService.getSectionById(Number(sectionId));
+                if (!result.success || !result.data) throw new Error(result.message || "Section not found");
+                setFormData({
+                    sectionName: result.data.name,
+                    sectionHead: result.data.section_head_id ? String(result.data.section_head_id) : "",
+                    departmentId: String(result.data.department_id),
+                    description: result.data.description || "",
+                });
+            } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Failed to load section");
+                navigate("/dashboard/sections/list");
+            }
+        };
+        void loadSection();
+    }, [navigate, sectionId]);
 
     // 🎯 Aa j real fix che: /departments/:id/users API vaparo (role_code sathe aave che)
     // ane sirf SECTION_HEAD role wala users j dropdown ma batavo
@@ -162,15 +186,21 @@ export default function CreateSection() {
 
         try {
             // 🎯 FIX: sectionHead have ek alag field tarike jay che, description ma nahi
-            const result = await sectionService.createSection({
-                name: formData.sectionName,
-                departmentId: Number(formData.departmentId),
-                description: formData.description || undefined,
-                sectionHead: formData.sectionHead ? Number(formData.sectionHead) : null,
-            });
+            const result = isEditMode
+                ? await sectionService.updateSection(Number(sectionId), {
+                      name: formData.sectionName,
+                      description: formData.description || undefined,
+                      sectionHead: formData.sectionHead ? Number(formData.sectionHead) : null,
+                  })
+                : await sectionService.createSection({
+                      name: formData.sectionName,
+                      departmentId: Number(formData.departmentId),
+                      description: formData.description || undefined,
+                      sectionHead: formData.sectionHead ? Number(formData.sectionHead) : null,
+                  });
 
             if (result.success) {
-                toast.success("Section created successfully");
+                toast.success(isEditMode ? "Section updated successfully" : "Section created successfully");
                 setFormData({
                     sectionName: "",
                     sectionHead: "",
@@ -178,6 +208,7 @@ export default function CreateSection() {
                     description: "",
                 });
                 setUserOptions([]);
+                if (isEditMode) navigate("/dashboard/sections/list");
             }
         } catch (error: any) {
             toast.error(error.message || "Error creating section");
@@ -203,7 +234,7 @@ export default function CreateSection() {
                     <HiOutlineClipboardList size={24} />
                 </div>
                 <h2 className={`text-3xl sm:text-4xl font-bold tracking-tight ${theme ? "text-blue-200" : "text-red-600"}`}>
-                    Create Section
+                    {isEditMode ? "Edit Section" : "Create Section"}
                 </h2>
                 <p className={`text-sm max-w-md ${theme ? "text-gray-400" : "text-neutral-500"}`}>
                     Fill in the details below to register a new section under a department.
@@ -296,9 +327,7 @@ export default function CreateSection() {
                                 <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
                                 Processing...
                             </span>
-                        ) : (
-                            "Create Section"
-                        )}
+                        ) : isEditMode ? "Update Section" : "Create Section"}
                     </Button>
                 </div>
             </form>

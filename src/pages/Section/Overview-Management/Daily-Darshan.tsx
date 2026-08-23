@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTheme } from "../../../components/theme/ThemeContext";
-import { HiOutlineSun, HiOutlineTrash, HiOutlinePhotograph } from "react-icons/hi";
+import { HiOutlineSun, HiOutlineTrash, HiOutlinePhotograph, HiOutlinePencil } from "react-icons/hi";
 import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -25,6 +25,7 @@ export default function AdminDailyDarshan() {
     const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
 
     const fetchEntries = useCallback(async () => {
         try {
@@ -57,6 +58,7 @@ export default function AdminDailyDarshan() {
         setDate(new Date().toISOString().split("T")[0]);
         setImageFile(null);
         setPreviewUrl(null);
+        setEditingId(null);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -66,7 +68,7 @@ export default function AdminDailyDarshan() {
             toast.error("Title is required");
             return;
         }
-        if (!imageFile) {
+        if (!imageFile && !editingId) {
             toast.error("Please select an image");
             return;
         }
@@ -77,16 +79,16 @@ export default function AdminDailyDarshan() {
             formData.append("title", title);
             formData.append("description", description);
             formData.append("date", date);
-            formData.append("image", imageFile);
+            if (imageFile) formData.append("image", imageFile);
 
-            const res = await fetch(`${API_URL}/daily-darshan`, {
-                method: "POST",
+            const res = await fetch(editingId ? `${API_URL}/daily-darshan/${editingId}` : `${API_URL}/daily-darshan`, {
+                method: editingId ? "PUT" : "POST",
                 body: formData,
             });
             const result = await res.json();
 
             if (result.success) {
-                toast.success("Daily Darshan added!");
+                toast.success(editingId ? "Daily Darshan updated!" : "Daily Darshan added!");
                 resetForm();
                 fetchEntries();
             } else {
@@ -97,6 +99,15 @@ export default function AdminDailyDarshan() {
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const handleEdit = (entry: DarshanEntry) => {
+        setEditingId(entry.id);
+        setTitle(entry.title);
+        setDescription(entry.description);
+        setDate(entry.date);
+        setPreviewUrl(entry.imageUrl);
+        setImageFile(null);
     };
 
     const handleDelete = async (id: number) => {
@@ -203,7 +214,7 @@ export default function AdminDailyDarshan() {
                         theme ? "bg-blue-600 hover:bg-blue-500" : "bg-[#9b001c] hover:bg-[#7a0016]"
                     }`}
                 >
-                    {submitting ? "Uploading..." : "Upload Darshan"}
+                    {submitting ? (editingId ? "Updating..." : "Uploading...") : (editingId ? "Update Darshan" : "Upload Darshan")}
                 </button>
             </form>
 
@@ -232,6 +243,13 @@ export default function AdminDailyDarshan() {
                                     <p className={`text-sm font-semibold truncate ${theme ? "text-gray-200" : "text-gray-800"}`}>{entry.title}</p>
                                     <p className={`text-xs mt-0.5 ${theme ? "text-gray-500" : "text-gray-400"}`}>{entry.date}</p>
                                 </div>
+                                <button
+                                    onClick={() => handleEdit(entry)}
+                                    className={`p-2 rounded-lg transition-colors ${theme ? "text-blue-400 hover:bg-blue-500/10" : "text-blue-600 hover:bg-blue-50"}`}
+                                    title="Edit"
+                                >
+                                    <HiOutlinePencil size={18} />
+                                </button>
                                 <button
                                     onClick={() => handleDelete(entry.id)}
                                     className={`p-2 rounded-lg transition-colors ${theme ? "text-red-400 hover:bg-red-500/10" : "text-red-500 hover:bg-red-50"}`}

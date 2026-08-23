@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "../components/theme/ThemeContext";
-import StatCard from "../components/dashboard/Statcard";
+import SparklineStatCard, { type SparklinePoint } from "../components/dashboard/SparklineStatCard";
 import PerformanceChart, { type ChartPoint } from "../components/dashboard/Performancechart";
 import ActivityLogList, { type ActivityLogItem } from "../components/dashboard/Activityloglist";
 import RoleDistribution, { type RoleDistributionItem } from "../components/dashboard/Roledistribution";
@@ -11,7 +11,7 @@ import type { AuthUser } from "../Types/Role-create";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 interface DashboardStatsResponse {
-    cards: { label: string; value: number; subLabel: string }[];
+    cards: { label: string; value: number; subLabel: string; trend?: SparklinePoint[] }[];
     chart: ChartPoint[];
     logs?: ActivityLogItem[];
     roleDistribution?: RoleDistributionItem[];
@@ -45,7 +45,7 @@ export default function Dashboard() {
                 if ((user as any).sectionId) params.set("sectionId", String((user as any).sectionId));
                 if (user.suid) params.set("suid", String(user.suid));
 
-                const res = await fetch(`${API_URL}/dashboard/stats?${params.toString()}`);
+                const res = await fetch(`${API_URL}/dashboard/stats?${params.toString()}`, { cache: "no-store" });
                 const json = await res.json();
 
                 if (json.success) {
@@ -110,14 +110,17 @@ export default function Dashboard() {
 
             <div className={`grid gap-5 grid-cols-1 sm:grid-cols-2 ${isSuperAdmin ? "lg:grid-cols-4" : "lg:grid-cols-2"}`}>
                 {(stats?.cards || []).map((card, i) => (
-                    <StatCard
+                    <SparklineStatCard
                         key={card.label}
                         label={card.label}
                         value={card.value}
                         subLabel={card.subLabel}
+                        data={card.trend}
                         icon={cardIcons[i % cardIcons.length]}
                         colorScheme={cardColors[i % cardColors.length]}
                         loading={loading}
+                        index={i}
+                        animationKey={range}
                     />
                 ))}
             </div>

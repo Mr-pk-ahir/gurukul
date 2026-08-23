@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Table from "../../../components/common/Table";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import DataCruding from "../../../components/common/DataCruding";
@@ -19,6 +20,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function DepartmentList() {
     const { theme } = useTheme();
+    const navigate = useNavigate();
     const [departments, setDepartments] = useState<DepartmentData[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -98,14 +100,13 @@ export default function DepartmentList() {
     });
 
     const handleEditDepartment = (id: number) => {
-        // Edit માટેનું લોજિક અહી ઉમેરવું (જેમ કે રાઉટિંગ અથવા મોડલ ઓપન કરવું)
-        console.log("Edit ID:", id);
+        navigate(`/dashboard/departments/edit/${id}`);
     };
 
     const handleDeleteDepartment = async (id: number) => {
         if (window.confirm("Are you sure you want to delete this department?")) {
             try {
-                const response = await fetch(`${API_URL}/departments/${id}`, {
+                const response = await fetch(`${API_URL}/departments/delete/${id}`, {
                     method: "DELETE",
                 });
                 const result = await response.json();

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import Table from "../../../components/common/Table";
 import DataCruding from "../../../components/common/DataCruding";
@@ -22,6 +23,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function RoleList() {
     const { theme } = useTheme();
+    const navigate = useNavigate();
 
     const [roles, setRoles] = useState<RoleData[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -56,11 +58,10 @@ export default function RoleList() {
             className: "w-40 text-left text-[11px] font-bold tracking-wider text-slate-500",
             accessor: (role: RoleData) => (
                 <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold tracking-wide transition-colors ${
-                        theme
-                            ? "bg-slate-500/10 text-slate-200" 
-                            : "bg-blue-50 text-red-700"     
-                    }`}
+                    className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold tracking-wide transition-colors ${theme
+                            ? "bg-slate-500/10 text-slate-200"
+                            : "bg-blue-50 text-red-700"
+                        }`}
                 >
                     {role.role_code}
                 </span>
@@ -88,7 +89,13 @@ export default function RoleList() {
             header: "ALLOWED MODULES",
             className: "text-left text-[11px] font-bold tracking-wider text-slate-500",
             accessor: (role: RoleData) => {
-                const allowedModules = role.permissions ? Object.keys(role.permissions) : [];
+                // 🎯 FIX: pehla badha permission-object keys batavta hata, chahe badha actions false hoy.
+                // Have fakt e j modules batave chhe jema ochu-ochu ek action (create/edit/view/delete) true hoy.
+                const allowedModules = role.permissions
+                    ? Object.entries(role.permissions)
+                        .filter(([, actions]) => actions?.create || actions?.edit || actions?.view || actions?.delete)
+                        .map(([mod]) => mod)
+                    : [];
 
                 return (
                     <div className="flex flex-wrap gap-2 py-1">
@@ -96,11 +103,10 @@ export default function RoleList() {
                             allowedModules.map((mod) => (
                                 <span
                                     key={mod}
-                                    className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full transition-colors ${
-                                        theme
-                                            ? "bg-slate-500/10 text-slate-200 border border-slate-500/20" 
+                                    className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full transition-colors ${theme
+                                            ? "bg-slate-500/10 text-slate-200 border border-slate-500/20"
                                             : "bg-rose-50 text-rose-700 border border-rose-200"
-                                    }`}
+                                        }`}
                                 >
                                     {mod}
                                 </span>
@@ -120,7 +126,7 @@ export default function RoleList() {
             accessor: (role: RoleData) => (
                 <div className="flex justify-center">
                     <DataCruding
-                        onEdit={() => console.log("Edit Role:", role.role_code)}
+                        onEdit={() => navigate(`/dashboard/permissions/role/edit/${encodeURIComponent(role.role_code)}`)}
                         onDelete={async () => {
                             if (!window.confirm("Are you sure you want to delete this role?")) {
                                 return;

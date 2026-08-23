@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import Input from "../../../components/common/Input";
 import Button from "../../../components/common/Button";
@@ -49,12 +50,34 @@ export interface DepartmentCreate {
 
 export default function CreateDepartment() {
     const { theme } = useTheme();
+    const navigate = useNavigate();
+    const { departmentId } = useParams<{ departmentId: string }>();
+    const isEditMode = Boolean(departmentId);
     const [loading, setLoading] = useState<boolean>(false);
     
     const [formData, setFormData] = useState<DepartmentCreate>({
         departmentName: "",
         description: "",
     });
+
+    useEffect(() => {
+        if (!departmentId) return;
+        const loadDepartment = async () => {
+            try {
+                const response = await fetch(`${API_URL}/departments/${departmentId}`);
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.message || "Department not found");
+                setFormData({
+                    departmentName: result.data.department_name || "",
+                    description: result.data.description || "",
+                });
+            } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Failed to load department");
+                navigate("/dashboard/departments/list");
+            }
+        };
+        void loadDepartment();
+    }, [departmentId, navigate]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -70,26 +93,30 @@ export default function CreateDepartment() {
 
         try {
             // બેકએન્ડ API કોલ
-            const response = await fetch(`${API_URL}/departments/create`, {
-                method: "POST",
+            const response = await fetch(
+                isEditMode ? `${API_URL}/departments/${departmentId}` : `${API_URL}/departments/create`,
+                {
+                method: isEditMode ? "PUT" : "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify(formData),
-            });
+                }
+            );
 
             const result = await response.json();
 
             console.log("Backend Department Response:", result);
 
             if (result.success) {
-                toast.success("Department created successfully!");
+                toast.success(isEditMode ? "Department updated successfully!" : "Department created successfully!");
 
                 // ફોર્મ ક્લિયર કરવું
                 setFormData({
                     departmentName: "",
                     description: "",
                 });
+                if (isEditMode) navigate("/dashboard/departments/list");
             } else {
                 toast.error(result.message || "Failed to create department");
             }
@@ -116,7 +143,7 @@ export default function CreateDepartment() {
                     <FaBuilding size={24} />
                 </div>
                 <h2 className={`text-3xl sm:text-4xl font-bold tracking-tight ${theme ? "text-blue-200" : "text-red-600"}`}>
-                    Create Department
+                    {isEditMode ? "Update Department" : "Create Department"}
                 </h2>
                 <p className={`text-sm max-w-md ${theme ? "text-gray-400" : "text-neutral-500"}`}>
                     Fill in the details below to register a new department.

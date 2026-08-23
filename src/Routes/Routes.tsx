@@ -104,7 +104,7 @@ export default function Routers() {
         <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Overview />} />
-            <Route path="/amrut-nu-aachaman" element={<AmrutAachaman />} />
+            <Route path="/amrut-aachaman" element={<AmrutAachaman />} />
             <Route path="/daily-darshan" element={<DailyDarshanPage />} />
             <Route path="/events" element={<UpcomingEventsPage />} />
             <Route path="/activities" element={<ActivitiesPage />} />
@@ -124,6 +124,9 @@ export default function Routers() {
                 <Route element={<ProtectedRoute module="Department" action="create" />}>
                     <Route path="departments/create" element={<CreateDepartment />} />
                 </Route>
+                <Route element={<ProtectedRoute module="Department" action="edit" />}>
+                    <Route path="departments/edit/:departmentId" element={<CreateDepartment />} />
+                </Route>
                 <Route element={<ProtectedRoute module="Department" action="view" />}>
                     <Route path="departments/list" element={<DepartmentList />} />
                 </Route>
@@ -138,6 +141,9 @@ export default function Routers() {
                 <Route element={<ProtectedRoute module="Section" action="create" />}>
                     <Route path="sections/create" element={<CreateSection />} />
                 </Route>
+                <Route element={<ProtectedRoute module="Section" action="edit" />}>
+                    <Route path="sections/edit/:sectionId" element={<CreateSection />} />
+                </Route>
                 <Route element={<ProtectedRoute module="Section" action="view" />}>
                     <Route path="sections/list" element={<SectionList />} />
                 </Route>
@@ -146,6 +152,9 @@ export default function Routers() {
 
                 <Route element={<ProtectedRoute module="RolesPermissions" action="create" />}>
                     <Route path="permissions/role" element={<CreateRole />} />
+                </Route>
+                <Route element={<ProtectedRoute module="RolesPermissions" action="edit" />}>
+                    <Route path="permissions/role/edit/:roleCode" element={<CreateRole />} />
                 </Route>
                 <Route element={<ProtectedRoute module="RolesPermissions" action="view" />}>
                     <Route path="permissions/lesson" element={<RoleList />} />
@@ -162,9 +171,6 @@ export default function Routers() {
                     <Route path="groups/edit/:groupId" element={<CreateGroup />} />
                 </Route>
 
-                {/* 👥 NAVU: Group Member Detail — access group-membership thi backend check thashe,
-                    etle requireLoginOnly vaparyu chhe (static role permission na badle). Badha members
-                    (SUPER_ADMIN thi student sudhi) potana group no detail joi shake. */}
                 <Route element={<ProtectedRoute requireLoginOnly />}>
                     <Route path="groups/member/:groupId" element={<GroupMemberDetail />} />
                 </Route>
