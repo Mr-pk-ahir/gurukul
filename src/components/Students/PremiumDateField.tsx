@@ -125,8 +125,12 @@ const PremiumDateField: React.FC<PremiumDateFieldProps> = ({ label, value, onCha
                 <input
                     type="text"
                     readOnly
+                    inputMode="none"
                     value={getDisplayDate()}
                     placeholder="DD/MM/YYYY"
+                    onKeyDown={(event) => event.preventDefault()}
+                    onPaste={(event) => event.preventDefault()}
+                    onDrop={(event) => event.preventDefault()}
                     className={inputClasses}
                 />
             </div>

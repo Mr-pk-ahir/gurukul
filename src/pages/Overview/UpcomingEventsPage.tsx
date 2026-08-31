@@ -9,19 +9,43 @@ interface EventItem {
     title: string;
     description: string;
     thumbnail: string;
+    eventStartDate: string;
+    eventEndDate: string;
+    status: "Active" | "Inactive";
 }
 
 // 🎯 Backend QuoteData ne page na shape ma convert karo
 function mapQuoteToEventItem(q: QuoteData): EventItem {
-    const dateObj = new Date(q.event_date);
+    const startDate = q.event_start_date || q.event_date || new Date().toISOString();
+    const endDate = q.event_end_date || q.event_date || new Date().toISOString();
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    const today = new Date();
+    const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const startDateOnly = startDate.split("T")[0];
+    const endDateOnly = endDate.split("T")[0];
     return {
         id: q.id,
-        date: dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase(),
-        title: q.description?.trim() || "Upcoming Event",
+        date: startDateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase(),
+        title: q.name?.trim() || q.description?.trim() || "Upcoming Event",
         description: q.description?.trim() || "No description provided.",
         thumbnail: q.image_url,
+        eventStartDate: startDateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase(),
+        eventEndDate: endDateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase(),
+        status: startDateOnly && endDateOnly && todayDate >= startDateOnly && todayDate <= endDateOnly
+            ? "Active"
+            : (q.status || "Active"),
     };
 }
+
+    function isEventVisibleToday(event: QuoteData): boolean {
+        if (event.is_approved !== "Approved") return false;
+        const currentDate = new Date();
+        const today = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
+        const startDate = (event.display_start_date || event.event_start_date || event.event_date)?.split("T")[0] || "";
+        const endDate = (event.display_end_date || event.event_end_date || event.event_date)?.split("T")[0] || "";
+        return Boolean(startDate && endDate && today >= startDate && today < endDate);
+    }
 
 export default function UpcomingEventsPage() {
     const { theme } = useTheme();
@@ -40,7 +64,7 @@ export default function UpcomingEventsPage() {
                 setLoading(true);
                 const result = await quoteService.getQuotesByType("event");
                 if (result.success) {
-                    setEvents(result.data.map(mapQuoteToEventItem));
+                    setEvents(result.data.filter(isEventVisibleToday).map(mapQuoteToEventItem));
                 }
             } catch (error) {
                 console.error("Error fetching events:", error);
@@ -143,10 +167,21 @@ export default function UpcomingEventsPage() {
                                         </div>
 
                                         <div className="flex-1 flex flex-col justify-center">
-                                            <span className={`text-xs font-bold tracking-wide uppercase ${theme ? "text-blue-400" : "text-red-600"}`}>
-                                                {item.date}
-                                            </span>
-                                            <h2 className="text-2xl font-bold mt-2">{item.title}</h2>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${theme ? "border-blue-500/40 bg-blue-500/10 text-blue-300" : "border-red-200 bg-red-50 text-red-600"}`}>
+                                                    {item.eventStartDate} - {item.eventEndDate}
+                                                </span>
+                                                <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${theme ? "border-slate-700 bg-slate-800/80 text-slate-300" : "border-slate-200 bg-slate-100 text-slate-700"}`}>
+                                                    {item.date}
+                                                </span>
+                                                <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${item.status === "Active"
+                                                    ? theme ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                                    : theme ? "border-slate-700 bg-slate-800/80 text-slate-400" : "border-slate-200 bg-slate-100 text-slate-500"
+                                                    }`}>
+                                                    {item.status}
+                                                </span>
+                                            </div>
+                                            <h2 className={`text-2xl font-bold mt-3 ${theme ? "text-white" : "text-slate-900"}`}>{item.title}</h2>
                                             <p className={`text-sm mt-3 leading-relaxed ${theme ? "text-slate-400" : "text-slate-600"}`}>
                                                 {item.description}
                                             </p>

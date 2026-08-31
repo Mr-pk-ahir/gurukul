@@ -80,7 +80,7 @@ export default function CreateUserForm() {
     const isUserRole = incomingData?.requestedRole === "USER";
 
     const [formData, setFormData] = useState<UserCreate>(() => ({
-        suid: Math.floor(100000 + Math.random() * 900000),
+        suid: incomingData?.id ? Number(incomingData.id) : 0, 
         avatar: "",
         name: incomingData?.applicantName || "",
         username: "",
@@ -191,7 +191,7 @@ export default function CreateUserForm() {
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.message || "સર્વર પર યુઝર ક્રિએટ કરવામાં સમસ્યા આવી.");
+                throw new Error(result.message || "Failed to create user From server.");
             }
 
             if (isFromPipeline && incomingData) {
@@ -207,7 +207,7 @@ export default function CreateUserForm() {
             }
 
         } catch (error) {
-            setErrorMessage((error as any).message || "કંઈક ખોટું થયું છે, ફરી પ્રયાસ કરો.");
+            setErrorMessage((error as any).message || "An error occurred while creating the user.");
         } finally {
             setLoading(false);
         }
@@ -271,7 +271,7 @@ export default function CreateUserForm() {
                         uploadType="avatar"
                         shape="circle"
                         size={128}
-                        label="Profile photo (optional)"
+                        label="Profile photo"
                     />
                 </div>
 
@@ -286,11 +286,13 @@ export default function CreateUserForm() {
                                 name="suid"
                                 value={formData.suid ? String(formData.suid) : ""}
                                 onChange={handleInputChange}
+                                onWheel={(e) => e.currentTarget.blur()}
                                 icon={<HiOutlineIdentification className="text-lg" />}
-                                placeholder="Ex: 5001"
+                                placeholder="Ex: 221255"
                                 required
                                 disabled={isFromPipeline}
-                                className={isFromPipeline ? "bg-gray-50 dark:bg-gray-800 text-gray-500" : ""}
+                                className={`[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isFromPipeline ? "bg-gray-50 dark:bg-gray-800 text-gray-500" : ""
+                                    }`}
                             />
                         </div>
 

@@ -2,13 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import {
-    Camera,
     User,
     Hash,
     Lock,
     Calendar,
     BookOpen,
-    ImagePlus,
     Eye,
     EyeOff,
     Layers,
@@ -18,10 +16,11 @@ import { toast } from "sonner";
 import Input from "../../../components/common/Input";
 import PremiumDateField from "../../../components/Students/PremiumDateField";
 import SearchableDropdown from "../../../components/common/SearchableDropdown";
+import ImageUploader from "../../../components/common/ImageUploader";
 import type { StudentFormData } from "../../../Types/Student";
 import { sectionService } from "../../../services/sectionService";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITsE_API_URL || "http://localhost:5000";
 
 // 🎯 FIX: Aa form ma have fakt 2 j role select thai shake chhe —
 // Section Head (SECHEAD101) ane Student (STUDENT). Role code database
@@ -52,9 +51,7 @@ const CreateStudent = () => {
     const [departmentName, setDepartmentName] = useState<string>("");
     const [sectionLoading, setSectionLoading] = useState(true);
 
-    const [, setProfileImageFile] = useState<File | null>(null);
     const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
-    const [isDragging, setIsDragging] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -80,12 +77,6 @@ const CreateStudent = () => {
         fetchSectionDetail();
     }, [sectionId]);
 
-    useEffect(() => {
-        return () => {
-            if (profileImagePreview) URL.revokeObjectURL(profileImagePreview);
-        };
-    }, [profileImagePreview]);
-
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
@@ -93,34 +84,6 @@ const CreateStudent = () => {
 
     const handleDateChange = (fieldName: string, dateStr: string) => {
         setFormData((prev) => ({ ...prev, [fieldName]: dateStr }));
-    };
-
-    const setImage = (file: File) => {
-        if (profileImagePreview) URL.revokeObjectURL(profileImagePreview);
-        setProfileImageFile(file);
-        setProfileImagePreview(URL.createObjectURL(file));
-    };
-
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) setImage(file);
-    };
-
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        setIsDragging(true);
-    };
-
-    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        setIsDragging(false);
-    };
-
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        setIsDragging(false);
-        const file = e.dataTransfer.files?.[0];
-        if (file && file.type.startsWith("image/")) setImage(file);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -153,7 +116,7 @@ const CreateStudent = () => {
 
             const payload = {
                 suid: Number(formData.suid),
-                avatar: "", // ⚠️ TODO: profileImageFile ne base64/Cloudinary upload karvani baki che
+                avatar: profileImagePreview || "",
                 name: formData.fullName,
                 username: formData.username,
                 password: formData.password,
@@ -191,7 +154,6 @@ const CreateStudent = () => {
                 password: "",
             });
             setRoleCode("STUDENT");
-            setProfileImageFile(null);
             setProfileImagePreview(null);
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "Something went wrong.");
@@ -252,46 +214,16 @@ const CreateStudent = () => {
 
             <form onSubmit={handleSubmit} className="relative z-10 space-y-10">
 
-                <div className="flex flex-col items-center justify-center mb-6">
-                    <div
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        className={`relative group w-40 h-40 rounded-4xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all duration-500 ease-out transform hover:-translate-y-1.5 hover:scale-[1.02] cursor-pointer ${isDragging
-                            ? theme
-                                ? "border-blue-500 bg-blue-500/10 scale-105 shadow-[0_0_35px_rgba(59,130,246,0.3)]"
-                                : "border-red-500 bg-red-500/10 scale-105 shadow-[0_0_35px_rgba(239,68,68,0.2)]"
-                            : theme
-                                ? "border-gray-600 bg-[#1f2937]/50 hover:border-blue-400 hover:bg-blue-900/20 shadow-[0_8px_25px_rgba(0,0,0,0.3)] hover:shadow-[0_15px_40px_rgba(59,130,246,0.25)]"
-                                : "border-slate-300 bg-slate-50 hover:border-red-400 hover:bg-red-50 shadow-[0_8px_25px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(239,68,68,0.15)]"
-                            }`}
-                    >
-                        {profileImagePreview ? (
-                            <img src={profileImagePreview} alt="Profile" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                        ) : (
-                            <div className={`flex flex-col items-center justify-center transition-all duration-500 transform group-hover:scale-105 ${theme ? "text-gray-500 group-hover:text-blue-400" : "text-slate-400 group-hover:text-red-500"
-                                }`}>
-                                <ImagePlus size={38} className="mb-2 drop-shadow-sm" />
-                            </div>
-                        )}
-
-                        <div className="absolute inset-0 bg-black/40 backdrop-blur-xs flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 z-10 pointer-events-none">
-                            <Camera size={28} className="text-white mb-1.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
-                            <span className="text-white text-xs font-black tracking-widest drop-shadow-md">UPLOAD</span>
-                        </div>
-
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="absolute inset-0 opacity-0 z-20 cursor-pointer"
-                            title="Click or Drag & Drop an image here"
-                        />
-                    </div>
-                    <span className={`text-sm mt-4 font-bold tracking-widest uppercase transition-colors duration-300 ${theme ? "text-gray-500" : "text-slate-400"
-                        }`}>
-                        {isDragging ? "Drop it like it's hot!" : "Profile Photo"}
-                    </span>
+                <div className="mb-6 flex flex-col items-center justify-center">
+                    <ImageUploader
+                        value={profileImagePreview}
+                        onChange={setProfileImagePreview}
+                        theme={theme}
+                        uploadType="avatar"
+                        shape="circle"
+                        size={145}
+                        label="Profile Photo"
+                    />
                 </div>
 
                 <div className="space-y-8">

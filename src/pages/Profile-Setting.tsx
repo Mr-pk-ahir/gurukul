@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import {
   AtSign,
   Calendar,
-  Camera,
   Check,
   Eye,
   EyeOff,
@@ -15,6 +14,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useTheme } from "../components/theme/ThemeContext";
+import ImageUploader from "../components/common/ImageUploader";
 
 /* ----------------------------- Types ----------------------------- */
 
@@ -417,7 +417,6 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
   onChangePassword,
 }) => {
   const { theme } = useTheme();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     suid: user.suid,
@@ -445,7 +444,6 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
   
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
 
   const handleFormChange = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -456,46 +454,6 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
   const handleDateChange = (key: keyof typeof form) => (dateStr: string) => {
     setForm((prev) => ({ ...prev, [key]: dateStr }));
     setProfileSaved(false);
-  };
-
-  const processFile = (file: File) => {
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          setForm((prev) => ({ ...prev, avatarUrl: reader.result as string }));
-          setProfileSaved(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      processFile(e.target.files[0]);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
   };
 
   const handleSaveProfile = async () => {
@@ -557,8 +515,6 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
     }
   };
 
-  const initial = form.fullName?.charAt(0)?.toUpperCase() || "U";
-
   return (
     <div
       className={`w-full h-full p-4 sm:p-8 transition-all duration-300 ${
@@ -584,42 +540,18 @@ const ProfileSetting: React.FC<ProfileSettingProps> = ({
             ? "border-transparent bg-gray-950/10 hover:border-gray-800 hover:bg-gray-950/30 hover:shadow-[0_15px_35px_-10px_rgba(0,0,0,0.3)] hover:-translate-y-1" 
             : "border-transparent bg-neutral-50/40 hover:border-neutral-200 hover:bg-neutral-50/80 hover:shadow-[0_15px_35px_-10px_rgba(0,0,0,0.05)] hover:-translate-y-1"
         }`}>
-          <div 
-            className="relative group cursor-pointer"
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={triggerFileInput}
-          >
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              accept="image/*" 
-              className="hidden" 
-            />
-
-            <div
-              className={`relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-full text-5xl font-black shadow-xl ring-4 transition-all duration-500 ${
-                isDragging 
-                  ? "ring-emerald-500 scale-105 bg-emerald-500/10" 
-                  : theme
-                  ? "bg-linear-to-tr from-gray-800 to-gray-700 text-blue-300 ring-gray-800/50 group-hover:ring-blue-500/40 group-hover:shadow-[0_0_25px_rgba(59,130,246,0.2)]"
-                  : "bg-linear-to-tr from-neutral-100 to-white text-red-600 ring-neutral-100 group-hover:ring-red-500/30 group-hover:shadow-[0_0_25px_rgba(220,38,38,0.15)]"
-              }`}
-            >
-              {form.avatarUrl ? (
-                <img src={form.avatarUrl} alt={form.fullName} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
-              ) : (
-                initial
-              )}
-              
-              {/* Hover Overlay for Camera */}
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <Camera size={32} className="text-white drop-shadow-md" />
-              </div>
-            </div>
-          </div>
+          <ImageUploader
+            value={form.avatarUrl}
+            onChange={(url) => {
+              setForm((prev) => ({ ...prev, avatarUrl: url }));
+              setProfileSaved(false);
+            }}
+            theme={theme}
+            uploadType="avatar"
+            shape="circle"
+            size={128}
+            label="Profile Photo"
+          />
           <h2 className={`mt-6 text-2xl font-black tracking-tight transition-colors duration-300 ${theme ? "text-gray-50 group-hover:text-white" : "text-neutral-900 group-hover:text-neutral-950"}`}>
             {form.fullName}
           </h2>

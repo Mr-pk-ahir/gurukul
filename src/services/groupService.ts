@@ -5,6 +5,7 @@ export interface GroupMember {
     suid: number;
     name: string;
     role_code?: string;
+    avatar?: string
 }
 
 export interface GroupData {
