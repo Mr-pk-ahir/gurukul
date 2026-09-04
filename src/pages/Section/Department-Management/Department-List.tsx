@@ -1,22 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Table from "../../../components/common/Table";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import DataCruding from "../../../components/common/DataCruding";
 import { FaBuildingColumns } from "react-icons/fa6";
-import { HiSearch, HiFilter, HiChevronDown } from "react-icons/hi";
-import { toast } from "sonner"; // 👑 Alert ની જગ્યાએ Toast ઉમેર્યું
-
-export interface DepartmentData {
-    departmentId: number;
-    departmentName: string;
-    departmentHeadId: number | null;
-    departmentHeadName: string | null;
-    description: string;
-}
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { HiSearch, HiFilter, HiChevronDown, HiEye } from "react-icons/hi";
+import { toast } from "sonner";
+import { getDepartments, deleteDepartment, type DepartmentData } from "../../../action/Department/View";
 
 export default function DepartmentList() {
     const { theme } = useTheme();
@@ -37,21 +27,10 @@ export default function DepartmentList() {
     const fetchDepartments = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_URL}/departments`);
-            const result = await response.json();
-
-            if (result.success) {
-                // 👑 Backend ના snake_case ડેટાને Frontend ના camelCase માં મેપ કર્યો
-                const mappedData: DepartmentData[] = result.data.map((item: any) => ({
-                    departmentId: item.department_id,
-                    departmentName: item.department_name,
-                    departmentHeadId: item.department_head_id,
-                    departmentHeadName: item.department_head_name || null,
-                    description: item.description || "",
-                }));
-                setDepartments(mappedData);
-            }
-        } catch {
+            const data = await getDepartments();
+            setDepartments(data);
+        } catch (error) {
+            console.error("Department fetch error:", error);
             toast.error("Failed to fetch departments.");
         } finally {
             setLoading(false);
@@ -59,8 +38,7 @@ export default function DepartmentList() {
     };
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        fetchDepartments();
+        void fetchDepartments();
     }, []);
 
     const getSearchInputConfig = () => {
@@ -99,27 +77,23 @@ export default function DepartmentList() {
         }
     });
 
+    const handleViewDepartment = (id: number) => {
+        navigate(`/dashboard/departments/view/${id}`);
+    };
+
     const handleEditDepartment = (id: number) => {
         navigate(`/dashboard/departments/edit/${id}`);
     };
 
     const handleDeleteDepartment = async (id: number) => {
-        if (window.confirm("Are you sure you want to delete this department?")) {
-            try {
-                const response = await fetch(`${API_URL}/departments/delete/${id}`, {
-                    method: "DELETE",
-                });
-                const result = await response.json();
-
-                if (result.success) {
-                    setDepartments((prev) => prev.filter((dept) => dept.departmentId !== id));
-                    toast.success("Department deleted successfully");
-                } else {
-                    toast.error(result.message || "Failed to delete department");
-                }
-            } catch {
-                toast.error("Something went wrong while deleting.");
+        try {
+            const isDeleted = await deleteDepartment(id);
+            if (isDeleted) {
+                setDepartments((prev) => prev.filter((dept) => dept.departmentId !== id));
             }
+        } catch (error) {
+            console.error("Department delete error:", error);
+            toast.error("Something went wrong while deleting.");
         }
     };
 
@@ -160,8 +134,12 @@ export default function DepartmentList() {
             className: "w-16 text-center",
             accessor: (dept: DepartmentData) => (
                 <DataCruding
+                    onView={() => handleViewDepartment(dept.departmentId)}
                     onEdit={() => handleEditDepartment(dept.departmentId)}
                     onDelete={() => void handleDeleteDepartment(dept.departmentId)}
+                    viewLabel="View"
+                    editLabel="Edit"
+                    deleteLabel="Delete"
                 />
             ),
         },
@@ -188,6 +166,14 @@ export default function DepartmentList() {
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto mt-2 sm:mt-1">
+                    <button
+                        type="button"
+                        onClick={() => navigate("/dashboard/departments/create")}
+                        className={`rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm transition ${theme ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-[#9b001c] text-white hover:bg-[#7d0017]"}`}
+                    >
+                        + Add Department
+                    </button>
+
                     <div className="relative group">
                         <button
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -261,16 +247,25 @@ export default function DepartmentList() {
                     <div className={`w-10 h-10 rounded-full border-4 border-t-transparent animate-spin ${theme ? "border-blue-500" : "border-[#9b001c]"}`} />
                 </div>
             ) : (
-                <Table
-                    columns={columns}
-                    data={filteredDepartments}
-                    keyExtractor={(dept) => dept.departmentId}
-                    emptyMessage={
-                        searchQuery
-                            ? `No departments found matching "${searchQuery}"`
-                            : "No departments found!"
-                    }
-                />
+                <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-gray-800">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                            <HiEye className="text-base" />
+                            Department Overview
+                        </div>
+                    </div>
+
+                    <Table
+                        columns={columns}
+                        data={filteredDepartments}
+                        keyExtractor={(dept) => dept.departmentId}
+                        emptyMessage={
+                            searchQuery
+                                ? `No departments found matching "${searchQuery}"`
+                                : "No departments found!"
+                        }
+                    />
+                </div>
             )}
         </div>
     );

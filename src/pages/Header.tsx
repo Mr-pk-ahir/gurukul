@@ -10,6 +10,7 @@ import ProfilePopup, { type ProfileUser } from "../components/Profile-Popup/Prof
 import { CgAlbum } from "react-icons/cg";
 import Application from "../components/applocation/Application";
 import type { AuthUser } from "../Types/Role-create";
+import { useSidebarView } from "../context/SidebarViewContext";
 
 interface HeaderProps {
     toggleSidebar: () => void;
@@ -18,63 +19,53 @@ interface HeaderProps {
 export default function Header({ toggleSidebar }: HeaderProps) {
     const { theme } = useTheme();
     const navigate = useNavigate();
-
-    // 🎯 FIX: "adminData" nahi, "user" key vaparo — aakhi app ma e j key vapari che
+    const { activeDepartmentName, setActiveDepartment } = useSidebarView();
     const [user, setUser] = useState<AuthUser | null>(null);
-
     useEffect(() => {
         const data = localStorage.getItem("user");
         if (data) {
             try {
-                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setUser(JSON.parse(data));
             } catch (e) {
                 console.error("Error parsing user data:", e);
             }
         }
     }, []);
-
     const [applicationData, setApplicationData] = useState(false);
     const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
     const [isEventCalendarOpen, setIsEventCalendarOpen] = useState<boolean>(false);
-
-    // 🎯 FIX: sahi field names — AuthUser type mujab (id, username, roleName)
     const profileUser: ProfileUser = {
         suid: user?.id ? String(user.id) : "-",
         fullName: user?.username ?? "Admin",
         username: user?.username ?? "-",
-        joinedDate: "-", // ⚠️ TODO: backend login response ma joiningDate nathi aavtu, add karvu padse
-        birthDate: "-",  // ⚠️ TODO: backend login response ma bod nathi aavtu, add karvu padse
+        joinedDate: "-",
+        birthDate: "-",
         roleLabel: user?.roleName ?? user?.roleCode ?? "USER",
     };
-
+    const userDepartmentName = user?.departmentName ?? (user as any)?.department_name ?? null;
+    const headerTitle = activeDepartmentName || (user && user.roleCode !== "SUPER_ADMIN" ? userDepartmentName || "GURUKUL" : "GURUKUL");
     const handleLogout = () => {
-        // 🎯 FIX: "user" key pan remove karo — nahi to ProtectedRoute hajuye login mani lese
+        setActiveDepartment(null, null);
         localStorage.removeItem("user");
         localStorage.removeItem("token");
         navigate("/login");
     };
 
-
     const currentDate = new Date();
     const dayNumber = currentDate.getDate().toString().padStart(2, '0');
     const monthShort = currentDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-
     const yearStr = currentDate.getFullYear();
     const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0');
     const dateStr = String(currentDate.getDate()).padStart(2, '0');
     const todayStr = `${yearStr}-${monthStr}-${dateStr}`;
-
     const todayEvent = eventsData ? eventsData[todayStr] : null;
 
     return (
         <header className={`h-18 border-b flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-sm transition-colors duration-300 ${theme ? "bg-[#0f172a]/95 backdrop-blur-xl border-slate-800 text-white" : "bg-white border-slate-200 text-slate-800"
             }`}>
-
             {applicationData && (
                 <Application onClose={() => setApplicationData(false)} />
             )}
-
             <div className="flex items-center gap-4">
                 <button
                     onClick={toggleSidebar}
@@ -83,13 +74,11 @@ export default function Header({ toggleSidebar }: HeaderProps) {
                 >
                     <HiOutlineMenuAlt2 className="text-2xl" />
                 </button>
-
                 <h1 className={`text-lg sm:text-2xl font-black hidden sm:block tracking-wide ${theme ? "text-white" : "text-slate-800"
                     }`}>
-                    GURUKUL
+                    {headerTitle}
                 </h1>
             </div>
-
             <div className="flex items-center gap-3 sm:gap-5 h-full">
                 <div className="relative flex items-center">
                     <button
@@ -104,18 +93,15 @@ export default function Header({ toggleSidebar }: HeaderProps) {
                                 }`}>
                                 {dayNumber}
                             </span>
-
                             <span className={`text-[12px] font-light mx-2 ${theme ? "text-slate-600 group-hover:text-slate-500" : "text-slate-300 group-hover:text-slate-400"
                                 }`}>
                                 |
                             </span>
-
                             <span className={`text-[11px] font-extrabold tracking-widest leading-none mt-0.5 ${theme ? "text-slate-300 group-hover:text-white" : "text-slate-600 group-hover:text-slate-900"
                                 }`}>
                                 {monthShort}
                             </span>
                         </div>
-
                         {todayEvent && (
                             <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 animate-pulse ${theme ? "border-slate-800" : "border-white"
                                 } ${todayEvent.category === 'event'
@@ -124,13 +110,11 @@ export default function Header({ toggleSidebar }: HeaderProps) {
                                 }`}></span>
                         )}
                     </button>
-
                     <EventCalendarPopup
                         isOpen={isEventCalendarOpen}
                         onClose={() => setIsEventCalendarOpen(false)}
                     />
                 </div>
-
                 <div className="relative flex items-center">
                     <button
                         onClick={() => setApplicationData(prev => !prev)}
@@ -153,17 +137,13 @@ export default function Header({ toggleSidebar }: HeaderProps) {
                         <span className={`absolute top-2 right-2.5 w-2 h-2 rounded-full border ${theme ? "bg-blue-400 border-slate-800" : "bg-red-500 border-white"
                             }`}></span>
                     </button>
-
                     <NotificationBox
                         isOpen={isNotifOpen}
                         onClose={() => setIsNotifOpen(false)}
                     />
                 </div>
-
                 <ThemeToggle />
-
                 <div className={`h-7 w-px hidden sm:block ${theme ? "bg-slate-700" : "bg-slate-200"}`} />
-
                 <ProfilePopup
                     user={profileUser}
                     onLogout={handleLogout}

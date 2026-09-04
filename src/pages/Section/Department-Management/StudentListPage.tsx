@@ -43,19 +43,26 @@ export default function StudentListPage() {
           ? `${API_URL}/users/section/${currentSectionId}`
           : `${API_URL}/users`;
 
+        console.log("🔍 Fetching from:", url); // 🎯 DEBUG
+        
         const res = await fetch(url);
         const json = await res.json();
 
+        console.log("📦 Response:", json); // 🎯 DEBUG
+
         const students: Student[] = json.data || [];
         setAllStudents(students);
-      } catch {
+      } catch (error) {
+        console.error("❌ Error:", error); // 🎯 DEBUG
         toast.error("Failed to load students.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStudents();
+    if (currentSectionId) {
+      fetchStudents();
+    }
   }, [currentSectionId]);
 
   // 🎯 FIX: department_id nahi, departmentId (camelCase) — ane already section-specific API vaparyu che

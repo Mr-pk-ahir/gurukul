@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { HiPlus, HiX } from "react-icons/hi";
 import { toast } from "sonner";
 import { useTheme } from "../../../components/theme/ThemeContext";
+import ImageCropEditor from "../../../components/common/ImageCropEditor";
 import { API_BASE_URL } from "../../../services/OverviewService";
 
 const SECTION = "heroSlider"; // 🎯 Aa component sirf "Overview" module (heroSlider) mate j che
@@ -55,6 +56,8 @@ export default function OverviewManagement() {
     const [images, setImages] = useState<OverviewImageItem[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [draggingKey, setDraggingKey] = useState<string | null>(null);
+    const [cropTarget, setCropTarget] = useState<{ localKey: string; file: File } | null>(null);
+    const [isCropEditorOpen, setIsCropEditorOpen] = useState(false);
 
     // 🎯 Dynamic refs — box ganya vagar j (fixed 3 nahi have) — key thi map karyu
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -100,6 +103,23 @@ export default function OverviewManagement() {
         setImages((prev) => [...prev, newItem]);
     };
 
+    const handleCroppedImage = async (croppedFile: File) => {
+        if (!cropTarget) return;
+
+        try {
+            const optimizedFile = await optimizeImage(croppedFile);
+            const previewUrl = URL.createObjectURL(optimizedFile);
+            setImages((prev) => prev.map((img) => (img.localKey === cropTarget.localKey ? { ...img, file: optimizedFile, url: previewUrl, uploading: false } : img)));
+            setCropTarget(null);
+            setIsCropEditorOpen(false);
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Unable to process image");
+            setImages((prev) => prev.map((img) => (img.localKey === cropTarget.localKey ? { ...img, uploading: false } : img)));
+            setCropTarget(null);
+            setIsCropEditorOpen(false);
+        }
+    };
+
     // 📤 File ne local preview tarike rakho; backend par Save click pachi upload thashe
     const handleFileUpload = async (localKey: string, file: File) => {
         if (!file.type.startsWith("image/")) {
@@ -108,14 +128,8 @@ export default function OverviewManagement() {
         }
 
         setImages((prev) => prev.map((img) => (img.localKey === localKey ? { ...img, uploading: true } : img)));
-        try {
-            const optimizedFile = await optimizeImage(file);
-            const previewUrl = URL.createObjectURL(optimizedFile);
-            setImages((prev) => prev.map((img) => (img.localKey === localKey ? { ...img, file: optimizedFile, url: previewUrl, uploading: false } : img)));
-        } catch (error) {
-            toast.error("Unable to process image");
-            setImages((prev) => prev.map((img) => (img.localKey === localKey ? { ...img, uploading: false } : img)));
-        }
+        setCropTarget({ localKey, file });
+        setIsCropEditorOpen(true);
     };
 
     const handleSave = async (item: OverviewImageItem) => {
@@ -176,14 +190,8 @@ export default function OverviewManagement() {
         }
 
         setImages((prev) => prev.map((img) => (img.localKey === item.localKey ? { ...img, uploading: true } : img)));
-        try {
-            const optimizedFile = await optimizeImage(file);
-            const previewUrl = URL.createObjectURL(optimizedFile);
-            setImages((prev) => prev.map((img) => (img.localKey === item.localKey ? { ...img, file: optimizedFile, url: previewUrl, uploading: false } : img)));
-        } catch (error) {
-            toast.error("Unable to process image");
-            setImages((prev) => prev.map((img) => (img.localKey === item.localKey ? { ...img, uploading: false } : img)));
-        }
+        setCropTarget({ localKey: item.localKey, file });
+        setIsCropEditorOpen(true);
     };
 
     //  Element remove karo — top na close icon thi (uploaded hoy to backend delete, empty hoy to sirf local remove)
@@ -492,6 +500,20 @@ export default function OverviewManagement() {
                     No images yet — click "Add Image" to upload your first overview image.
                 </p>
             )}
+
+            <ImageCropEditor
+                file={cropTarget?.file ?? null}
+                isOpen={isCropEditorOpen}
+                theme={theme}
+                shape="square"
+                title="Edit Overview Image"
+                subtitle="Frame the image exactly as it should appear in the overview gallery"
+                onClose={() => {
+                    setCropTarget(null);
+                    setIsCropEditorOpen(false);
+                }}
+                onCropped={handleCroppedImage}
+            />
         </div>
     );
 }

@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-export default async function departmentDelete(departmentId: number) {
+export default async function departmentDelete(departmentId: number): Promise<boolean> {
     try {
         const response = await fetch(`${API_URL}/departments/delete/${departmentId}`, {
             method: "DELETE",
@@ -11,14 +10,19 @@ export default async function departmentDelete(departmentId: number) {
                 "Content-Type": "application/json",
             },
         });
+
         const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message);
+
+        if (!response.ok || !result.success) {
+            toast.error(result.message || "Failed to delete department");
+            return false;
         }
-        if (response.ok) {
-            toast.success("Department deleted successfully");
-        }
-    } catch (error: any) {
-        console.error("Error deleting department:", error);
+
+        toast.success(result.message || "Department deleted successfully.");
+        return true;
+    } catch (error) {
+        console.error("Department delete error:", error);
+        toast.error("Something went wrong while deleting.");
+        return false;
     }
 }

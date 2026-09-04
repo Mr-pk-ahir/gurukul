@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { HiMenu, HiX } from "react-icons/hi";
 import ThemeToggle from "../../components/theme/ThemeToggle";
 import { useTheme } from "../../components/theme/ThemeContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../../services/OverviewService";
 import { quoteService, type QuoteData } from "../../services/Quoteservice";
 
@@ -360,6 +360,8 @@ export default function Overview() {
         ...heroHighlights[currentImgIndex % heroHighlights.length],
     };
 
+    const navigate = useNavigate()
+
     return (
         <div className={`w-full h-screen overflow-y-auto overflow-x-hidden font-sans transition-colors duration-500 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none ${theme ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-800"}`}>
 
@@ -403,15 +405,17 @@ export default function Overview() {
                             {mobileMenuOpen ? <HiX size={20} /> : <HiMenu size={20} />}
                         </button>
 
-                        <Link
-                            to="/login"
-                            className={`px-7 py-2.5 rounded-xl font-bold text-sm shadow-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 border ${theme
+                        {/* 🎯 iOS Morphing Button -> layoutId ઉમેરવામાં આવ્યો છે */}
+                        <motion.div
+                            layoutId="login-card-transform"
+                            onClick={() => navigate("/login")}
+                            className={`px-7 py-2.5 rounded-xl font-bold text-sm shadow-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 border cursor-pointer flex items-center justify-center ${theme
                                 ? "bg-blue-600/90 border-blue-400/50 text-white hover:bg-blue-500 hover:shadow-blue-500/40"
                                 : "bg-red-600/90 border-red-500/50 text-white hover:bg-red-500 hover:shadow-red-500/40"
                                 }`}
                         >
                             Login
-                        </Link>
+                        </motion.div>
                     </div>
                 </div>
 
@@ -466,9 +470,9 @@ export default function Overview() {
                 </div>
 
                 <div className="absolute inset-x-0 bottom-0 z-10 h-48 sm:h-56 lg:h-64 pointer-events-none flex flex-col justify-end">
-                    
+
                     <div className={`absolute inset-0 bg-linear-to-t ${theme ? "from-slate-950 via-slate-950/80 to-transparent" : "from-slate-50 via-slate-50/80 to-transparent"}`} />
-                    
+
                     <div className="relative mx-auto flex w-full max-w-full items-end px-4 pb-6 sm:px-8 lg:px-12 z-20">
                         <div className="relative w-full overflow-hidden">
                             <AnimatePresence mode="wait">

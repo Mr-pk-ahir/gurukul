@@ -188,18 +188,16 @@ export default function ActivitiesPage() {
 
     return (
         <div
-            className={`h-screen w-full overflow-y-auto scroll-smooth font-sans transition-colors duration-500 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none ${
-                theme ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-800"
-            }`}
+            className={`h-screen w-full overflow-y-auto scroll-smooth font-sans transition-colors duration-500 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none ${theme ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-800"
+                }`}
         >
             <div className="mx-auto w-full max-w-360 px-5 pt-6 sm:px-10 sm:pt-8 lg:px-16">
                 <Link
                     to="/"
-                    className={`group inline-flex items-center gap-2.5 rounded-full border px-6 py-2.5 text-sm font-bold shadow-sm backdrop-blur-md transition-all duration-300 active:scale-95 ${
-                        theme
+                    className={`group inline-flex items-center gap-2.5 rounded-full border px-6 py-2.5 text-sm font-bold shadow-sm backdrop-blur-md transition-all duration-300 active:scale-95 ${theme
                             ? "border-slate-700 bg-[#151D2F]/80 text-slate-300 hover:-translate-y-0.5 hover:border-blue-500/50 hover:text-blue-400 hover:shadow-lg hover:shadow-blue-500/20"
                             : "border-slate-200 bg-white/80 text-slate-700 hover:border-red-300 hover:text-red-600 hover:shadow-lg hover:shadow-red-500/15"
-                    }`}
+                        }`}
                 >
                     <ArrowLeft className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" />
                     Back
@@ -215,11 +213,10 @@ export default function ActivitiesPage() {
                         <h1 className="relative z-10 mb-5 pb-2 text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
                             <span className={`bg-clip-text text-transparent ${headingClass}`}>All Past </span>
                             <span
-                                className={`bg-clip-text text-transparent ${
-                                    theme
+                                className={`bg-clip-text text-transparent ${theme
                                         ? "bg-linear-to-r from-blue-400 to-indigo-400 drop-shadow-[0_0_20px_rgba(96,165,250,0.3)]"
                                         : "bg-linear-to-r from-red-600 to-rose-500"
-                                }`}
+                                    }`}
                             >
                                 Activities
                             </span>
@@ -235,9 +232,8 @@ export default function ActivitiesPage() {
                         <div className={`h-10 w-10 animate-spin rounded-full border-4 border-t-transparent ${theme ? "border-blue-500" : "border-red-600"}`} />
                     </div>
                 ) : loadError ? (
-                    <div className={`mx-auto max-w-lg rounded-2xl border px-6 py-10 text-center shadow-sm ${
-                        theme ? "border-slate-800 bg-slate-900/60 text-slate-300" : "border-slate-200 bg-white text-slate-600"
-                    }`}>
+                    <div className={`mx-auto max-w-lg rounded-2xl border px-6 py-10 text-center shadow-sm ${theme ? "border-slate-800 bg-slate-900/60 text-slate-300" : "border-slate-200 bg-white text-slate-600"
+                        }`}>
                         <p className="text-sm font-semibold">Unable to load activities</p>
                         <p className={`mt-2 text-sm ${theme ? "text-slate-500" : "text-slate-400"}`}>{loadError}</p>
                     </div>
@@ -254,11 +250,10 @@ export default function ActivitiesPage() {
                                     whileHover={{ y: -8, scale: 1.02 }}
                                     transition={{ duration: 0.3, ease: "easeOut" }}
                                     onClick={() => openActivity(activity)}
-                                    className={`group flex h-full w-full flex-col overflow-hidden rounded-2xl border text-left shadow-sm transition-all duration-300 hover:-translate-y-1 ${
-                                        theme
+                                    className={`group flex h-full w-full flex-col overflow-hidden rounded-2xl border text-left shadow-sm transition-all duration-300 hover:-translate-y-1 ${theme
                                             ? "border-slate-800 bg-slate-900/60 hover:border-blue-500/30 hover:shadow-xl hover:shadow-black/50"
                                             : "border-slate-200 bg-white hover:border-red-200 hover:shadow-2xl"
-                                    }`}
+                                        }`}
                                 >
                                     <div className="relative aspect-4/3 w-full shrink-0 overflow-hidden">
                                         <img
@@ -294,7 +289,7 @@ export default function ActivitiesPage() {
 
             <AnimatePresence>
                 {selectedActivity && (
-                                    <motion.div
+                    <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -307,11 +302,10 @@ export default function ActivitiesPage() {
                             exit={{ opacity: 0, scale: 0.94, y: 20 }}
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
                             onClick={(event) => event.stopPropagation()}
-                            className={`relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border shadow-2xl md:flex-row ${
-                                theme ? "border-slate-800 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900"
-                            }`}
+                            className={`relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border shadow-2xl md:flex-row ${theme ? "border-slate-800 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900"
+                                }`}
                         >
-                                    <div className={`relative flex min-h-72 flex-1 items-center justify-center p-5 md:min-h-155 ${theme ? "bg-[#090F1C]" : "bg-slate-100"}`}>
+                            <div className={`relative flex min-h-72 flex-1 items-center justify-center p-5 md:min-h-155 ${theme ? "bg-[#090F1C]" : "bg-slate-100"}`}>
                                 <img
                                     src={selectedActivity.images[galleryIndex].url}
                                     alt=""
@@ -372,13 +366,12 @@ export default function ActivitiesPage() {
                                                 key={image.id}
                                                 type="button"
                                                 onClick={() => setGalleryIndex(index)}
-                                                className={`aspect-square overflow-hidden rounded-lg border-2 transition ${
-                                                    galleryIndex === index
+                                                className={`aspect-square overflow-hidden rounded-lg border-2 transition ${galleryIndex === index
                                                         ? theme
                                                             ? "border-blue-400"
                                                             : "border-red-500"
                                                         : "border-transparent opacity-60 hover:opacity-100"
-                                                }`}
+                                                    }`}
                                                 aria-label={`View image ${index + 1}`}
                                             >
                                                 <img src={image.url} alt="" className="h-full w-full object-cover" />

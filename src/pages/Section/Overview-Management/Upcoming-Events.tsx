@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useTheme } from '../../../components/theme/ThemeContext';
 import PremiumDateField from '../../../components/Students/PremiumDateField';
 import DatePicker from '../../../components/common/Calendar';
+import ImageCropEditor from '../../../components/common/ImageCropEditor';
 import { quoteService, type QuoteData } from '../../../services/Quoteservice';
 import UserActionMenu from '../../../components/user-actions/UserActionMenu';
 import SearchableDropdown from '../../../components/common/SearchableDropdown';
@@ -97,6 +98,8 @@ const UpcomingEvents: React.FC = () => {
 
     // Drag & Drop State
     const [isDragging, setIsDragging] = useState(false);
+    const [cropFile, setCropFile] = useState<File | null>(null);
+    const [isCropEditorOpen, setIsCropEditorOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // 🎯 FIX: Backend thi events fetch karo (localStorage nahi have)
@@ -118,10 +121,17 @@ const UpcomingEvents: React.FC = () => {
         fetchEvents();
     }, []);
 
+    const handleCroppedFile = (file: File) => {
+        setDraftImageFile(file);
+        setDraftImagePreview(URL.createObjectURL(file));
+        setCropFile(null);
+        setIsCropEditorOpen(false);
+    };
+
     const processFile = (file: File) => {
         if (file && file.type.startsWith('image/')) {
-            setDraftImageFile(file);
-            setDraftImagePreview(URL.createObjectURL(file));
+            setCropFile(file);
+            setIsCropEditorOpen(true);
         }
     };
 
@@ -448,7 +458,7 @@ const UpcomingEvents: React.FC = () => {
                                     </div>
 
                                     <div className="relative z-55">
-                                            <SearchableDropdown
+                                        <SearchableDropdown
                                             label="Is Approved"
                                             placeholder="Select approval status"
                                             searchPlaceholder="Search approval status..."
@@ -506,9 +516,9 @@ const UpcomingEvents: React.FC = () => {
                                             placeholder="Select status"
                                             searchPlaceholder="Search status..."
                                             options={[{ value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }]}
-                                                selectedValue={isEventActiveDuringWindow({ eventStartDate: draftEventStartDate, eventEndDate: draftEventEndDate }) ? "Active" : draftStatus}
+                                            selectedValue={isEventActiveDuringWindow({ eventStartDate: draftEventStartDate, eventEndDate: draftEventEndDate }) ? "Active" : draftStatus}
                                             onSelect={(value) => setDraftStatus(String(value) as 'Active' | 'Inactive')}
-                                                disabled={isEventActiveDuringWindow({ eventStartDate: draftEventStartDate, eventEndDate: draftEventEndDate })}
+                                            disabled={isEventActiveDuringWindow({ eventStartDate: draftEventStartDate, eventEndDate: draftEventEndDate })}
                                         />
                                     </div>
 
@@ -622,6 +632,20 @@ const UpcomingEvents: React.FC = () => {
                 )}
 
             </div>
+
+            <ImageCropEditor
+                file={cropFile}
+                isOpen={isCropEditorOpen}
+                theme={theme}
+                shape="square"
+                title="Edit Event Image"
+                subtitle="Position and zoom the cover image to fit perfectly"
+                onClose={() => {
+                    setCropFile(null);
+                    setIsCropEditorOpen(false);
+                }}
+                onCropped={handleCroppedFile}
+            />
 
             {activeEvent && modalMode && createPortal(
                 <div className="fixed inset-0 z-10000 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => event.target === event.currentTarget && closeModal()}>

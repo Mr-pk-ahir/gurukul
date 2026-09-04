@@ -2,6 +2,12 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+// 🎯 Growth trend — last 30 days metric
+export interface GrowthTrendPoint {
+  date: string; // YYYY-MM-DD format
+  newEnrollments: number;
+  totalActive: number;
+}
 
 export interface UserProgress {
   suid: number;
@@ -20,6 +26,8 @@ export interface SectionProgress {
   completedTasks: number;
   percentage: number;
   users: UserProgress[];
+  studentCount?: number; // 🎯 NEW: Actual student count (no admins/heads)
+  growthTrend?: GrowthTrendPoint[]; // 🎯 NEW: Last 30 days enrollment trend
 }
 
 export interface DepartmentProgress {
@@ -29,6 +37,7 @@ export interface DepartmentProgress {
   completedTasks: number;
   percentage: number;
   sections: SectionProgress[];
+  growthTrend?: GrowthTrendPoint[]; // 🎯 NEW: Last 30 days enrollment trend
 }
 
 export interface DepartmentSummary {

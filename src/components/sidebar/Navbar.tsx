@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../theme/ThemeContext";
 import SidebarDropdown from "./SidebarDropdown";
@@ -13,7 +13,8 @@ import {
     HiOutlineBookOpen,
     HiOutlineClipboardCheck,
     HiOutlineUserGroup,
-    HiStar
+    HiStar,
+    HiOutlineArrowLeft
 } from "react-icons/hi";
 import { FiUsers, FiRefreshCw } from "react-icons/fi";
 import { CiCircleList } from "react-icons/ci";
@@ -28,6 +29,7 @@ import { sectionService } from "../../services/sectionService";
 import { groupService, isGroupLeader, type GroupData } from "../../services/groupService";
 import { RxActivityLog } from "react-icons/rx";
 import { MdOutlineEvent } from "react-icons/md";
+import { useSidebarView } from "../../context/SidebarViewContext";
 
 interface NavbarProps {
     setSidebarOpen: (isOpen: boolean) => void;
@@ -57,6 +59,7 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
     const [sectionsLoading, setSectionsLoading] = useState<boolean>(false);
 
     const [refreshing, setRefreshing] = useState<boolean>(false);
+    const { activeDepartmentId, setActiveDepartment } = useSidebarView();
 
     // 🎯 NAVU: user je-je groups no member chhe e list — data-driven (role-based nathi)
     const [myGroups, setMyGroups] = useState<GroupData[]>([]);
@@ -176,6 +179,8 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
     const filteredDepartments = (user?.roleCode === "SUPER_ADMIN"
         ? departments
         : (departments || []).filter(d => d.departmentId === (user as any)?.departmentId)) || [];
+    const isSuperAdmin = user?.roleCode === "SUPER_ADMIN";
+    const singleDepartment = filteredDepartments.length === 1 ? filteredDepartments[0] : null;
 
     const userItems = [];
     if (hasAccess("Users", "create")) {
@@ -242,6 +247,78 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
     const showPermissionsBtn = hasAccess("Permissions", "view");
     const showProgressBtn = hasAccess("Progress", "view");
     const showMyLessonsBtn = hasAccess("MyLessons", "view");
+
+    if (isSuperAdmin && activeDepartmentId !== null) {
+        const activeDept = filteredDepartments.find((dept) => dept.departmentId === activeDepartmentId);
+        const activeSections = sectionsByDept[activeDepartmentId] || [];
+
+        return (
+            <div className="w-full flex flex-col space-y-1.5">
+                <button
+                    type="button"
+                    onClick={() => setActiveDepartment(null, null)}
+                    className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-[15px] transition-all duration-200 group cursor-pointer ${
+                        isMiniSidebar ? "justify-center px-2" : ""
+                    } ${theme ? "text-white hover:bg-gray-800 hover:text-blue-200" : "text-gray-500 hover:bg-red-50 hover:text-red-600"}`}
+                >
+                    <span className={`transition-colors ${theme ? "text-gray-300 group-hover:text-blue-200" : "text-gray-400 group-hover:text-red-600"}`}>
+                        <HiOutlineArrowLeft className="text-xl" />
+                    </span>
+                    {!isMiniSidebar && "Back"}
+                </button>
+
+                {sectionsLoading && !isMiniSidebar && (
+                    <p className={`text-xs px-4 ${theme ? "text-gray-600" : "text-neutral-400"}`}>Loading sections...</p>
+                )}
+
+                {!sectionsLoading && !activeDept && !isMiniSidebar && (
+                    <div className={`px-4 py-2.5 rounded-xl text-xs italic ${theme ? "text-gray-600 bg-gray-900/50" : "text-neutral-400 bg-neutral-50"}`}>
+                        No department selected
+                    </div>
+                )}
+
+                {!sectionsLoading && activeDept && activeSections.length === 0 && !isMiniSidebar && (
+                    <div className={`px-4 py-2.5 rounded-xl text-xs italic ${theme ? "text-gray-600 bg-gray-900/50" : "text-neutral-400 bg-neutral-50"}`}>
+                        {`${activeDept.departmentName}: No sections created yet`}
+                    </div>
+                )}
+
+                {!sectionsLoading && activeDept && activeSections.map((section) => {
+                    const sectionItems = [] as Array<{ name: string; path: string; icon: ReactNode }>;
+
+                    if (hasAccess("Student", "create")) {
+                        sectionItems.push({
+                            name: "Create Student",
+                            path: `/dashboard/departments/${activeDept.departmentId}/sections/${section.section_id}/create-student`,
+                            icon: <IoCreateOutline />
+                        });
+                    }
+                    if (hasAccess("Student", "view")) {
+                        sectionItems.push({
+                            name: "Student List",
+                            path: `/dashboard/departments/${activeDept.departmentId}/sections/${section.section_id}/student-list`,
+                            icon: <CiCircleList />
+                        });
+                    }
+
+                    if (sectionItems.length === 0) {
+                        return null;
+                    }
+
+                    return (
+                        <SidebarDropdown
+                            key={section.section_id}
+                            title={section.name}
+                            icon={<HiOutlineOfficeBuilding className="text-xl" />}
+                            items={sectionItems}
+                            setSidebarOpen={setSidebarOpen}
+                            isMiniSidebar={isMiniSidebar}
+                        />
+                    );
+                })}
+            </div>
+        );
+    }
 
     return (
         <div className="w-full flex flex-col space-y-1.5">
@@ -402,50 +479,73 @@ export default function Navbar({ setSidebarOpen, isMiniSidebar }: NavbarProps) {
                 </button>
             </div>
 
-            {filteredDepartments.map((dept) => {
-                const sections = sectionsByDept[dept.departmentId] || [];
+            {isSuperAdmin ? (
+                filteredDepartments.map((dept) => {
+                    const sections = sectionsByDept[dept.departmentId] || [];
+                    const hasSections = sections.length > 0;
 
-                const sectionStudentItems = sections.flatMap((sec) => {
-                    const items = [];
+                    if (!hasSections) {
+                        return (
+                            <div
+                                key={dept.departmentId}
+                                className={`px-4 py-2.5 rounded-xl text-xs italic ${theme ? "text-gray-600 bg-gray-900/50" : "text-neutral-400 bg-neutral-50"}`}
+                            >
+                                {!isMiniSidebar && `${dept.departmentName}: No sections created yet`}
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <button
+                            key={dept.departmentId}
+                            type="button"
+                            onClick={() => setActiveDepartment(dept.departmentId, dept.departmentName)}
+                            className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-[15px] transition-all duration-200 group cursor-pointer ${
+                                isMiniSidebar ? "justify-center px-2" : ""
+                            } ${theme ? "text-white hover:bg-gray-800 hover:text-blue-200" : "text-gray-500 hover:bg-red-50 hover:text-red-600"}`}
+                        >
+                            <span className={`transition-colors ${theme ? "text-gray-300 group-hover:text-blue-200" : "text-gray-400 group-hover:text-red-600"}`}>
+                                <HiOutlineAcademicCap className="text-xl" />
+                            </span>
+                            {!isMiniSidebar && <span className="truncate">{dept.departmentName}</span>}
+                        </button>
+                    );
+                })
+            ) : (
+                (singleDepartment ? (sectionsByDept[singleDepartment.departmentId] || []).map((section) => {
+                    const sectionItems = [] as Array<{ name: string; path: string; icon: ReactNode }>;
+
                     if (hasAccess("Student", "create")) {
-                        items.push({
-                            name: `${sec.name} — Create Student`,
-                            path: `/dashboard/departments/${dept.departmentId}/sections/${sec.section_id}/create-student`,
+                        sectionItems.push({
+                            name: "Create Student",
+                            path: `/dashboard/departments/${singleDepartment.departmentId}/sections/${section.section_id}/create-student`,
                             icon: <IoCreateOutline />
                         });
                     }
                     if (hasAccess("Student", "view")) {
-                        items.push({
-                            name: `${sec.name} — Student List`,
-                            path: `/dashboard/departments/${dept.departmentId}/sections/${sec.section_id}/student-list`,
+                        sectionItems.push({
+                            name: "Student List",
+                            path: `/dashboard/departments/${singleDepartment.departmentId}/sections/${section.section_id}/student-list`,
                             icon: <CiCircleList />
                         });
                     }
-                    return items;
-                });
 
-                if (sectionStudentItems.length === 0) {
+                    if (sectionItems.length === 0) {
+                        return null;
+                    }
+
                     return (
-                        <div
-                            key={dept.departmentId}
-                            className={`px-4 py-2.5 rounded-xl text-xs italic ${theme ? "text-gray-600 bg-gray-900/50" : "text-neutral-400 bg-neutral-50"}`}
-                        >
-                            {!isMiniSidebar && `${dept.departmentName}: No sections created yet`}
-                        </div>
+                        <SidebarDropdown
+                            key={section.section_id}
+                            title={section.name}
+                            icon={<HiOutlineOfficeBuilding className="text-xl" />}
+                            items={sectionItems}
+                            setSidebarOpen={setSidebarOpen}
+                            isMiniSidebar={isMiniSidebar}
+                        />
                     );
-                }
-
-                return (
-                    <SidebarDropdown
-                        key={dept.departmentId}
-                        title={dept.departmentName}
-                        icon={<HiOutlineAcademicCap className="text-xl" />}
-                        items={sectionStudentItems}
-                        setSidebarOpen={setSidebarOpen}
-                        isMiniSidebar={isMiniSidebar}
-                    />
-                );
-            })}
+                }) : null)
+            )}
 
             {sectionsLoading && !isMiniSidebar && (
                 <p className={`text-xs px-4 ${theme ? "text-gray-600" : "text-neutral-400"}`}>Loading sections...</p>

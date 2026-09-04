@@ -25,8 +25,10 @@ export interface AuthUser {
     email?: string;
     roleName: string;
     roleCode: string;
-    // 🎯 અહીં 'any' ઉમેરો જેથી જો JSON.parse() વખતે ડેટા થોડો અલગ હોય તો એરર ના આવે
+    // 🎯 અહીં 'any' ઉમેરો zodat જો JSON.parse() laikā ડેટા થોડો અલગ હોય તો એરર ના આવે
     permissions: ModulePermissions | any; 
     departmentId?: number | null;
     sectionId?: number | null;
+    departmentName?: string | null;
+    department_name?: string | null;
 }

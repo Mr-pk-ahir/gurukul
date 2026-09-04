@@ -4,10 +4,10 @@ import Table from "../../../components/common/Table";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import { HiOutlineUsers, HiSearch, HiFilter, HiChevronDown } from "react-icons/hi";
 import userDelete from "../../../action/User/Delete";
-import UserActionMenu from "../../../components/user-actions/UserActionMenu";
-import UserDetailsModal from "../../../components/user-actions/UserDetailsModal";
-import EditUserModal from "../../../components/user-actions/EditUserModal";
+import UserDetailsModal from "./core/UserDetailsModal";
+import EditUserModal from "./core/EditUserModal";
 import { toast } from "sonner";
+import DataCruding from "../../../components/common/DataCruding";
 
 // 🟢 ૧. બેકએન્ડ સ્ટ્રક્ચર મુજબ પરમિશન ઇન્ટરફેસ
 interface PermissionActions {
@@ -26,10 +26,10 @@ interface UserData {
     avatar: string;
     name: string;
     performance: string;
-    requestDate?: string;  
-    joiningDate?: string;  
+    requestDate?: string;
+    joiningDate?: string;
     status: "APPROVED" | "PENDING" | "REJECTED";
-    role: string; 
+    role: string;
     permissions: ModulePermissions;
 }
 
@@ -59,7 +59,7 @@ export default function UserList() {
 
     const fetchUsers = async () => {
         try {
-            setLoading(true); 
+            setLoading(true);
             setError("");
 
             const response = await fetch(`${API_URL}/users`, {
@@ -73,7 +73,7 @@ export default function UserList() {
             const result = await response.json();
 
             if (result.success) {
-                setUsers(result.data); 
+                setUsers(result.data);
             } else {
                 setError(result.message || "ડેટા લાવવામાં કંઈક ભૂલ થઈ!");
             }
@@ -89,7 +89,7 @@ export default function UserList() {
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchUsers();
-    }, []); 
+    }, []);
 
     const handleViewUser = (user: UserData) => {
         setSelectedUser(user);
@@ -159,7 +159,7 @@ export default function UserList() {
                 return user.status.toLowerCase().startsWith(query);
             case "performance":
                 return userPerf.startsWith(query);
-            default: 
+            default:
                 return (
                     user.name.toLowerCase().includes(query) ||
                     user.suid.toString().includes(query) ||
@@ -198,7 +198,7 @@ export default function UserList() {
             className: "w-16 text-center",
             accessor: (user: UserData) => (
                 <img
-                    src={user.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"} 
+                    src={user.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"}
                     alt={user.name}
                     className={`w-10 h-10 rounded-full object-cover mx-auto border-2 ${theme ? "border-gray-700" : "border-white"} shadow-sm ring-1 ${theme ? "ring-gray-700" : "ring-neutral-200"}`}
                 />
@@ -254,10 +254,13 @@ export default function UserList() {
             header: "Actions",
             className: "w-16 text-center",
             accessor: (user: UserData) => (
-                <UserActionMenu
+                <DataCruding
                     onView={() => handleViewUser(user)}
                     onEdit={() => handleEditUser(user)}
                     onDelete={() => void handleDeleteUser(user)}
+                    viewLabel="View"
+                    editLabel="Edit"
+                    deleteLabel="Delete"
                 />
             ),
         },

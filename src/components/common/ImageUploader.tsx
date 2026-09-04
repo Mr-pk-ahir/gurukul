@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import Cropper, { type Area } from "react-easy-crop";
-import { Camera, Check, ImagePlus, Loader2, RotateCw, RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Camera, Check, ImagePlus, Loader2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { toast } from "sonner";
 import { uploadService } from "../../services/uploadService";
 
@@ -15,7 +15,7 @@ interface ImageUploaderProps {
     label?: string;
 }
 
-const createCroppedFile = async (imageSrc: string, cropArea: Area, rotation: number) => {
+const createCroppedFile = async (imageSrc: string, cropArea: Area) => {
     const image = await new Promise<HTMLImageElement>((resolve, reject) => {
         const element = new Image();
         element.onload = () => resolve(element);
@@ -23,9 +23,6 @@ const createCroppedFile = async (imageSrc: string, cropArea: Area, rotation: num
         element.src = imageSrc;
     });
 
-    const radians = (rotation * Math.PI) / 180;
-    const rotatedWidth = Math.abs(Math.cos(radians) * image.naturalWidth) + Math.abs(Math.sin(radians) * image.naturalHeight);
-    const rotatedHeight = Math.abs(Math.sin(radians) * image.naturalWidth) + Math.abs(Math.cos(radians) * image.naturalHeight);
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
 
@@ -33,10 +30,18 @@ const createCroppedFile = async (imageSrc: string, cropArea: Area, rotation: num
 
     canvas.width = cropArea.width;
     canvas.height = cropArea.height;
-    context.translate(-cropArea.x, -cropArea.y);
-    context.translate(rotatedWidth / 2, rotatedHeight / 2);
-    context.rotate(radians);
-    context.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
+
+    context.drawImage(
+        image,
+        cropArea.x,
+        cropArea.y,
+        cropArea.width,
+        cropArea.height,
+        0,
+        0,
+        cropArea.width,
+        cropArea.height
+    );
 
     return new Promise<File>((resolve, reject) => {
         canvas.toBlob((blob) => {
@@ -63,7 +68,6 @@ export default function ImageUploader({
     const [editingImage, setEditingImage] = useState<string | null>(null);
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
-    const [rotation, setRotation] = useState(0);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,7 +112,6 @@ export default function ImageUploader({
         }
         setCrop({ x: 0, y: 0 });
         setZoom(1);
-        setRotation(0);
         setCroppedAreaPixels(null);
         setEditingImage(URL.createObjectURL(file));
     };
@@ -144,7 +147,7 @@ export default function ImageUploader({
     const confirmCrop = async () => {
         if (!editingImage || !croppedAreaPixels) return;
         try {
-            const croppedFile = await createCroppedFile(editingImage, croppedAreaPixels, rotation);
+            const croppedFile = await createCroppedFile(editingImage, croppedAreaPixels);
             closeEditor();
             await doUpload(croppedFile);
         } catch (error: unknown) {
@@ -153,11 +156,7 @@ export default function ImageUploader({
     };
 
     const roundedClass = shape === "circle" ? "rounded-full" : "rounded-3xl";
-
     const zoomPercent = ((zoom - 1) / 2) * 100;
-
-    const rotationPercent = ((rotation + 180) / 360) * 100;
-
     const iconBtnClass = `p-2 rounded-full transition-all active:scale-95 ${theme ? "hover:bg-slate-800 text-slate-300" : "hover:bg-slate-100 text-slate-600"
         }`;
 
@@ -247,7 +246,7 @@ export default function ImageUploader({
                         <div className={`flex items-center justify-between border-b px-6 py-4 ${theme ? "border-slate-800/50" : "border-slate-200/50"}`}>
                             <div>
                                 <h2 className="text-base font-semibold tracking-wide">Edit Profile Photo</h2>
-                                <p className={`text-xs mt-0.5 ${theme ? "text-slate-400" : "text-slate-500"}`}>Position, zoom and rotate your image to perfection</p>
+                                <p className={`text-xs mt-0.5 ${theme ? "text-slate-400" : "text-slate-500"}`}>Position and zoom your image to perfection</p>
                             </div>
                             <button type="button" onClick={closeEditor} className={`rounded-full p-2.5 transition-colors ${theme ? "hover:bg-slate-800/80" : "hover:bg-slate-100"}`} aria-label="Close image editor">
                                 <X size={18} strokeWidth={2} />
@@ -259,19 +258,16 @@ export default function ImageUploader({
                                 image={editingImage}
                                 crop={crop}
                                 zoom={zoom}
-                                rotation={rotation}
                                 aspect={1}
                                 cropShape={shape === "circle" ? "round" : "rect"}
                                 showGrid={true}
                                 onCropChange={setCrop}
                                 onZoomChange={setZoom}
-                                onRotationChange={setRotation}
                                 onCropComplete={(_, pixels) => setCroppedAreaPixels(pixels)}
                             />
                         </div>
 
                         <div className="space-y-5 px-6 py-5">
-
                             {/* 1. Zoom Slider with Line Progress */}
                             <div className="flex items-center gap-4">
                                 <button type="button" onClick={() => setZoom(Math.max(1, zoom - 0.1))} className={iconBtnClass} aria-label="Zoom out">
@@ -293,75 +289,6 @@ export default function ImageUploader({
                                 <button type="button" onClick={() => setZoom(Math.min(3, zoom + 0.1))} className={iconBtnClass} aria-label="Zoom in">
                                     <ZoomIn size={18} />
                                 </button>
-                            </div>
-
-                            {/* 2. Photo-Editor Style Ruler Angle Dial (-180° to +180°) */}
-                            <div className="flex flex-col items-center w-full">
-                                {/* Angle Number Display */}
-                                <span className={`text-sm font-bold font-sans tracking-wider mb-1 ${theme ? "text-blue-400" : "text-red-500"}`}>
-                                    {rotation > 0 ? `+${rotation}°` : `${rotation}°`}
-                                </span>
-
-                                <div className="flex items-center justify-between w-full gap-3">
-                                    {/* Rotate 90° Left Button */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setRotation((prev) => (prev - 90 < -180 ? prev - 90 + 360 : prev - 90))}
-                                        className={iconBtnClass}
-                                        title="Rotate -90°"
-                                    >
-                                        <RotateCcw size={18} />
-                                    </button>
-
-                                    {/* Ruler Marks & Interactive Range Control */}
-                                    <div className="relative flex-1 h-9 flex items-center justify-center select-none">
-                                        {/* Background Ruler Tick Lines — flush edge-to-edge so the
-                                            first/last tick line up exactly with the indicator's
-                                            0% / 100% (i.e. -180° / +180°) travel range */}
-                                        <div className="absolute inset-x-0 flex items-center justify-between pointer-events-none opacity-40">
-                                            {Array.from({ length: 33 }).map((_, i) => (
-                                                <div
-                                                    key={i}
-                                                    className={`w-[1.5px] rounded-full transition-all ${i % 4 === 0
-                                                            ? `h-4 ${theme ? "bg-slate-200" : "bg-slate-800"}`
-                                                            : `h-2 ${theme ? "bg-slate-500" : "bg-slate-400"}`
-                                                        }`}
-                                                />
-                                            ))}
-                                        </div>
-
-                                        {/* Center Indicator Indicator Line */}
-                                        <div
-                                            className="absolute top-0 bottom-0 pointer-events-none flex flex-col items-center justify-between z-10 transition-all duration-75"
-                                            style={{ left: `${rotationPercent}%`, transform: 'translateX(-50%)' }}
-                                        >
-                                            <div className={`w-0.5 h-6 rounded-full ${theme ? "bg-blue-500 shadow-[0_0_10px_#3b82f6]" : "bg-red-500 shadow-[0_0_10px_#ef4444]"}`} />
-                                            <div className={`w-1.5 h-1.5 rounded-full ${theme ? "bg-blue-400" : "bg-red-500"}`} />
-                                        </div>
-
-                                        {/* Range Input overlaid transparently on top */}
-                                        <input
-                                            aria-label="Rotate Angle"
-                                            type="range"
-                                            min={-180}
-                                            max={180}
-                                            step={1}
-                                            value={rotation}
-                                            onChange={(e) => setRotation(Number(e.target.value))}
-                                            className="w-full h-full opacity-0 cursor-ew-resize relative z-20"
-                                        />
-                                    </div>
-
-                                    {/* Reset Angle Button (or Rotate 90° Right) */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setRotation(0)}
-                                        className={iconBtnClass}
-                                        title="Reset angle to 0°"
-                                    >
-                                        <RotateCw size={18} />
-                                    </button>
-                                </div>
                             </div>
 
                             <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-700/20">

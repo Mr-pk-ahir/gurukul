@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import DatePicker from "../../../components/common/Calendar";
 import { useTheme } from "../../../components/theme/ThemeContext";
 import { quoteService, type QuoteData } from "../../../services/Quoteservice";
+import TabSwitcher, { type TabItem } from "../../../components/common/TabSwitcher";
 
 const GROUP_PREFIX = "__GURUKUL_ACTIVITY_GROUP_V1__";
 const MAX_DESCRIPTION_LENGTH = 500;
@@ -26,6 +27,13 @@ interface ActivityImage {
     id: number;
     url: string;
 }
+
+type ActivityTab = "list" | "create";
+
+const ACTIVITY_TABS: TabItem<ActivityTab>[] = [
+    { key: "list", label: "Activities List", icon: List },
+    { key: "create", label: "Create Activity", icon: PlusCircle },
+];
 
 interface ActivityData {
     id: number;
@@ -331,7 +339,7 @@ const Activities: React.FC = () => {
 
                 // જ્યારે પણ કોઈ એક ઈમેજ અપલોડ થાય, ત્યારે કાઉન્ટર વધારો
                 setUploadProgress((prev) => prev ? { ...prev, current: prev.current + 1 } : null);
-                
+
                 return mapQuoteToActivity(result.data);
             });
 
@@ -470,56 +478,20 @@ const Activities: React.FC = () => {
                 transition={{ duration: 0.5, delay: 0.1 }}
                 className="relative z-20 flex w-full justify-center sm:justify-start"
             >
-                <div className={`flex items-center gap-2 rounded-xl border p-1 shadow-sm transition-all duration-300 ${theme ? "border-slate-800 bg-[#151D2F]/80 backdrop-blur-md" : "border-slate-200 bg-white/80 backdrop-blur-md"
-                    }`}>
-                    <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => setActiveTab("list")}
-                        className={`flex h-10 items-center gap-2 rounded-lg px-5 text-sm font-bold transition-all duration-300 ${activeTab === "list"
-                            ? theme
-                                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
-                                : "bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]"
-                            : theme
-                                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-                                : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                            } ${focusRingClass}`}
-                    >
-                        <List size={16} />
-                        Activities List
-                    </motion.button>
-
-                    <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => setActiveTab("create")}
-                        className={`flex h-10 items-center gap-2 rounded-lg px-5 text-sm font-bold transition-all duration-300 ${activeTab === "create"
-                            ? theme
-                                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
-                                : "bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]"
-                            : theme
-                                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-                                : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                            } ${focusRingClass}`}
-                    >
-                        <PlusCircle size={16} />
-                        Create Activity
-                    </motion.button>
-                </div>
+                <TabSwitcher tabs={ACTIVITY_TABS} activeTab={activeTab} onChange={setActiveTab} />
             </motion.div>
 
             {/* Main Content Area */}
             <main className="relative z-10 flex-1">
                 <AnimatePresence mode="wait">
                     {activeTab === "create" ? (
-                        // ================= CREATE VIEW ================= //
                         <motion.section
                             key="create-section"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
                             transition={{ duration: 0.4 }}
-                            className={`mx-auto max-w-4xl rounded-3xl border p-6 sm:p-8 shadow-xl transition-all ${panelClass}`}
+                            className={`mx-auto max-w-full rounded-3xl border p-6 sm:p-8 shadow-xl transition-all ${panelClass}`}
                         >
                             <div className="mb-6 text-center sm:text-left">
                                 <h2 className={`text-2xl font-black sm:text-3xl ${theme ? "text-white" : "text-slate-900"}`}>
@@ -536,7 +508,7 @@ const Activities: React.FC = () => {
                                         htmlFor="activity-title"
                                         className={`mb-2 block text-xs font-bold uppercase tracking-wider ${theme ? "text-slate-300" : "text-slate-700"}`}
                                     >
-                                         Title
+                                        Title
                                     </label>
                                     <input
                                         id="activity-title"

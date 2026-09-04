@@ -6,23 +6,26 @@ import { progressService, type DepartmentProgress, type SectionProgress, type Us
 import DepartmentProgressView from "../../components/Prograce-Cards/Departmentprogressview";
 import SectionProgressCard from "../../components/Prograce-Cards/SectionProgressCard";
 import UserProgressCard from "../../components/Prograce-Cards/Userprogresscard";
+import SearchableDropdown from "../../components/common/SearchableDropdown"; // ⚠️ path ને તમારા actual folder structure પ્રમાણે adjust કરી લેજો
 import type { AuthUser } from "../../Types/Role-create";
 
-// 🎯 IMPORTANT: Roles table na exact role_code pramane confirm karo
+// NOTE: match these to the actual role_code values stored in the DB (roles table)
 const SUPER_ADMIN = "SUPER_ADMIN";
 const DEPARTMENT_HEAD = "HEAD100";
-const SECTION_HEAD = "SECTION_HEAD";
+const SECTION_HEAD = "SECHEAD101"; // was "SECTION_HEAD" before — didn't match any real role_code, so this branch never ran
+
+// Extend AuthUser locally so we don't need `as any` for sectionId.
+// (Better: add `sectionId?: number` to the AuthUser type itself in Role-create.ts)
+type AuthUserWithSection = AuthUser & { sectionId?: number };
 
 export default function ProgressDashboard() {
     const { theme } = useTheme();
-    const [user, setUser] = useState<AuthUser | null>(null);
+    const [user, setUser] = useState<AuthUserWithSection | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // Super Admin dropdown state
     const [deptSummaries, setDeptSummaries] = useState<DepartmentSummary[]>([]);
     const [selectedDeptId, setSelectedDeptId] = useState<number | null>(null);
 
-    // Data states
     const [departmentData, setDepartmentData] = useState<DepartmentProgress | null>(null);
     const [sectionData, setSectionData] = useState<SectionProgress | null>(null);
     const [userData, setUserData] = useState<UserProgress | null>(null);
@@ -35,10 +38,11 @@ export default function ProgressDashboard() {
             } catch (e) {
                 console.error(e);
             }
+        } else {
+            setLoading(false);
         }
     }, []);
 
-    // 🎯 Role pramane decide karo shu load karvu
     useEffect(() => {
         if (!user) return;
 
@@ -59,13 +63,11 @@ export default function ProgressDashboard() {
                         if (result.success) setDepartmentData(result.data);
                     }
                 } else if (user.roleCode === SECTION_HEAD) {
-                    const sectionId = (user as any).sectionId;
-                    if (sectionId) {
-                        const result = await progressService.getSectionProgress(sectionId);
+                    if (user.sectionId) {
+                        const result = await progressService.getSectionProgress(user.sectionId);
                         if (result.success) setSectionData(result.data);
                     }
                 } else {
-                    // Student / User — potानు j progress
                     const result = await progressService.getUserProgress(user.suid);
                     if (result.success) setUserData(result.data);
                 }
@@ -79,7 +81,6 @@ export default function ProgressDashboard() {
         load();
     }, [user]);
 
-    // Super Admin e department select karyu pachi e department nu detail fetch karo
     useEffect(() => {
         if (user?.roleCode !== SUPER_ADMIN || !selectedDeptId) return;
 
@@ -100,66 +101,83 @@ export default function ProgressDashboard() {
     if (!user) return null;
 
     return (
-        <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-            <div className="flex items-center gap-3">
-                <span className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${theme ? "bg-blue-500/10 text-blue-300" : "bg-red-500/10 text-red-600"}`}>
-                    <HiOutlineChartBar size={20} />
-                </span>
-                <div>
-                    <h1 className={`text-xl font-bold ${theme ? "text-blue-200" : "text-red-600"}`}>Progress Overview</h1>
-                    <p className={`text-xs ${theme ? "text-gray-500" : "text-neutral-400"}`}>Track task completion across the system</p>
+        <div className={`min-h-screen transition-colors duration-300 ${theme ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800" : "bg-gradient-to-br from-gray-50 via-white to-gray-100"}`}>
+            <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+
+                {/* Premium Header */}
+                <div className={`rounded-3xl border backdrop-blur-xl transition-all duration-300 ${
+                    theme
+                        ? "bg-gradient-to-br from-slate-800/40 to-slate-900/40 border-slate-700/50 shadow-2xl shadow-blue-900/20"
+                        : "bg-gradient-to-br from-white/80 to-gray-50/80 border-gray-200/60 shadow-xl shadow-gray-200/40"
+                }`}>
+                    <div className="px-6 sm:px-8 py-6 sm:py-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+
+                        {/* Title Section */}
+                        <div className="flex items-center gap-4">
+                            <div className={`flex items-center justify-center w-14 h-14 rounded-2xl shrink-0 transition-all duration-300 ${
+                                theme
+                                    ? "bg-gradient-to-br from-blue-500/20 to-cyan-500/20 text-blue-300 shadow-lg shadow-blue-500/20"
+                                    : "bg-gradient-to-br from-red-500/10 to-orange-500/10 text-red-600 shadow-lg shadow-red-200/40"
+                            }`}>
+                                <HiOutlineChartBar size={24} className="font-bold" />
+                            </div>
+                            <div className="flex-1">
+                                <h1 className={`text-2xl sm:text-3xl font-black tracking-tight ${
+                                    theme ? "text-white" : "text-gray-900"
+                                }`}>Progress Overview</h1>
+                                <p className={`text-sm mt-1 font-medium ${
+                                    theme ? "text-gray-400" : "text-gray-500"
+                                }`}>Track performance and growth trends</p>
+                            </div>
+                        </div>
+
+                        {/* Department Selector */}
+                        {user.roleCode === SUPER_ADMIN && deptSummaries.length > 0 && (
+                            <div className="w-full sm:w-56">
+                                <SearchableDropdown
+                                    placeholder="Select Department"
+                                    searchPlaceholder="Search department..."
+                                    options={deptSummaries.map((d) => ({
+                                        value: d.department_id,
+                                        label: `${d.department_name} • ${d.percentage}%`,
+                                    }))}
+                                    selectedValue={selectedDeptId ?? ""}
+                                    onSelect={(value) => setSelectedDeptId(Number(value))}
+                                />
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* 🎯 Sirf Super Admin ne j department select karvani dropdown dekhay */}
-                {user.roleCode === SUPER_ADMIN && deptSummaries.length > 0 && (
-                    <select
-                        value={selectedDeptId ?? ""}
-                        onChange={(e) => setSelectedDeptId(Number(e.target.value))}
-                        className={`ml-auto px-4 py-2.5 rounded-xl border text-sm font-medium outline-none ${
-                            theme ? "bg-gray-800/60 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-700"
-                        }`}
-                    >
-                        {deptSummaries.map((d) => (
-                            <option key={d.department_id} value={d.department_id}>
-                                {d.department_name} ({d.percentage}%)
-                            </option>
-                        ))}
-                    </select>
+                {loading ? (
+                    <div className="flex justify-center items-center py-20">
+                        <div className={`w-10 h-10 rounded-full border-4 border-t-transparent animate-spin ${theme ? "border-blue-500" : "border-red-600"}`} />
+                    </div>
+                ) : (
+                    <>
+                        {(user.roleCode === SUPER_ADMIN || user.roleCode === DEPARTMENT_HEAD) && departmentData && (
+                            <DepartmentProgressView department={departmentData} theme={theme} />
+                        )}
+
+                        {user.roleCode === SECTION_HEAD && sectionData && (
+                            <SectionProgressCard section={sectionData} theme={theme} defaultOpen={true} />
+                        )}
+
+                        {user.roleCode !== SUPER_ADMIN && user.roleCode !== DEPARTMENT_HEAD && user.roleCode !== SECTION_HEAD && userData && (
+                            <div className="flex justify-center py-10">
+                                <UserProgressCard user={userData} theme={theme} />
+                            </div>
+                        )}
+
+                        {user.roleCode === DEPARTMENT_HEAD && !departmentData && (
+                            <p className={`text-center py-16 ${theme ? "text-gray-500" : "text-neutral-400"}`}>No department assigned to your account.</p>
+                        )}
+                        {user.roleCode === SECTION_HEAD && !sectionData && (
+                            <p className={`text-center py-16 ${theme ? "text-gray-500" : "text-neutral-400"}`}>No section assigned to your account.</p>
+                        )}
+                    </>
                 )}
             </div>
-
-            {loading ? (
-                <div className="flex justify-center items-center py-20">
-                    <div className={`w-10 h-10 rounded-full border-4 border-t-transparent animate-spin ${theme ? "border-blue-500" : "border-red-600"}`} />
-                </div>
-            ) : (
-                <>
-                    {/* Super Admin / Department Head — full department view */}
-                    {(user.roleCode === SUPER_ADMIN || user.roleCode === DEPARTMENT_HEAD) && departmentData && (
-                        <DepartmentProgressView department={departmentData} theme={theme} />
-                    )}
-
-                    {/* Section Head — potana section nu view, default expanded */}
-                    {user.roleCode === SECTION_HEAD && sectionData && (
-                        <SectionProgressCard section={sectionData} theme={theme} defaultOpen={true} />
-                    )}
-
-                    {/* Student / User — potanu personal progress card */}
-                    {user.roleCode !== SUPER_ADMIN && user.roleCode !== DEPARTMENT_HEAD && user.roleCode !== SECTION_HEAD && userData && (
-                        <div className="flex justify-center py-10">
-                            <UserProgressCard user={userData} theme={theme} />
-                        </div>
-                    )}
-
-                    {/* Empty states */}
-                    {user.roleCode === DEPARTMENT_HEAD && !departmentData && (
-                        <p className={`text-center py-16 ${theme ? "text-gray-500" : "text-neutral-400"}`}>No department assigned to your account.</p>
-                    )}
-                    {user.roleCode === SECTION_HEAD && !sectionData && (
-                        <p className={`text-center py-16 ${theme ? "text-gray-500" : "text-neutral-400"}`}>No section assigned to your account.</p>
-                    )}
-                </>
-            )}
         </div>
     );
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Save, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react'; 
 import DatePicker from '../../../components/common/Calendar';
+import ImageCropEditor from '../../../components/common/ImageCropEditor';
 import { useTheme } from '../../../components/theme/ThemeContext';
 
 interface AmrutData {
@@ -17,6 +18,8 @@ const AmrutNuAachaman: React.FC = () => {
     const [dataList, setDataList] = useState<AmrutData[]>([]);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [description, setDescription] = useState('');
+    const [cropFile, setCropFile] = useState<File | null>(null);
+    const [isCropEditorOpen, setIsCropEditorOpen] = useState(false);
 
     const [headerDate, setHeaderDate] = useState(new Date().toISOString().split('T')[0]);
 
@@ -60,13 +63,21 @@ const AmrutNuAachaman: React.FC = () => {
         return () => window.removeEventListener('resize', checkOverflow);
     }, [selectedItem, isDescExpanded, isModalOpen]);
 
+    const handleCroppedFile = (file: File) => {
+        const reader = new FileReader();
+        reader.onloadend = () => setSelectedImage(reader.result as string);
+        reader.readAsDataURL(file);
+        setCropFile(null);
+        setIsCropEditorOpen(false);
+    };
+
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => setSelectedImage(reader.result as string);
-            reader.readAsDataURL(file);
+            setCropFile(file);
+            setIsCropEditorOpen(true);
         }
+        e.target.value = '';
     };
 
     const handleSave = () => {
@@ -272,6 +283,20 @@ const AmrutNuAachaman: React.FC = () => {
             </div>
 
             {/* --- IMAGE POPUP MODAL (70% Image & 30% Description) --- */}
+            <ImageCropEditor
+                file={cropFile}
+                isOpen={isCropEditorOpen}
+                theme={theme}
+                shape="square"
+                title="Edit Amrut Image"
+                subtitle="Crop and zoom the selected memory to fit the gallery"
+                onClose={() => {
+                    setCropFile(null);
+                    setIsCropEditorOpen(false);
+                }}
+                onCropped={handleCroppedFile}
+            />
+
             {isModalOpen && selectedItem && (
                 <div 
                     onClick={() => setIsModalOpen(false)}

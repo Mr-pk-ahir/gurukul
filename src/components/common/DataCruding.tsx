@@ -4,15 +4,19 @@ import { useTheme } from "../theme/ThemeContext"; // તમારી ThemeContex
 import { HiDotsVertical } from "react-icons/hi";
 
 interface DataCrudingProps {
-    onEdit: () => void;
+    onView?: () => void;
+    onEdit?: () => void;
     onDelete: () => void;
+    viewLabel?: string;
     editLabel?: string;
     deleteLabel?: string;
 }
 
 export default function DataCruding({
+    onView,
     onEdit,
     onDelete,
+    viewLabel = "View",
     editLabel = "Edit",
     deleteLabel = "Delete",
 }: DataCrudingProps) {
@@ -100,20 +104,37 @@ export default function DataCruding({
                             : "bg-white border-neutral-100 text-neutral-700"
                             }`}
                     >
-                        {/* Edit બટન */}
-                        <button
-                            type="button"
-                            role="menuitem"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onEdit();
-                                setIsOpen(false);
-                            }}
-                            className={`w-full text-left px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${theme ? "hover:bg-gray-700" : "hover:bg-neutral-100"
-                                }`}
-                        >
-                            {editLabel}
-                        </button>
+                        {onView && (
+                            <button
+                                type="button"
+                                role="menuitem"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onView();
+                                    setIsOpen(false);
+                                }}
+                                className={`w-full text-left px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${theme ? "hover:bg-gray-700" : "hover:bg-neutral-100"
+                                    }`}
+                            >
+                                {viewLabel}
+                            </button>
+                        )}
+
+                        {onEdit && (
+                            <button
+                                type="button"
+                                role="menuitem"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEdit();
+                                    setIsOpen(false);
+                                }}
+                                className={`w-full text-left px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${theme ? "hover:bg-gray-700" : "hover:bg-neutral-100"
+                                    }`}
+                            >
+                                {editLabel}
+                            </button>
+                        )}
 
                         <button
                             type="button"

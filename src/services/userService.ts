@@ -10,7 +10,7 @@ export interface UserData {
     section_id?: number | null;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
 
 
 export const userService = {
@@ -29,6 +29,15 @@ export const userService = {
             return { success: true, data: res.data?.data ?? res.data };
         } catch (error: any) {
             return { success: false, message: error?.response?.data?.message || "Error fetching user" };
+        }
+    },
+
+    getUsersBySection: async (sectionId: number) => {
+        try {
+            const res = await axios.get(`${API_URL}/users/section/${sectionId}`);
+            return { success: true, data: res.data?.data ?? res.data?.users ?? res.data };
+        } catch (error: any) {
+            return { success: false, message: error?.response?.data?.message || "Error fetching users for section" };
         }
     },
 };
